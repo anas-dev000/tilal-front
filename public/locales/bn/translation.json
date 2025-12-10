@@ -1,0 +1,190 @@
+{
+  "common": {
+    "welcome": "স্বাগতম",
+    "login": "লগইন",
+    "logout": "লগআউট",
+    "save": "সংরক্ষণ",
+    "cancel": "বাতিল",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা",
+    "add": "যোগ করুন",
+    "search": "অনুসন্ধান",
+    "filter": "ফিল্টার",
+    "export": "রপ্তানি",
+    "import": "আমদানি",
+    "submit": "জমা দিন",
+    "close": "বন্ধ করুন",
+    "confirm": "নিশ্চিত করুন",
+    "loading": "লোড হচ্ছে...",
+    "noData": "কোন তথ্য নেই",
+    "error": "একটি ত্রুটি ঘটেছে",
+    "success": "অপারেশন সফল",
+    "language": "ভাষা",
+    "settings": "সেটিংস"
+  },
+  "nav": {
+    "dashboard": "ড্যাশবোর্ড",
+    "clients": "ক্লায়েন্ট",
+    "workers": "কর্মী",
+    "branches": "শাখা",
+    "projects": "প্রকল্প",
+    "tasks": "কাজ",
+    "invoices": "চালান",
+    "inventory": "ইনভেন্টরি",
+    "reports": "রিপোর্ট",
+    "myTasks": "আমার কাজ"
+  },
+  "admin": {
+    "title": "অ্যাডমিন ড্যাশবোর্ড",
+    "stats": {
+      "totalClients": "মোট ক্লায়েন্ট",
+      "totalWorkers": "মোট কর্মী",
+      "activeTasks": "সক্রিয় কাজ",
+      "completedTasks": "সম্পন্ন কাজ",
+      "totalRevenue": "মোট আয়",
+      "pendingInvoices": "মুলতুবি চালান"
+    },
+    "clients": {
+      "title": "ক্লায়েন্ট ব্যবস্থাপনা",
+      "addClient": "ক্লায়েন্ট যোগ করুন",
+      "name": "নাম",
+      "email": "ইমেইল",
+      "phone": "ফোন",
+      "address": "ঠিকানা",
+      "status": "অবস্থা"
+    },
+    "workers": {
+      "title": "কর্মী ব্যবস্থাপনা",
+      "addWorker": "কর্মী যোগ করুন",
+      "name": "নাম",
+      "email": "ইমেইল",
+      "phone": "ফোন",
+      "specialization": "বিশেষত্ব",
+      "status": "অবস্থা",
+      "assignedTasks": "নির্ধারিত কাজ"
+    },
+    "tasks": {
+      "title": "কাজ ব্যবস্থাপনা",
+      "createTask": "কাজ তৈরি করুন",
+      "assignTask": "কাজ নির্ধারণ করুন",
+      "taskName": "কাজের নাম",
+      "description": "বিবরণ",
+      "assignedTo": "নির্ধারিত",
+      "client": "ক্লায়েন্ট",
+      "branch": "শাখা",
+      "status": "অবস্থা",
+      "priority": "অগ্রাধিকার",
+      "dueDate": "নির্ধারিত তারিখ",
+      "materials": "উপকরণ",
+      "beforePhoto": "আগের ছবি",
+      "afterPhoto": "পরের ছবি",
+      "aiScore": "এআই স্কোর",
+      "adminComments": "অ্যাডমিন মন্তব্য"
+    },
+    "invoices": {
+      "title": "চালান কেন্দ্র",
+      "invoiceNumber": "চালান নম্বর",
+      "client": "ক্লায়েন্ট",
+      "amount": "পরিমাণ",
+      "date": "তারিখ",
+      "status": "অবস্থা",
+      "download": "পিডিএফ ডাউনলোড",
+      "view": "দেখুন"
+    },
+    "inventory": {
+      "title": "ইনভেন্টরি ব্যবস্থাপনা",
+      "itemName": "আইটেমের নাম",
+      "quantity": "পরিমাণ",
+      "unit": "একক",
+      "minStock": "ন্যূনতম স্টক",
+      "supplier": "সরবরাহকারী",
+      "lastUpdated": "শেষ আপডেট"
+    },
+    "reports": {
+      "title": "রিপোর্ট এবং বিশ্লেষণ",
+      "taskCompletion": "কাজ সম্পন্নের হার",
+      "workerPerformance": "কর্মীর কর্মক্ষমতা",
+      "revenueAnalysis": "আয় বিশ্লেষণ",
+      "clientSatisfaction": "ক্লায়েন্ট সন্তুষ্টি"
+    }
+  },
+  "worker": {
+    "title": "কর্মী ড্যাশবোর্ড",
+    "myTasks": "আমার কাজ",
+    "taskDetails": "কাজের বিবরণ",
+    "startTask": "কাজ শুরু করুন",
+    "finishTask": "কাজ শেষ করুন",
+    "uploadPhotos": "ছবি আপলোড করুন",
+    "beforePhoto": "আগের ছবি",
+    "afterPhoto": "পরের ছবি",
+    "materialsReceived": "উপকরণ প্রাপ্ত",
+    "confirmMaterials": "উপকরণ নিশ্চিত করুন",
+    "taskTime": "কাজের সময়",
+    "comments": "মন্তব্য",
+    "aiScore": "এআই মান স্কোর"
+  },
+  "client": {
+    "title": "ক্লায়েন্ট পোর্টাল",
+    "taskDetails": "কাজের বিবরণ",
+    "viewPhotos": "ছবি দেখুন",
+    "beforePhoto": "আগের ছবি",
+    "afterPhoto": "পরের ছবি",
+    "invoice": "চালান",
+    "downloadInvoice": "চালান ডাউনলোড",
+    "feedback": "প্রতিক্রিয়া",
+    "submitFeedback": "প্রতিক্রিয়া জমা দিন",
+    "rating": "রেটিং",
+    "comments": "মন্তব্য"
+  },
+  "auth": {
+    "email": "ইমেইল",
+    "password": "পাসওয়ার্ড",
+    "rememberMe": "আমাকে মনে রাখুন",
+    "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+    "loginSuccess": "লগইন সফল",
+    "loginError": "অবৈধ শংসাপত্র"
+  },
+  "status": {
+    "pending": "মুলতুবি",
+    "inProgress": "চলমান",
+    "completed": "সম্পন্ন",
+    "cancelled": "বাতিল",
+    "active": "সক্রিয়",
+    "inactive": "নিষ্ক্রিয়"
+  },
+  "priority": {
+    "low": "নিম্ন",
+    "medium": "মাঝারি",
+    "high": "উচ্চ",
+    "urgent": "জরুরি"
+  },
+   "bn_additions": {
+    "common": {
+      "saving": "সংরক্ষণ করা হচ্ছে...",
+      "actions": "কার্যক্রম",
+      "allCategories": "সমস্ত বিভাগ",
+      "confirmDelete": "আপনি কি নিশ্চিত এই আইটেমটি মুছে ফেলতে চান?",
+      "subtitle": "পরিচালনা এবং সংগঠিত করুন",
+      "street": "রাস্তা",
+      "city": "শহর",
+      "state": "রাজ্য",
+      "zipCode": "পিন কোড",
+      "whatsapp": "হোয়াটসঅ্যাপ"
+    },
+    "propertyTypes": {
+      "residential": "আবাসিক",
+      "commercial": "বাণিজ্যিক",
+      "industrial": "শিল্প",
+      "public": "সরকারি"
+    },
+    "roles": {
+      "admin": "প্রশাসক",
+      "worker": "কর্মী",
+      "client": "ক্লায়েন্ট"
+    },
+    "app": {
+      "name": "গার্ডেন এমএস"
+    }
+  }
+}
+
