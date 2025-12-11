@@ -1,10 +1,18 @@
 // frontend/src/pages/admin/SectionManagement.jsx
-import { useState } from 'react';
-import { Layers, Plus, Edit, Trash2, X, Upload, Image as ImageIcon } from 'lucide-react';
-import Modal from '../../components/common/Modal';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import { sitesAPI } from '../../services/api';
+import { useState } from "react";
+import {
+  Layers,
+  Plus,
+  Edit,
+  Trash2,
+  X,
+  Upload,
+  Image as ImageIcon,
+} from "lucide-react";
+import Modal from "../../components/common/Modal";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import { sitesAPI } from "../../services/api";
 
 const SectionManagement = ({ site, onUpdate }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -14,10 +22,10 @@ const SectionManagement = ({ site, onUpdate }) => {
 
   // New Section Form
   const [newSection, setNewSection] = useState({
-    name: '',
-    description: '',
-    area: '',
-    notes: ''
+    name: "",
+    description: "",
+    area: "",
+    notes: "",
   });
 
   // Reference Images
@@ -30,29 +38,29 @@ const SectionManagement = ({ site, onUpdate }) => {
 
     try {
       const formData = new FormData();
-      formData.append('name', newSection.name);
-      formData.append('description', newSection.description);
-      formData.append('area', newSection.area || 0);
-      formData.append('notes', newSection.notes);
+      formData.append("name", newSection.name);
+      formData.append("description", newSection.description);
+      formData.append("area", newSection.area || 0);
+      formData.append("notes", newSection.notes);
 
       // Add reference images
-      referenceImages.forEach(file => {
-        formData.append('referenceImages', file);
+      referenceImages.forEach((file) => {
+        formData.append("referenceImages", file);
       });
 
       await sitesAPI.addSection(site._id, formData);
-      
+
       // Reset form
-      setNewSection({ name: '', description: '', area: '', notes: '' });
+      setNewSection({ name: "", description: "", area: "", notes: "" });
       setReferenceImages([]);
       setImagePreviews([]);
       setIsAddModalOpen(false);
-      
+
       onUpdate();
-      alert('Section added successfully!');
+      alert("Section added successfully!");
     } catch (error) {
-      console.error('Error adding section:', error);
-      alert('Failed to add section');
+      console.error("Error adding section:", error);
+      alert("Failed to add section");
     } finally {
       setLoading(false);
     }
@@ -64,55 +72,59 @@ const SectionManagement = ({ site, onUpdate }) => {
 
     try {
       const formData = new FormData();
-      formData.append('name', newSection.name);
-      formData.append('description', newSection.description);
-      formData.append('area', newSection.area || 0);
-      formData.append('notes', newSection.notes);
+      formData.append("name", newSection.name);
+      formData.append("description", newSection.description);
+      formData.append("area", newSection.area || 0);
+      formData.append("notes", newSection.notes);
 
       // Add new reference images
-      referenceImages.forEach(file => {
-        formData.append('referenceImages', file);
+      referenceImages.forEach((file) => {
+        formData.append("referenceImages", file);
       });
 
       await sitesAPI.updateSection(site._id, selectedSection._id, formData);
-      
+
       setIsEditModalOpen(false);
       setSelectedSection(null);
       setReferenceImages([]);
       setImagePreviews([]);
-      
+
       onUpdate();
-      alert('Section updated successfully!');
+      alert("Section updated successfully!");
     } catch (error) {
-      console.error('Error updating section:', error);
-      alert('Failed to update section');
+      console.error("Error updating section:", error);
+      alert("Failed to update section");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteSection = async (sectionId) => {
-    if (window.confirm('Are you sure you want to delete this section? All reference images will be deleted.')) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this section? All reference images will be deleted."
+      )
+    ) {
       try {
         await sitesAPI.deleteSection(site._id, sectionId);
         onUpdate();
-        alert('Section deleted successfully!');
+        alert("Section deleted successfully!");
       } catch (error) {
-        console.error('Error deleting section:', error);
-        alert('Failed to delete section');
+        console.error("Error deleting section:", error);
+        alert("Failed to delete section");
       }
     }
   };
 
   const handleDeleteReferenceImage = async (sectionId, imageId) => {
-    if (window.confirm('Delete this reference image?')) {
+    if (window.confirm("Delete this reference image?")) {
       try {
         await sitesAPI.deleteReferenceImage(site._id, sectionId, imageId);
         onUpdate();
-        alert('Image deleted successfully!');
+        alert("Image deleted successfully!");
       } catch (error) {
-        console.error('Error deleting image:', error);
-        alert('Failed to delete image');
+        console.error("Error deleting image:", error);
+        alert("Failed to delete image");
       }
     }
   };
@@ -121,9 +133,9 @@ const SectionManagement = ({ site, onUpdate }) => {
     setSelectedSection(section);
     setNewSection({
       name: section.name,
-      description: section.description || '',
-      area: section.area || '',
-      notes: section.notes || ''
+      description: section.description || "",
+      area: section.area || "",
+      notes: section.notes || "",
     });
     setReferenceImages([]);
     setImagePreviews([]);
@@ -132,36 +144,36 @@ const SectionManagement = ({ site, onUpdate }) => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    
+
     if (files.length + imagePreviews.length > 20) {
-      alert('Maximum 20 images allowed');
+      alert("Maximum 20 images allowed");
       return;
     }
 
-    setReferenceImages(prev => [...prev, ...files]);
+    setReferenceImages((prev) => [...prev, ...files]);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, { file, preview: reader.result }]);
+        setImagePreviews((prev) => [...prev, { file, preview: reader.result }]);
       };
       reader.readAsDataURL(file);
     });
   };
 
   const removeNewImage = (index) => {
-    setReferenceImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setReferenceImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'in-progress': 'bg-blue-100 text-blue-800',
-      'completed': 'bg-green-100 text-green-800',
-      'maintenance': 'bg-purple-100 text-purple-800',
+      pending: "bg-yellow-100 text-yellow-800",
+      "in-progress": "bg-blue-100 text-blue-800",
+      completed: "bg-green-100 text-green-800",
+      maintenance: "bg-purple-100 text-purple-800",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   return (
@@ -173,7 +185,7 @@ const SectionManagement = ({ site, onUpdate }) => {
         </h2>
         <Button
           onClick={() => {
-            setNewSection({ name: '', description: '', area: '', notes: '' });
+            setNewSection({ name: "", description: "", area: "", notes: "" });
             setReferenceImages([]);
             setImagePreviews([]);
             setIsAddModalOpen(true);
@@ -202,20 +214,31 @@ const SectionManagement = ({ site, onUpdate }) => {
       ) : (
         <div className="space-y-4">
           {site.sections.map((section) => (
-            <div key={section._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div
+              key={section._id}
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(section.status)}`}>
+                    <h3 className="font-semibold text-lg text-gray-900">
+                      {section.name}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        section.status
+                      )}`}
+                    >
                       {section.status}
                     </span>
                   </div>
                   {section.description && (
-                    <p className="text-sm text-gray-600">{section.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {section.description}
+                    </p>
                   )}
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => openEditModal(section)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded"
@@ -234,47 +257,57 @@ const SectionManagement = ({ site, onUpdate }) => {
               </div>
 
               {section.area > 0 && (
-                <p className="text-sm text-gray-500 mb-3">Area: {section.area} m²</p>
+                <p className="text-sm text-gray-500 mb-3">
+                  Area: {section.area} m²
+                </p>
               )}
 
               {/* Reference Images */}
-                   {section.referenceImages && section.referenceImages.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-700">
-                      Reference Images ({section.referenceImages.length})
-                    </p>
-                    <p className="text-xs text-gray-500">Hover to delete</p>
+              {section.referenceImages &&
+                section.referenceImages.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Reference Images ({section.referenceImages.length})
+                      </p>
+                      <p className="text-xs text-gray-500">Hover to delete</p>
+                    </div>
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                      {section.referenceImages.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                          <img
+                            src={img.url}
+                            alt={`Reference ${idx + 1}`}
+                            className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-90"
+                            onClick={() => window.open(img.url, "_blank")}
+                          />
+                          <button
+                            onClick={() => {
+                              if (
+                                window.confirm("Delete this reference image?")
+                              ) {
+                                handleDeleteReferenceImage(
+                                  section._id,
+                                  img._id
+                                );
+                              }
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                            title="Delete image"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                    {section.referenceImages.map((img, idx) => (
-                      <div key={idx} className="relative group">
-                        <img
-                          src={img.url}
-                          alt={`Reference ${idx + 1}`}
-                          className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-90"
-                          onClick={() => window.open(img.url, '_blank')}
-                        />
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Delete this reference image?')) {
-                              handleDeleteReferenceImage(section._id, img._id);
-                            }
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
-                          title="Delete image"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
               {section.notes && (
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-gray-500">Notes: {section.notes}</p>
+                  <p className="text-xs text-gray-500">
+                    Notes: {section.notes}
+                  </p>
                 </div>
               )}
             </div>
@@ -293,7 +326,9 @@ const SectionManagement = ({ site, onUpdate }) => {
           <Input
             label="Section Name"
             value={newSection.name}
-            onChange={(e) => setNewSection({ ...newSection, name: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, name: e.target.value })
+            }
             placeholder="e.g., Front Garden, Backyard, Pool Area"
             required
           />
@@ -304,7 +339,9 @@ const SectionManagement = ({ site, onUpdate }) => {
             </label>
             <textarea
               value={newSection.description}
-              onChange={(e) => setNewSection({ ...newSection, description: e.target.value })}
+              onChange={(e) =>
+                setNewSection({ ...newSection, description: e.target.value })
+              }
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               placeholder="Brief description..."
@@ -315,7 +352,9 @@ const SectionManagement = ({ site, onUpdate }) => {
             label="Area (m²)"
             type="number"
             value={newSection.area}
-            onChange={(e) => setNewSection({ ...newSection, area: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, area: e.target.value })
+            }
             placeholder="Optional"
             min="0"
           />
@@ -325,7 +364,7 @@ const SectionManagement = ({ site, onUpdate }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Reference Images (Max 20)
             </label>
-            
+
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
               <input
                 type="file"
@@ -371,7 +410,9 @@ const SectionManagement = ({ site, onUpdate }) => {
           <Input
             label="Notes"
             value={newSection.notes}
-            onChange={(e) => setNewSection({ ...newSection, notes: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, notes: e.target.value })
+            }
             placeholder="Optional notes..."
           />
 
@@ -385,7 +426,7 @@ const SectionManagement = ({ site, onUpdate }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Section'}
+              {loading ? "Adding..." : "Add Section"}
             </Button>
           </div>
         </form>
@@ -402,7 +443,9 @@ const SectionManagement = ({ site, onUpdate }) => {
           <Input
             label="Section Name"
             value={newSection.name}
-            onChange={(e) => setNewSection({ ...newSection, name: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, name: e.target.value })
+            }
             required
           />
 
@@ -412,7 +455,9 @@ const SectionManagement = ({ site, onUpdate }) => {
             </label>
             <textarea
               value={newSection.description}
-              onChange={(e) => setNewSection({ ...newSection, description: e.target.value })}
+              onChange={(e) =>
+                setNewSection({ ...newSection, description: e.target.value })
+              }
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
@@ -422,7 +467,9 @@ const SectionManagement = ({ site, onUpdate }) => {
             label="Area (m²)"
             type="number"
             value={newSection.area}
-            onChange={(e) => setNewSection({ ...newSection, area: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, area: e.target.value })
+            }
             min="0"
           />
 
@@ -431,7 +478,7 @@ const SectionManagement = ({ site, onUpdate }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Add More Reference Images
             </label>
-            
+
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
               <input
                 type="file"
@@ -477,7 +524,9 @@ const SectionManagement = ({ site, onUpdate }) => {
           <Input
             label="Notes"
             value={newSection.notes}
-            onChange={(e) => setNewSection({ ...newSection, notes: e.target.value })}
+            onChange={(e) =>
+              setNewSection({ ...newSection, notes: e.target.value })
+            }
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t">
@@ -490,7 +539,7 @@ const SectionManagement = ({ site, onUpdate }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Section'}
+              {loading ? "Updating..." : "Update Section"}
             </Button>
           </div>
         </form>

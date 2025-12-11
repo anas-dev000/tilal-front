@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Menu, Bell, X } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import { notificationsAPI } from '../services/api';
-import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { useState, useEffect } from "react";
+import { Menu, Bell, X } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
+import { notificationsAPI } from "../services/api";
+import LanguageSwitcher from "../components/common/LanguageSwitcher";
 
 const Navbar = ({ onMenuClick }) => {
   const { isRTL } = useLanguage();
@@ -12,42 +12,41 @@ const Navbar = ({ onMenuClick }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
- 
-useEffect(() => {
-  if (user) {
-    fetchNotifications();
-    // ✅ تقليل التكرار من 30 ثانية إلى دقيقة واحدة
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
-  }
-}, [user]);
-
-const fetchNotifications = async () => {
-  try {
-    // ✅ إضافة تأخير عشوائي لتوزيع الطلبات
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 3000));
-    
-    const response = await notificationsAPI.getNotifications({ 
-      limit: 10,
-      unreadOnly: true // ✅ جلب غير المقروءة فقط
-    });
-    const data = response.data.data || [];
-    setNotifications(data);
-    setUnreadCount(data.filter(n => !n.read).length);
-  } catch (error) {
-    // ✅ تجاهل أخطاء 429 بصمت
-    if (error.response?.status !== 429) {
-      console.error('Error fetching notifications:', error);
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      // ✅ تقليل التكرار من 30 ثانية إلى دقيقة واحدة
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
     }
-  }
-};
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      // ✅ إضافة تأخير عشوائي لتوزيع الطلبات
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 3000));
+
+      const response = await notificationsAPI.getNotifications({
+        limit: 10,
+        unreadOnly: true, // ✅ جلب غير المقروءة فقط
+      });
+      const data = response.data.data || [];
+      setNotifications(data);
+      setUnreadCount(data.filter((n) => !n.read).length);
+    } catch (error) {
+      // ✅ تجاهل أخطاء 429 بصمت
+      if (error.response?.status !== 429) {
+        console.error("Error fetching notifications:", error);
+      }
+    }
+  };
 
   const handleMarkAsRead = async (id) => {
     try {
       await notificationsAPI.markAsRead(id);
       fetchNotifications();
     } catch (error) {
-      console.error('Error marking as read:', error);
+      console.error("Error marking as read:", error);
     }
   };
 
@@ -56,18 +55,18 @@ const fetchNotifications = async () => {
       await notificationsAPI.markAllAsRead();
       fetchNotifications();
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error("Error marking all as read:", error);
     }
   };
 
   const getNotificationIcon = (type) => {
-    return '📢';
+    return "📢";
   };
 
   const getTimeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    
-    if (seconds < 60) return 'Just now';
+
+    if (seconds < 60) return "Just now";
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     return `${Math.floor(seconds / 86400)}d ago`;
@@ -79,7 +78,7 @@ const fetchNotifications = async () => {
         {/* Menu Button (Mobile) */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+          className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
         >
           <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
         </button>
@@ -93,25 +92,31 @@ const fetchNotifications = async () => {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
               {unreadCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
 
             {/* Notifications Dropdown */}
             {showNotifications && (
-              <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-w-[calc(100vw-2rem)]`}>
+              <div
+                className={`absolute ${
+                  isRTL ? "left-0" : "right-0"
+                } mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-w-[calc(100vw-2rem)]`}
+              >
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Notifications</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
+                    Notifications
+                  </h3>
                   <button
                     onClick={() => setShowNotifications(false)}
-                    className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                    className="text-gray-400 hover:text-gray-600 shrink-0"
                   >
                     <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
@@ -141,7 +146,7 @@ const fetchNotifications = async () => {
                         <div
                           key={notification._id}
                           className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                            !notification.read ? 'bg-blue-50' : ''
+                            !notification.read ? "bg-blue-50" : ""
                           }`}
                           onClick={() => {
                             if (!notification.read) {
@@ -150,7 +155,7 @@ const fetchNotifications = async () => {
                           }}
                         >
                           <div className="flex items-start gap-2 sm:gap-3">
-                            <span className="text-xl sm:text-2xl flex-shrink-0">
+                            <span className="text-xl sm:text-2xl shrink-0">
                               {getNotificationIcon(notification.type)}
                             </span>
                             <div className="flex-1 min-w-0">
@@ -165,7 +170,7 @@ const fetchNotifications = async () => {
                               </p>
                             </div>
                             {!notification.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
+                              <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-2" />
                             )}
                           </div>
                         </div>

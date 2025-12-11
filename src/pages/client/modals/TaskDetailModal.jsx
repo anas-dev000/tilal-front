@@ -22,9 +22,9 @@ const TaskDetailModal = ({
           <div className="max-w-full">
             {/* Feedback Banner */}
             {task.feedback && (
-              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-4 border-amber-400 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="bg-linear-to-r from-yellow-50 to-amber-50 border-b-4 border-amber-400 rounded-xl p-4 mb-6 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="bg-amber-100 p-2 rounded-full flex-shrink-0">
+                  <div className="bg-amber-100 p-2 rounded-full shrink-0">
                     <Star className="w-5 h-5 text-amber-600" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -47,7 +47,7 @@ const TaskDetailModal = ({
                       </span>
                     </div>
                     {task.feedback.comment && (
-                      <p className="text-sm text-gray-800 leading-relaxed break-words">
+                      <p className="text-sm text-gray-800 leading-relaxed wrap-break-word">
                         "{task.feedback.comment}"
                       </p>
                     )}
@@ -76,7 +76,7 @@ const TaskDetailModal = ({
                   <h4 className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
                     <span className="text-green-600">Description</span>
                   </h4>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap wrap-break-word">
                     {task.description}
                   </p>
                 </div>
@@ -86,14 +86,14 @@ const TaskDetailModal = ({
                   {task.site && (
                     <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                       <h4 className="font-bold text-sm text-green-900 mb-2 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <MapPin className="w-4 h-4 shrink-0" />
                         <span className="truncate">Site Location</span>
                       </h4>
                       <p className="font-semibold text-sm text-green-800 truncate">
                         {task.site.name}
                       </p>
                       {task.site.location?.address && (
-                        <p className="text-xs text-green-700 mt-1 break-words">
+                        <p className="text-xs text-green-700 mt-1 wrap-break-word">
                           {task.site.location.address}
                         </p>
                       )}
@@ -131,11 +131,11 @@ const TaskDetailModal = ({
 
               {/* Right Column – After Work Photos */}
               <div className="min-w-0">
-                <div className="bg-gradient-to-b from-gray-50 to-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-linear-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2 flex-wrap">
                     <span className="text-green-600">After Work Photos</span>
                     {visibleAfterImages.length > 0 && (
-                      <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+                      <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full shrink-0">
                         {visibleAfterImages.length} photos
                       </span>
                     )}
@@ -154,7 +154,7 @@ const TaskDetailModal = ({
                             alt={`After work ${idx + 1}`}
                             className="w-full h-40 object-cover"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                          <div className="absolute inset-0 bg-linear-to-r from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
                             <div className="p-3 text-white">
                               <Eye className="w-6 h-6" />
                             </div>
@@ -181,7 +181,7 @@ const TaskDetailModal = ({
 
         {/* Fixed Action Button at Bottom */}
         {!task.feedback && task.status === "completed" && (
-          <div className="flex-shrink-0 mt-4 pt-4 border-t-2 border-gray-200 bg-gray-50 -mx-6 px-6 pb-2">
+          <div className="shrink-0 mt-4 pt-4 border-t-2 border-gray-200 bg-gray-50 -mx-6 px-6 pb-2">
             <Button
               variant="success"
               size="lg"
