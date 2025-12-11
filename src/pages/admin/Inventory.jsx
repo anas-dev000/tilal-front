@@ -167,7 +167,7 @@ const Inventory = () => {
             {inventory.length} items
             {lowStockCount > 0 && (
               <span className="text-red-600 font-semibold ml-2">
-                • ⚠️ {lowStockCount} Low Stock
+                • {lowStockCount} Low Stock
               </span>
             )}
           </p>

@@ -1,165 +1,258 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit, Trash2, Power } from 'lucide-react';
-import { usersAPI } from '../../services/api';
-import Card from '../../components/common/Card';
-import Table from '../../components/common/Table';
-import Button from '../../components/common/Button';
-import WorkerModal from './WorkerModal';
-import Loading from '../../components/common/Loading';
+// src/pages/admin/Workers.jsx
+import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, Search, Users, UserCheck, UserX } from "lucide-react";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Loading from "../../components/common/Loading";
+import WorkerModal from "./WorkerModal";
+import WorkersTable from "../../components/workers/WorkersTable";
+import ConfirmationModal from "../../components/workers/ConfirmationModal";
+import { usersAPI } from "../../services/api";
+import useWorkers from "../../hooks/useWorkers";
+
+const PAGE_SIZE = 10;
 
 const Workers = () => {
   const { t } = useTranslation();
-  const [workers, setWorkers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // all, active, inactive
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    worker: null,
+    action: "",
+  });
 
+  const { allWorkers, loading, error, refetch } = useWorkers();
+
+  // فلترة البيانات في الفرونت
+  const filteredWorkers = useMemo(() => {
+    let filtered = allWorkers;
+
+    // فلترة حسب الحالة
+    if (activeTab === "active") filtered = filtered.filter((w) => w.isActive);
+    if (activeTab === "inactive")
+      filtered = filtered.filter((w) => !w.isActive);
+
+    // فلترة حسب البحث
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (w) =>
+          w.name.toLowerCase().includes(term) ||
+          w.email.toLowerCase().includes(term) ||
+          (w.phone && w.phone.includes(term))
+      );
+    }
+
+    return filtered;
+  }, [allWorkers, activeTab, searchTerm]);
+
+  // Pagination في الفرونت
+  const paginatedWorkers = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return filteredWorkers.slice(start, end);
+  }, [filteredWorkers, currentPage]);
+
+  const totalPages = Math.ceil(filteredWorkers.length / PAGE_SIZE);
+
+  // إعادة تعيين الصفحة عند تغيير الفلاتر
   useEffect(() => {
-    fetchWorkers();
-  }, []);
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
 
-  const fetchWorkers = async () => {
+  const handleToggleStatus = (worker) => {
+    setConfirmModal({
+      isOpen: true,
+      worker,
+      action: worker.isActive ? "deactivate" : "activate",
+    });
+  };
+
+  const confirmToggle = async () => {
     try {
-      setLoading(true);
-      const response = await usersAPI.getUsers({ role: 'worker' });
-      setWorkers(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching workers:', error);
-    } finally {
-      setLoading(false);
+      await usersAPI.updateUser(confirmModal.worker._id, {
+        isActive: !confirmModal.worker.isActive,
+      });
+      refetch(); // إعادة جلب البيانات بعد التعديل
+      setConfirmModal({ isOpen: false, worker: null, action: "" });
+    } catch (err) {
+      alert(t("common.errorOccurred", err));
     }
   };
 
-  const handleEdit = (worker) => {
-    setSelectedWorker(worker);
-    setIsModalOpen(true);
+  const handleDelete = (worker) => {
+    setConfirmModal({
+      isOpen: true,
+      worker,
+      action: "delete",
+    });
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(t('common.confirmDelete'))) {
-      try {
-        await usersAPI.deleteUser(id);
-        fetchWorkers();
-      } catch (error) {
-        console.error('Error deleting worker:', error);
-        alert('Failed to delete worker');
-      }
-    }
-  };
-
-  // ✅ NEW: Toggle Worker Status (Activate/Deactivate)
-  const toggleWorkerStatus = async (id, newStatus) => {
+  const confirmDelete = async () => {
     try {
-      await usersAPI.updateUser(id, { isActive: newStatus });
-      fetchWorkers();
-    } catch (error) {
-      console.error('Error toggling worker status:', error);
-      alert('Failed to update worker status');
+      await usersAPI.deleteUser(confirmModal.worker._id);
+      refetch();
+      setConfirmModal({ isOpen: false, worker: null, action: "" });
+    } catch (err) {
+      alert(t("common.errorOccurred", err));
     }
   };
 
-  const handleAddNew = () => {
-    setSelectedWorker(null);
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedWorker(null);
-  };
-
-  const handleSuccess = () => {
-    fetchWorkers();
-  };
-
-  // ✅ UPDATED Columns (Removed Specialization, Added Status Toggle)
-  const columns = [
-    { header: t('admin.workers.name'), accessor: 'name' },
-    { header: t('admin.workers.email'), accessor: 'email' },
-    { header: t('admin.workers.phone'), accessor: 'phone' },
-    {
-      header: t('admin.workers.status'),
-      render: (row) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-          row.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
-          {row.isActive ? '✅ Active' : '🔴 Inactive'}
-        </span>
-      ),
-    },
-    {
-      header: t('common.actions'),
-      render: (row) => (
-        <div className="flex gap-2">
-          {/* Edit Button */}
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-blue-600 hover:text-blue-800 p-1"
-            title={t('common.edit')}
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          
-          {/* ✅ Toggle Status Button */}
-          <button
-            onClick={() => toggleWorkerStatus(row._id, !row.isActive)}
-            className={`p-1 ${
-              row.isActive 
-                ? 'text-red-600 hover:text-red-800' 
-                : 'text-green-600 hover:text-green-800'
-            }`}
-            title={row.isActive ? 'Deactivate' : 'Activate'}
-          >
-            <Power className="w-4 h-4" />
-          </button>
-          
-          {/* Delete Button */}
-          <button
-            onClick={() => handleDelete(row._id)}
-            className="text-red-600 hover:text-red-800 p-1"
-            title={t('common.delete')}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  if (loading) {
-    return <Loading fullScreen />;
-  }
+  if (loading) return <Loading fullScreen />;
+  if (error)
+    return <div className="text-center py-12 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('admin.workers.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("admin.workers.title")}
+          </h1>
           <p className="text-gray-600 mt-1">
-            {workers.length} workers • {workers.filter(w => w.isActive).length} active
+            {filteredWorkers.length} {t("admin.workers.displayed")} •{" "}
+            {allWorkers.filter((w) => w.isActive).length}{" "}
+            {t("admin.workers.active")} {t("common.of")} {allWorkers.length}{" "}
+            {t("admin.workers.total")}
           </p>
         </div>
-        <Button onClick={handleAddNew} icon={Plus}>
-          {t('admin.workers.addWorker')}
+        <Button onClick={() => setIsModalOpen(true)} icon={Plus}>
+          {t("admin.workers.addWorker")}
         </Button>
       </div>
 
+      {/* Search & Tabs */}
       <Card>
-        {workers.length === 0 ? (
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <Input
+              placeholder={t("common.searchByNameEmailPhone")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              icon={Search}
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex gap-2 border-b sm:border-b-0 border-gray-200">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "all"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              {t("common.all")} ({allWorkers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("active")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "active"
+                  ? "border-green-600 text-green-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              {t("admin.workers.active")} (
+              {allWorkers.filter((w) => w.isActive).length})
+            </button>
+            <button
+              onClick={() => setActiveTab("inactive")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "inactive"
+                  ? "border-red-600 text-red-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <UserX className="w-4 h-4" />
+              {t("admin.workers.inactive")} (
+              {allWorkers.filter((w) => !w.isActive).length})
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        {filteredWorkers.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">{t('common.noData')}</p>
+            <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t("common.noData")}</p>
           </div>
         ) : (
-          <Table columns={columns} data={workers} />
+          <WorkersTable
+            workers={paginatedWorkers}
+            onEdit={(w) => {
+              setSelectedWorker(w);
+              setIsModalOpen(true);
+            }}
+            onToggleStatus={handleToggleStatus}
+            onDelete={handleDelete}
+            pagination={{
+              page: currentPage,
+              totalPages,
+              total: filteredWorkers.length,
+              limit: PAGE_SIZE,
+            }}
+            onPageChange={setCurrentPage}
+          />
         )}
       </Card>
 
+      {/* Modals */}
       <WorkerModal
         isOpen={isModalOpen}
-        onClose={handleModalClose}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedWorker(null);
+        }}
         worker={selectedWorker}
-        onSuccess={handleSuccess}
+        onSuccess={refetch}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false })}
+        onConfirm={
+          confirmModal.action === "delete" ? confirmDelete : confirmToggle
+        }
+        title={
+          confirmModal.action === "delete"
+            ? t("common.confirmDelete")
+            : confirmModal.action === "deactivate"
+            ? t("admin.workers.deactivateWorker")
+            : t("admin.workers.activateWorker")
+        }
+        message={
+          confirmModal.action === "delete"
+            ? t("common.actionIrreversible")
+            : `${t("common.areYouSure")} ${
+                confirmModal.action === "deactivate"
+                  ? t("common.deactivate")
+                  : t("common.activate")
+              } ${t("common.thisWorker")}؟`
+        }
+        confirmText={
+          confirmModal.action === "delete"
+            ? t("common.delete")
+            : confirmModal.action === "deactivate"
+            ? t("common.deactivate")
+            : t("common.activate")
+        }
+        confirmVariant={
+          confirmModal.action === "delete"
+            ? "danger"
+            : confirmModal.action === "deactivate"
+            ? "warning"
+            : "success"
+        }
       />
     </div>
   );

@@ -18,20 +18,41 @@ import Loading from "../../components/common/Loading";
 
 const Sites = () => {
   const navigate = useNavigate();
-  const [sites, setSites] = useState([]);
-  const [clients, setClients] = useState([]);
+
+  // States
+  const [allSites, setAllSites] = useState([]);
+  const [allClients, setAllClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
 
+  // Fetch all data ONCE
   useEffect(() => {
-    fetchSites();
-    fetchClients();
-  }, [clientFilter]);
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const [sitesRes, clientsRes] = await Promise.all([
+          sitesAPI.getAllSites(), // No params → get everything
+          clientsAPI.getClients(), // Get all clients
+        ]);
 
-  const fetchSites = async () => {
+        setAllSites(sitesRes.data.data || []);
+        setAllClients(clientsRes.data.data || []);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+        alert("Failed to load sites or clients");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Refetch data after create/update/delete
+  const refetchSites = async () => {
     try {
       setLoading(true);
       const params = {};
@@ -55,16 +76,26 @@ const Sites = () => {
     } catch (error) {
       console.error("Error fetching clients:", error);
     }
-  };
 
-  // ✅ NEW: Navigate to sections page on card click
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (site) =>
+          site.name.toLowerCase().includes(term) ||
+          site.location?.address?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  }, [allSites, clientFilter, searchTerm]);
+
   const handleSiteClick = (site) => {
     navigate(`/admin/sites/${site._id}/sections`);
   };
 
-  // ✅ UPDATED: Edit opens modal for basic info only
   const handleEdit = (e, site) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation();
     setSelectedSite(site);
     setIsModalOpen(true);
   };
@@ -78,7 +109,7 @@ const Sites = () => {
     ) {
       try {
         await sitesAPI.deleteSite(id);
-        fetchSites();
+        refetchSites();
       } catch (error) {
         console.error("Error deleting site:", error);
         alert("Failed to delete site");
@@ -91,14 +122,13 @@ const Sites = () => {
     setIsModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedSite(null);
-  };
-
-  const handleSuccess = () => {
-    fetchSites();
-  };
+  const clientOptions = [
+    { value: "all", label: `All Clients (${allSites.length})` },
+    ...allClients.map((client) => ({
+      value: client._id,
+      label: client.name,
+    })),
+  ];
 
   const getSiteTypeColor = (type) => {
     const colors = {
@@ -137,17 +167,17 @@ const Sites = () => {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Instant (No API call) */}
       <div className="bg-white p-4 rounded-lg shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search sites..."
+              placeholder="Search by site name or address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
             />
           </div>
         </div>
@@ -172,9 +202,11 @@ const Sites = () => {
 
       {/* Sites Grid */}
       {filteredSites.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">No sites found</p>
+        <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+          <MapPin className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg">
+            No sites found matching your filters
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -210,7 +242,7 @@ const Sites = () => {
                 </div>
               </div>
 
-              {/* Site Info - Flexible with overflow */}
+              {/* Site Info */}
               <div className="p-6 space-y-3 flex-1 flex flex-col overflow-hidden">
                 <div className="flex justify-between items-start shrink-0">
                   <div className="flex-1 min-w-0">
@@ -296,13 +328,16 @@ const Sites = () => {
         </div>
       )}
 
-      {/* Edit Site Modal (Basic Info Only) */}
+      {/* Modal */}
       <SiteModal
         isOpen={isModalOpen}
-        onClose={handleModalClose}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedSite(null);
+        }}
         site={selectedSite}
-        clients={clients}
-        onSuccess={handleSuccess}
+        clients={allClients}
+        onSuccess={refetchSites}
       />
     </div>
   );

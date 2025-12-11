@@ -36,7 +36,6 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
       className="fixed inset-0 z-50 overflow-y-auto"
       style={{ pointerEvents: "auto" }}
     >
-      {/* Background overlay - شفاف بدون لون أسود */}
       <div
         className="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] transition-opacity"
         onClick={handleOverlayClick}

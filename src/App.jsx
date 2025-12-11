@@ -1,26 +1,32 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import DashboardLayout from './layouts/DashboardLayout';
-import Loading from './components/common/Loading';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import DashboardLayout from "./layouts/DashboardLayout";
+import Loading from "./components/common/Loading";
 
 // Admin Pages
-import AdminDashboard from './pages/admin/Dashboard';
-import Clients from './pages/admin/Clients';
-import Workers from './pages/admin/Workers';
-import Tasks from './pages/admin/Tasks';
-import Inventory from './pages/admin/Inventory';
-import AdminTaskDetail from './pages/admin/AdminTaskDetail';
-import Sites from './pages/admin/Sites';
-import SiteSectionsPage from './pages/admin/SiteSectionsPage';
+import AdminDashboard from "./pages/admin/Dashboard";
+import Clients from "./pages/admin/Clients";
+import Workers from "./pages/admin/Workers";
+import WorkerDetails from "./pages/admin/WorkerDetails";
+import Tasks from "./pages/admin/Tasks";
+import Inventory from "./pages/admin/Inventory";
+import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
+import Sites from "./pages/admin/Sites";
+import SiteSectionsPage from "./pages/admin/SiteSectionsPage";
 
 // Worker Pages
-import WorkerLogin from './pages/worker/Login'; // ✅ Now unified for all
-import MyTasks from './pages/worker/MyTasks';
-import TaskDetail from './pages/worker/TaskDetail';
+import WorkerLogin from "./pages/worker/Login"; // ✅ Now unified for all
+import MyTasks from "./pages/worker/MyTasks";
+import TaskDetail from "./pages/worker/TaskDetail";
 
 // Client Pages
-import ClientPortal from './pages/client/ClientPortal';
+import ClientPortal from "./pages/client/ClientPortal";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -47,14 +53,14 @@ const AppRoutes = () => {
     <Routes>
       {/* ✅ UNIFIED: Single login for all user types */}
       <Route path="/login" element={<WorkerLogin />} />
-      
+
       {/* ✅ REMOVED: /client/login (now uses /login) */}
 
       {/* Client Routes */}
       <Route
         path="/client/dashboard"
         element={
-          <ProtectedRoute allowedRoles={['client']}>
+          <ProtectedRoute allowedRoles={["client"]}>
             <ClientPortal />
           </ProtectedRoute>
         }
@@ -64,7 +70,7 @@ const AppRoutes = () => {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <AdminDashboard />
             </DashboardLayout>
@@ -74,7 +80,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/clients"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Clients />
             </DashboardLayout>
@@ -84,7 +90,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/workers"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Workers />
             </DashboardLayout>
@@ -94,7 +100,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/tasks"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Tasks />
             </DashboardLayout>
@@ -104,7 +110,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/tasks/:id"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <AdminTaskDetail />
             </DashboardLayout>
@@ -114,7 +120,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/inventory"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Inventory />
             </DashboardLayout>
@@ -124,29 +130,29 @@ const AppRoutes = () => {
       <Route
         path="/admin/sites"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Sites />
             </DashboardLayout>
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/admin/sites/:id/sections" 
+      <Route
+        path="/admin/sites/:id/sections"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <SiteSectionsPage />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* Worker Routes */}
       <Route
         path="/worker"
         element={
-          <ProtectedRoute allowedRoles={['worker']}>
+          <ProtectedRoute allowedRoles={["worker"]}>
             <DashboardLayout>
               <MyTasks />
             </DashboardLayout>
@@ -156,7 +162,7 @@ const AppRoutes = () => {
       <Route
         path="/worker/tasks"
         element={
-          <ProtectedRoute allowedRoles={['worker']}>
+          <ProtectedRoute allowedRoles={["worker"]}>
             <DashboardLayout>
               <MyTasks />
             </DashboardLayout>
@@ -166,9 +172,19 @@ const AppRoutes = () => {
       <Route
         path="/worker/tasks/:id"
         element={
-          <ProtectedRoute allowedRoles={['worker']}>
+          <ProtectedRoute allowedRoles={["worker"]}>
             <DashboardLayout>
               <TaskDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workers/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <WorkerDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }
@@ -176,29 +192,37 @@ const AppRoutes = () => {
 
       {/* Default Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route 
-        path="/unauthorized" 
+      <Route
+        path="/unauthorized"
         element={
           <div className="flex items-center justify-center min-h-screen bg-gray-50">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-red-600 mb-4">403</h1>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Unauthorized Access</h2>
-              <p className="text-gray-600">You don't have permission to access this page.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Unauthorized Access
+              </h2>
+              <p className="text-gray-600">
+                You don't have permission to access this page.
+              </p>
             </div>
           </div>
-        } 
+        }
       />
-      <Route 
-        path="*" 
+      <Route
+        path="*"
         element={
           <div className="flex items-center justify-center min-h-screen bg-gray-50">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-              <h2 className="text-2xl font-bold text-gray-700 mb-2">Page Not Found</h2>
-              <p className="text-gray-600">The page you're looking for doesn't exist.</p>
+              <h2 className="text-2xl font-bold text-gray-700 mb-2">
+                Page Not Found
+              </h2>
+              <p className="text-gray-600">
+                The page you're looking for doesn't exist.
+              </p>
             </div>
           </div>
-        } 
+        }
       />
     </Routes>
   );

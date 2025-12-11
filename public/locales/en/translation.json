@@ -38,7 +38,12 @@
     "city": "City",
     "state": "State",
     "zipCode": "ZIP Code",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "all": "All",
+    "of": "of",
+    "searchByNameEmailPhone": "Search by name, email or phone",
+    "areYouSure": "Are you sure you want to",
+    "thisWorker": "this worker"
   },
   "units": {
     "piece": "Piece",
@@ -99,7 +104,13 @@
       "phone": "Phone",
       "specialization": "Specialization",
       "status": "Status",
-      "assignedTasks": "Assigned Tasks"
+      "assignedTasks": "Assigned Tasks",
+      "active": "Active",
+      "inactive": "Inactive",
+      "displayed": "Worker displayed",
+      "total": "Total workers",
+      "activateWorker": "Activate worker",
+      "deactivateWorker": "Deactivate worker"
     },
     "tasks": {
       "title": "Task Management",

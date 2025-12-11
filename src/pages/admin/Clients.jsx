@@ -11,42 +11,86 @@ import Loading from "../../components/common/Loading";
 
 const Clients = () => {
   const { t } = useTranslation();
+
+  const [allClients, setAllClients] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
 
-  // Filter States
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState("all");
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchClients();
-  }, [statusFilter, paymentTypeFilter, propertyTypeFilter]);
+  // Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
 
-  const fetchClients = async () => {
+  useEffect(() => {
+    const fetchAllClients = async () => {
+      try {
+        setLoading(true);
+        const response = await clientsAPI.getClients({}); // بدون أي params
+        setAllClients(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        alert("Failed to load clients. Check console.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllClients();
+  }, []); 
+
+  useEffect(() => {
+    let filtered = [...allClients];
+
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter((client) => {
+        return (
+          client.name?.name?.toLowerCase().includes(lowerSearch) ||
+          client?.email?.toLowerCase().includes(lowerSearch) ||
+          client?.phone?.includes(searchTerm)
+        );
+      });
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((client) => client.status === statusFilter);
+    }
+
+    if (paymentTypeFilter !== "all") {
+      filtered = filtered.filter((client) => {
+        const clientPayment = client.paymentType || "online";
+        return clientPayment === paymentTypeFilter;
+      });
+    }
+
+    if (propertyTypeFilter !== "all") {
+      filtered = filtered.filter(
+        (client) => client.propertyType === propertyTypeFilter
+      );
+    }
+
+    setClients(filtered);
+  }, [
+    allClients,
+    searchTerm,
+    statusFilter,
+    paymentTypeFilter,
+    propertyTypeFilter,
+  ]);
+
+  const refreshClients = async () => {
     try {
       setLoading(true);
-      const params = {
-        search: searchTerm,
-      };
-
-      // Apply Filters
-      if (statusFilter !== "all") params.status = statusFilter;
-      if (paymentTypeFilter !== "all") {
-        params.paymentType = paymentTypeFilter;
-      }
-      if (propertyTypeFilter !== "all")
-        params.propertyType = propertyTypeFilter;
-
-      const response = await clientsAPI.getClients(params);
-      setClients(response.data.data || []);
+      const response = await clientsAPI.getClients({});
+      setAllClients(response.data.data || []);
     } catch (error) {
-      console.error("Error fetching clients:", error);
-      alert("Failed to fetch clients. Check console for details.");
+      console.error("Error refreshing clients:", error);
+      alert("Failed to refresh clients.");
     } finally {
       setLoading(false);
     }
@@ -57,12 +101,10 @@ const Clients = () => {
     if (window.confirm(`Are you sure you want to ${action} this client?`)) {
       try {
         await clientsAPI.toggleClientStatus(id);
-        fetchClients();
+        await refreshClients(); // نجيب البيانات جديدة
       } catch (error) {
         console.error("Error toggling status:", error);
-        alert(
-          error.response?.data?.message || "Failed to toggle client status"
-        );
+        alert(error.response?.data?.message || "Failed to toggle status");
       }
     }
   };
@@ -76,7 +118,7 @@ const Clients = () => {
     if (window.confirm(t("common.confirmDelete"))) {
       try {
         await clientsAPI.deleteClient(id);
-        fetchClients();
+        await refreshClients();
       } catch (error) {
         console.error("Error deleting client:", error);
         alert(error.response?.data?.message || "Failed to delete client");
@@ -95,32 +137,22 @@ const Clients = () => {
   };
 
   const handleSuccess = () => {
-    fetchClients();
+    refreshClients();
   };
 
   const columns = [
-    {
-      header: t("admin.clients.name"),
-      accessor: "name",
-    },
-    {
-      header: t("admin.clients.email"),
-      accessor: "email",
-    },
-    {
-      header: t("admin.clients.phone"),
-      accessor: "phone",
-    },
+    { header: t("admin.clients.name"), accessor: "name" },
+    { header: t("admin.clients.email"), accessor: "email" },
+    { header: t("admin.clients.phone"), accessor: "phone" },
     {
       header: "Property Type",
       render: (row) => {
         const typeKey = `ar_additions.propertyTypes.${row.propertyType}`;
         const translated = t(typeKey);
         const label = translated === typeKey ? row.propertyType : translated;
-
         return (
           <span className="capitalize">
-            {row.propertyType === "residential" ? "🏠" : "🏢"} {label}
+            {row.propertyType === "residential" ? "House" : "Building"} {label}
           </span>
         );
       },
@@ -137,7 +169,7 @@ const Clients = () => {
                 : "bg-blue-100 text-blue-800"
             }`}
           >
-            {paymentType === "cash" ? "💵 Cash" : "💳 Online"}
+            {paymentType === "cash" ? "Cash" : "Online"}
           </span>
         );
       },
@@ -154,9 +186,9 @@ const Clients = () => {
               : "bg-red-100 text-red-800"
           }`}
         >
-          {row.status === "active" && "✓ Active"}
-          {row.status === "inactive" && "○ Inactive"}
-          {row.status === "suspended" && "⊘ Suspended"}
+          {row.status === "active" && "Active"}
+          {row.status === "inactive" && "Inactive"}
+          {row.status === "suspended" && "Suspended"}
         </span>
       ),
     },
@@ -196,23 +228,6 @@ const Clients = () => {
     },
   ];
 
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone?.includes(searchTerm);
-
-    const clientPaymentType = client.paymentType || "online";
-    const matchesPayment =
-      paymentTypeFilter === "all" || clientPaymentType === paymentTypeFilter;
-
-    const matchesProperty =
-      propertyTypeFilter === "all" ||
-      client.propertyType === propertyTypeFilter;
-
-    return matchesSearch && matchesPayment && matchesProperty;
-  });
-
   if (loading) {
     return <Loading fullScreen />;
   }
@@ -231,14 +246,14 @@ const Clients = () => {
         </Button>
       </div>
 
-      {/* ✅ Status Tabs - العدد بس جنب All */}
+      {/* Status Tabs */}
       <div className="flex gap-2 flex-wrap">
         <Button
           variant={statusFilter === "all" ? "primary" : "secondary"}
           onClick={() => setStatusFilter("all")}
           size="sm"
         >
-          All ({filteredClients.length})
+          All ({clients.length})
         </Button>
         <Button
           variant={statusFilter === "active" ? "primary" : "secondary"}
@@ -296,35 +311,31 @@ const Clients = () => {
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
               <Select
-                label="💰 Payment Type"
+                label="Payment Type"
                 value={paymentTypeFilter}
                 onChange={(e) => setPaymentTypeFilter(e.target.value)}
                 options={[
                   { value: "all", label: "All Payment Types" },
-                  { value: "cash", label: "💵 Cash" },
-                  { value: "online", label: "💳 Online" },
+                  { value: "cash", label: "Cash" },
+                  { value: "online", label: "Online" },
                 ]}
               />
 
               <Select
-                label="🏠 Property Type"
+                label="Property Type"
                 value={propertyTypeFilter}
                 onChange={(e) => setPropertyTypeFilter(e.target.value)}
                 options={[
                   { value: "all", label: "All Property Types" },
-                  { value: "residential", label: "🏠 Residential" },
-                  { value: "commercial", label: "🏢 Commercial" },
+                  { value: "residential", label: "Residential" },
+                  { value: "commercial", label: "Commercial" },
                 ]}
               />
 
               <div className="flex items-end">
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  onClick={fetchClients}
-                >
-                  Apply Filters
-                </Button>
+                <div className="text-sm text-gray-500">
+                  Filtering is applied instantly
+                </div>
               </div>
             </div>
           )}
@@ -333,7 +344,7 @@ const Clients = () => {
 
       {/* Table */}
       <Card>
-        {filteredClients.length === 0 ? (
+        {clients.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">
               {statusFilter === "inactive"
@@ -342,7 +353,7 @@ const Clients = () => {
             </p>
           </div>
         ) : (
-          <Table columns={columns} data={filteredClients} />
+          <Table columns={columns} data={clients} />
         )}
       </Card>
 

@@ -38,7 +38,12 @@
     "city": "المدينة",
     "state": "المنطقة",
     "zipCode": "الرمز البريدي",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "all": "الكل",
+    "of": "من",
+    "searchByNameEmailPhone": "ابحث بالاسم أو البريد أو رقم الهاتف",
+    "areYouSure": "هل أنت متأكد أنك تريد",
+    "thisWorker": "هذا العامل"
   },
   "units": {
     "piece": "قطعة",
@@ -99,7 +104,13 @@
       "phone": "الهاتف",
       "specialization": "التخصص",
       "status": "الحالة",
-      "assignedTasks": "المهام المعينة"
+      "assignedTasks": "المهام المعينة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "displayed": "عامل معروض",
+      "total": "إجمالي العمال",
+      "activateWorker": "تفعيل العامل",
+      "deactivateWorker": "إيقاف العامل"
     },
     "tasks": {
       "title": "إدارة المهام",

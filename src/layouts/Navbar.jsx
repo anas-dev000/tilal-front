@@ -60,7 +60,7 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   const getNotificationIcon = (type) => {
-    return "📢";
+    return `📢 NotificationIcon !!!  ${type}`;
   };
 
   const getTimeAgo = (date) => {
@@ -159,10 +159,10 @@ const Navbar = ({ onMenuClick }) => {
                               {getNotificationIcon(notification.type)}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1 break-words">
+                              <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1 wrap-break-word">
                                 {notification.title}
                               </p>
-                              <p className="text-[10px] sm:text-xs text-gray-600 mb-1 break-words">
+                              <p className="text-[10px] sm:text-xs text-gray-600 mb-1 wrap-break-word">
                                 {notification.message}
                               </p>
                               <p className="text-[10px] sm:text-xs text-gray-400">

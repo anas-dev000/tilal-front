@@ -845,7 +845,7 @@ const TaskDetail = () => {
                         ✅ Confirm All Materials ({selectedMaterials.length})
                       </Button>
                       <p className="text-xs text-orange-600 text-center mt-2">
-                        ⚠️ You must confirm materials before finishing task
+                        You must confirm materials before finishing task
                       </p>
                     </div>
                   )}
@@ -922,7 +922,7 @@ const TaskDetail = () => {
                 {!materialsConfirmed && (
                   <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 text-center">
                     <p className="text-sm text-orange-800 font-bold">
-                      ⚠️ Please confirm materials first!
+                      Please confirm materials first!
                     </p>
                   </div>
                 )}

@@ -1,6 +1,6 @@
 // frontend/src/pages/admin/SiteModal.jsx
 import { useState, useEffect } from "react";
-import { Layers } from "lucide-react";
+import { Upload, X, Plus, Image as ImageIcon, Layers } from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";

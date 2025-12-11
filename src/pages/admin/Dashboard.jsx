@@ -84,7 +84,7 @@ const Dashboard = () => {
       </div>
 
       {/* ✅ Low Stock Alert - NEW */}
-      <Card title="⚠️ Low Stock Alerts">
+      <Card title="Low Stock Alerts">
         {lowStockItems.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-green-600 font-medium">
