@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Users, Briefcase, CheckSquare, CheckCircle, AlertTriangle } from 'lucide-react';
-import StatCard from '../../components/common/StatCard';
-import Card from '../../components/common/Card';
-import { reportsAPI, inventoryAPI } from '../../services/api';
-import Loading from '../../components/common/Loading';
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Users,
+  Briefcase,
+  CheckSquare,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
+import StatCard from "../../components/common/StatCard";
+import Card from "../../components/common/Card";
+import { reportsAPI, inventoryAPI } from "../../services/api";
+import Loading from "../../components/common/Loading";
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -19,21 +25,23 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // ✅ جلب الإحصائيات من Backend
       const statsResponse = await reportsAPI.getDashboardStats();
-      setStats(statsResponse.data.data);
-      
+      setStats(statsResponse.data);
+
       // ✅ جلب المنتجات منخفضة المخزون (أقل من 5)
       const inventoryResponse = await inventoryAPI.getInventory();
-      const allItems = inventoryResponse.data.data || [];
-      
+      const items = inventoryResponse.data?.data;
+      const allItems = Array.isArray(items) ? items : [];
       // فلترة المنتجات اللي الكمية فيها أقل من 5
-      const lowStock = allItems.filter(item => item.quantity.current < 5);
+      const lowStock = allItems.filter(
+        (item) => item.quantity?.current < item.quantity?.minimum
+      );
       setLowStockItems(lowStock);
-      
+      console.log("Inventory Response:", inventoryResponse);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -45,30 +53,30 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">{t('admin.title')}</h1>
-      
+      <h1 className="text-3xl font-bold text-gray-900">{t("admin.title")}</h1>
+
       {/* ✅ Stats Grid - Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title={t('admin.stats.totalClients')}
+          title={t("admin.stats.totalClients")}
           value={stats?.clients?.total || 0}
           icon={Users}
           color="blue"
         />
         <StatCard
-          title={t('admin.stats.totalWorkers')}
+          title={t("admin.stats.totalWorkers")}
           value={stats?.workers?.total || 0}
           icon={Briefcase}
           color="green"
         />
         <StatCard
-          title={t('admin.stats.activeTasks')}
+          title={t("admin.stats.activeTasks")}
           value={stats?.tasks?.inProgress || 0}
           icon={CheckSquare}
           color="yellow"
         />
         <StatCard
-          title={t('admin.stats.completedTasks')}
+          title={t("admin.stats.completedTasks")}
           value={stats?.tasks?.completed || 0}
           icon={CheckCircle}
           color="primary"
@@ -79,13 +87,15 @@ const Dashboard = () => {
       <Card title="⚠️ Low Stock Alerts">
         {lowStockItems.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-green-600 font-medium">✅ All items are well stocked!</p>
+            <p className="text-green-600 font-medium">
+              ✅ All items are well stocked!
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {lowStockItems.map(item => (
-              <div 
-                key={item._id} 
+            {lowStockItems.map((item) => (
+              <div
+                key={item._id}
                 className="flex justify-between items-center p-4 bg-red-50 border-l-4 border-red-500 rounded"
               >
                 <div className="flex items-center gap-3">
@@ -93,7 +103,10 @@ const Dashboard = () => {
                   <div>
                     <p className="font-semibold text-gray-900">{item.name}</p>
                     <p className="text-sm text-gray-600">
-                      Current: <strong>{item.quantity.current} {item.unit}</strong>
+                      Current:{" "}
+                      <strong>
+                        {item.quantity.current} {item.unit}
+                      </strong>
                     </p>
                   </div>
                 </div>

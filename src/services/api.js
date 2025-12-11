@@ -264,6 +264,7 @@ export const inventoryAPI = {
   getInventory: (params) => api.get("/inventory", { params }),
   getInventoryItem: (id) => api.get(`/inventory/${id}`),
   createInventoryItem: (data) => api.post("/inventory", data),
+   getLowStockItems: () => api.get("/inventory/low-stock"),
   updateInventoryItem: (id, data) => api.put(`/inventory/${id}`, data),
   deleteInventoryItem: (id) => api.delete(`/inventory/${id}`),
   withdrawInventory: (id, data) => api.post(`/inventory/${id}/withdraw`, data),
