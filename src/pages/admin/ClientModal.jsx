@@ -30,11 +30,11 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
         email: '',
         phone: '',
         whatsapp: '',
-        password: '', // ✅ جديد: optional password
-        paymentType: 'cash', // ✅ جديد
+        password: '', // ✅ Required
+        paymentType: 'cash',
         address: {
-          street: '', // ✅ required
-          city: '' // ✅ required
+          street: '',
+          city: ''
         },
         propertyType: 'residential',
         propertySize: '',
@@ -48,19 +48,12 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
       setLoading(true);
       setError('');
 
-      // ✅ إذا Password فاضي، Backend هيولد temporary password
-      const submitData = {
-        ...data,
-        // إزالة password إذا كان فاضي
-        password: data.password?.trim() || undefined
-      };
-
       if (client) {
         // Update existing client
-        await clientsAPI.updateClient(client._id, submitData);
+        await clientsAPI.updateClient(client._id, data);
       } else {
         // Create new client
-        await clientsAPI.createClient(submitData);
+        await clientsAPI.createClient(data);
       }
 
       onSuccess();
@@ -125,22 +118,19 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
           />
         </div>
 
-        {/* ✅ Password (Optional for new clients) */}
+        {/* ✅ Password (Required - Type Text) */}
         {!client && (
-          <div>
-            <Input
-              label="Password (Optional)"
-              type="password"
-              {...register('password')}
-              placeholder="Leave empty for auto-generated password"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              💡 If left empty, a temporary password will be generated and sent to the client
-            </p>
-          </div>
+          <Input
+            label="Password"
+            type="text"
+            {...register('password', { required: 'Password is required' })}
+            error={errors.password?.message}
+            placeholder="Enter password"
+            required
+          />
         )}
 
-        {/* ✅ Payment Type - NEW */}
+        {/* Payment Type */}
         <Select
           label="Payment Type"
           {...register('paymentType')}
@@ -151,20 +141,20 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
           required
         />
 
-        {/* ✅ Address - UPDATED (only street & city) */}
+        {/* ✅ Address - WITH LABELS */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             {t('admin.clients.address')} <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              placeholder="Street Address"
+              label="Street Address"
               {...register('address.street', { required: 'Street is required' })}
               error={errors.address?.street?.message}
               required
             />
             <Input
-              placeholder="City"
+              label="City"
               {...register('address.city', { required: 'City is required' })}
               error={errors.address?.city?.message}
               required
@@ -172,7 +162,7 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
           </div>
         </div>
 
-        {/* ✅ Property Info - UPDATED (only residential & commercial) */}
+        {/* Property Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
             label={t('admin.clients.propertyType')}
