@@ -168,6 +168,7 @@ export const clientsAPI = {
   createClient: (data) => api.post("/clients", data),
   updateClient: (id, data) => api.put(`/clients/${id}`, data),
   deleteClient: (id) => api.delete(`/clients/${id}`),
+  toggleClientStatus: (id) => api.put(`/clients/${id}/toggle-status`)
 };
 
 // ✅ Users API
