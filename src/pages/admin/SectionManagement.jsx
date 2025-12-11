@@ -8,13 +8,16 @@ import {
   X,
   Upload,
   Image as ImageIcon,
+  Eye,
 } from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { sitesAPI } from "../../services/api";
+import { useNavigate } from "react-router-dom";
 
 const SectionManagement = ({ site, onUpdate }) => {
+  const navigate = useNavigate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
@@ -176,6 +179,24 @@ const SectionManagement = ({ site, onUpdate }) => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const handleViewTasks = (sectionId, sectionName) => {
+    navigate(`/admin/sites/${site._id}/sections/${sectionId}/tasks`, {
+      state: { sectionName, siteName: site.name },
+    });
+  };
+
+  const calculateSectionStatus = (tasks = []) => {
+    if (tasks.length === 0) return "pending";
+
+    const hasPending = tasks.some((t) => t.status === "pending");
+    const hasInProgress = tasks.some((t) => t.status === "in-progress");
+    const allCompleted = tasks.every((t) => t.status === "completed");
+
+    if (allCompleted) return "completed";
+    if (hasInProgress || hasPending) return "in-progress"; // أو "pending" لو عايز أولوية للـ pending
+    return "in-progress"; // fallback
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -216,39 +237,66 @@ const SectionManagement = ({ site, onUpdate }) => {
           {site.sections.map((section) => (
             <div
               key={section._id}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="border rounded-lg p-5 hover:shadow-lg transition-all duration-200 bg-gray-50/50"
             >
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-lg text-gray-900">
                       {section.name}
                     </h3>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        section.status
-                      )}`}
-                    >
-                      {section.status}
-                    </span>
+                    {(() => {
+                      const computedStatus = calculateSectionStatus(
+                        section.tasks || []
+                      );
+                      return (
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            computedStatus
+                          )}`}
+                        >
+                          {computedStatus === "in-progress"
+                            ? "In Progress"
+                            : computedStatus.charAt(0).toUpperCase() +
+                              computedStatus.slice(1)}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {section.description && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 mb-2">
                       {section.description}
                     </p>
                   )}
+                  {section.area > 0 && (
+                    <p className="text-sm text-gray-500">
+                      Area:{" "}
+                      <span className="font-medium">{section.area} m²</span>
+                    </p>
+                  )}
                 </div>
-                <div className="flex gap-2 shrink-0">
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={Eye}
+                    onClick={() => handleViewTasks(section._id, section.name)}
+                    className="text-primary-600 border-primary-200 hover:bg-primary-50"
+                  >
+                    View All Tasks
+                  </Button>
+
                   <button
                     onClick={() => openEditModal(section)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
                     title="Edit"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteSection(section._id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -256,44 +304,30 @@ const SectionManagement = ({ site, onUpdate }) => {
                 </div>
               </div>
 
-              {section.area > 0 && (
-                <p className="text-sm text-gray-500 mb-3">
-                  Area: {section.area} m²
-                </p>
-              )}
-
               {/* Reference Images */}
               {section.referenceImages &&
                 section.referenceImages.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-700">
-                        Reference Images ({section.referenceImages.length})
-                      </p>
-                      <p className="text-xs text-gray-500">Hover to delete</p>
-                    </div>
-                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                      {section.referenceImages.map((img, idx) => (
-                        <div key={idx} className="relative group">
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Reference Images ({section.referenceImages.length})
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {section.referenceImages.map((img) => (
+                        <div
+                          key={img._id}
+                          className="relative group rounded overflow-hidden"
+                        >
                           <img
                             src={img.url}
-                            alt={`Reference ${idx + 1}`}
-                            className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-90"
+                            alt="Reference"
+                            className="w-full h-24 object-cover cursor-pointer hover:scale-105 transition-transform"
                             onClick={() => window.open(img.url, "_blank")}
                           />
                           <button
-                            onClick={() => {
-                              if (
-                                window.confirm("Delete this reference image?")
-                              ) {
-                                handleDeleteReferenceImage(
-                                  section._id,
-                                  img._id
-                                );
-                              }
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
-                            title="Delete image"
+                            onClick={() =>
+                              handleDeleteReferenceImage(section._id, img._id)
+                            }
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -304,9 +338,9 @@ const SectionManagement = ({ site, onUpdate }) => {
                 )}
 
               {section.notes && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-gray-500">
-                    Notes: {section.notes}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Notes:</span> {section.notes}
                   </p>
                 </div>
               )}

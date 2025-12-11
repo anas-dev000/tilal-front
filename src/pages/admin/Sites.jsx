@@ -9,6 +9,7 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
+import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import { sitesAPI, clientsAPI } from "../../services/api";
 import Button from "../../components/common/Button";
@@ -109,6 +110,14 @@ const Sites = () => {
     }
   };
 
+  const clientOptions = [
+    { value: "all", label: `All Clients (${allSites.length})` },
+    ...allClients.map((client) => ({
+      value: client._id,
+      label: client.name,
+    })),
+  ];
+
   const handleAddNew = () => {
     setSelectedSite(null);
     setIsModalOpen(true);
@@ -163,23 +172,12 @@ const Sites = () => {
         </div>
 
         <div className="w-full md:w-64">
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-          >
-            <option value="all">All Clients ({allSites.length})</option>
-            {allClients.map((client) => {
-              const siteCount = allSites.filter(
-                (s) => s.client?._id === client._id
-              ).length;
-              return (
-                <option key={client._id} value={client._id}>
-                  {client.name} ({siteCount})
-                </option>
-              );
-            })}
-          </select>
+          <Select
+            options={clientOptions}
+            value={clientOptions.find((c) => c.value === clientFilter)}
+            onChange={(selected) => setClientFilter(selected.value)}
+            isSearchable
+          />
         </div>
       </div>
 
@@ -213,7 +211,7 @@ const Sites = () => {
                   </div>
                 )}
 
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 group-hover:bg-opacity-40 hover:bg-black/4 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-4 py-2 flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary-600" />
                     <span className="font-semibold text-gray-900">

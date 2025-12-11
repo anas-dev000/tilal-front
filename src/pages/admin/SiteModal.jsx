@@ -121,11 +121,8 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
   };
 
   const siteTypes = [
-    { value: "residential", label: "Residential" },
-    { value: "commercial", label: "Commercial" },
-    { value: "industrial", label: "Industrial" },
-    { value: "public", label: "Public" },
-    { value: "agricultural", label: "Agricultural" },
+    { value: "residential", label: "Individual Client" },
+    { value: "commercial", label: "Company / Organization" },
   ];
 
   return (

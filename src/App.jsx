@@ -19,6 +19,7 @@ import Inventory from "./pages/admin/Inventory";
 import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
 import Sites from "./pages/admin/Sites";
 import SiteSectionsPage from "./pages/admin/SiteSectionsPage";
+import SectionTasksView from "./pages/admin/SectionTasksView";
 
 // Worker Pages
 import WorkerLogin from "./pages/worker/Login"; // ✅ Now unified for all
@@ -143,6 +144,17 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <SiteSectionsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/sites/:siteId/sections/:sectionId/tasks"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <SectionTasksView />
             </DashboardLayout>
           </ProtectedRoute>
         }
