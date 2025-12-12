@@ -1,4 +1,3 @@
-// frontend/src/pages/admin/InventoryModal.jsx - ✅ SIMPLIFIED
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -12,7 +11,6 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [branches, setBranches] = useState([]);
 
   const {
     register,
@@ -23,18 +21,20 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
     defaultValues: item || {}
   });
 
-  useEffect(() => {
-    fetchBranches();
-  }, []);
+ 
 
   useEffect(() => {
     if (item) {
-      reset(item);
+      reset({
+        ...item,
+        // ✅ Keep branch if editing
+        branch: item.branch?._id || item.branch
+      });
     } else {
       reset({
         name: '',
         unit: 'kg',
-        branch: '',
+        branch: '6910b1c1a3e82a5b6b079a63', // ✅ Default Main Branch ID
         description: '',
         quantity: {
           current: 0,
@@ -44,26 +44,14 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
     }
   }, [item, reset]);
 
-  const fetchBranches = async () => {
-    try {
-      // Mock data - replace with actual API call if you have branches endpoint
-      setBranches([
-        { _id: '6910b1c1a3e82a5b6b079a63', name: 'Main Branch' }
-      ]);
-    } catch (error) {
-      console.error('Error fetching branches:', error);
-    }
-  };
-
   const onSubmit = async (data) => {
     try {
       setLoading(true);
       setError('');
 
+      // ✅ Ensure branch is always set
       if (!data.branch) {
-        setError('Branch is required');
-        setLoading(false);
-        return;
+        data.branch = '6910b1c1a3e82a5b6b079a63';
       }
 
       if (item) {
@@ -89,7 +77,7 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
       title={item ? t('common.edit') : t('common.add')}
       size="md"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-4">
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
             {error}
@@ -117,15 +105,8 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
           required
         />
 
-        {/* Branch */}
-        <Select
-          label="Branch"
-          {...register('branch', { required: 'Branch is required' })}
-          error={errors.branch?.message}
-          options={branches.map(b => ({ value: b._id, label: b.name }))}
-          placeholder="Select branch"
-          required
-        />
+        {/* ✅ HIDDEN Branch Field - Auto-set to Main Branch */}
+        <input type="hidden" {...register('branch')} />
 
         {/* Quantity Section */}
         <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
@@ -161,6 +142,8 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
             />
           </div>
 
+         
+
           <div className="bg-blue-50 border border-blue-200 rounded p-2">
             <p className="text-xs text-blue-800">
               💡 <strong>تنبيه:</strong> سيتم إرسال تنبيه عندما تقل الكمية عن الحد الأدنى
@@ -192,11 +175,11 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
           >
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} onClick={handleSubmit(onSubmit)}>
             {loading ? t('common.saving') : t('common.save')}
           </Button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 };

@@ -1,56 +1,107 @@
-// frontend/src/pages/admin/Inventory.jsx - ✅ SIMPLIFIED
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit, Trash2, AlertTriangle, Search } from "lucide-react";
+import { Plus, Search, Package, AlertTriangle, PackageCheck, PackageX } from "lucide-react";
 import { inventoryAPI } from "../../services/api";
 import Card from "../../components/common/Card";
-import Table from "../../components/common/Table";
 import Button from "../../components/common/Button";
-import InventoryModal from "./InventoryModal";
+import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
+import InventoryModal from "./InventoryModal";
+import InventoryTable from "../../components/admin/InventoryTable";
+
+
+const PAGE_SIZE = 10;
 
 const Inventory = () => {
   const { t } = useTranslation();
-  const [inventory, setInventory] = useState([]);
+  
+  // Data
+  const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // all, low-stock, out-of-stock, in-stock
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
-    const fetchInventory = async () => {
-      try {
-        setLoading(true);
-        const response = await inventoryAPI.getInventory();
-        setInventory(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching inventory:", error);
-        alert("Failed to fetch inventory. Check console for details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchInventory();
   }, []);
 
-  const handleEdit = (item) => {
-    setSelectedItem(item);
-    setIsModalOpen(true);
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const response = await inventoryAPI.getInventory();
+      setAllItems(response.data.data || []);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+      setError("Failed to load inventory");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Client-side filtering
+  const filteredItems = useMemo(() => {
+    let filtered = allItems;
+
+    // Filter by tab
+    if (activeTab === "low-stock") {
+      filtered = filtered.filter(item => {
+        const current = item.quantity?.current || 0;
+        const minimum = item.quantity?.minimum || 0;
+        return current > 0 && current <= minimum;
+      });
+    } else if (activeTab === "out-of-stock") {
+      filtered = filtered.filter(item => (item.quantity?.current || 0) === 0);
+    } else if (activeTab === "in-stock") {
+      filtered = filtered.filter(item => {
+        const current = item.quantity?.current || 0;
+        const minimum = item.quantity?.minimum || 0;
+        return current > minimum;
+      });
+    }
+
+    // Filter by search
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(term) ||
+        (item.description && item.description.toLowerCase().includes(term))
+      );
+    }
+
+    return filtered;
+  }, [allItems, activeTab, searchTerm]);
+
+  // Pagination
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return filteredItems.slice(start, end);
+  }, [filteredItems, currentPage]);
+
+  const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
 
   const handleDelete = async (id) => {
     if (window.confirm(t("common.confirmDelete"))) {
       try {
         await inventoryAPI.deleteInventoryItem(id);
-        setLoading(true);
-        const response = await inventoryAPI.getInventory();
-        setInventory(response.data.data || []);
+        fetchInventory();
       } catch (error) {
         console.error("Error deleting item:", error);
         alert(error.response?.data?.message || "Failed to delete item");
-      } finally {
-        setLoading(false);
       }
     }
   };
@@ -60,129 +111,44 @@ const Inventory = () => {
     setIsModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedItem(null);
+  const handleEdit = (item) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
   };
 
-  const handleSuccess = async () => {
-    try {
-      setLoading(true);
-      const response = await inventoryAPI.getInventory();
-      setInventory(response.data.data || []);
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
-      alert("Failed to fetch inventory. Check console for details.");
-    } finally {
-      setLoading(false);
-    }
+  const handleSuccess = () => {
+    fetchInventory();
   };
 
-  const getStockStatus = (item) => {
-    const current = item.quantity?.current || 0;
-    const minimum = item.quantity?.minimum || 0;
-
-    if (current === 0)
-      return { label: "Out of Stock", color: "text-red-600", showAlert: true };
-    if (current <= minimum)
-      return { label: "Low Stock", color: "text-yellow-600", showAlert: true };
-    return { label: "In Stock", color: "text-green-600", showAlert: false };
+  // Calculate stats
+  const stats = {
+    total: allItems.length,
+    lowStock: allItems.filter(item => {
+      const current = item.quantity?.current || 0;
+      const minimum = item.quantity?.minimum || 0;
+      return current > 0 && current <= minimum;
+    }).length,
+    outOfStock: allItems.filter(item => (item.quantity?.current || 0) === 0).length,
+    inStock: allItems.filter(item => {
+      const current = item.quantity?.current || 0;
+      const minimum = item.quantity?.minimum || 0;
+      return current > minimum;
+    }).length
   };
 
-  // ✅ SIMPLIFIED COLUMNS (Only essential info)
-  const columns = [
-    {
-      header: "",
-      render: (row) => {
-        const status = getStockStatus(row);
-        return status.showAlert ? (
-          <AlertTriangle className="w-5 h-5 text-red-500" />
-        ) : null;
-      },
-    },
-    {
-      header: t("admin.inventory.itemName"),
-      accessor: "name",
-    },
-    {
-      header: t("admin.inventory.quantity"),
-      render: (row) => {
-        const status = getStockStatus(row);
-        return (
-          <span className={`font-semibold ${status.color}`}>
-            {row.quantity?.current || 0} {row.unit}
-          </span>
-        );
-      },
-    },
-    {
-      header: t("admin.inventory.unit"),
-      render: (row) => {
-        const unitLabels = {
-          kg: "كيلو",
-          piece: "قطعة",
-          liter: "لتر",
-        };
-        return (
-          <span className="text-gray-700">
-            {unitLabels[row.unit] || row.unit}
-          </span>
-        );
-      },
-    },
-    {
-      header: t("common.actions"),
-      render: (row) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-blue-600 hover:text-blue-800 p-1"
-            title={t("common.edit")}
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleDelete(row._id)}
-            className="text-red-600 hover:text-red-800 p-1"
-            title={t("common.delete")}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  const filteredInventory = inventory.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Count low stock items
-  const lowStockCount = inventory.filter((item) => {
-    const current = item.quantity?.current || 0;
-    const minimum = item.quantity?.minimum || 0;
-    return current <= minimum;
-  }).length;
-
-  if (loading) {
-    return <Loading fullScreen />;
-  }
+  if (loading) return <Loading fullScreen />;
+  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900">
             {t("admin.inventory.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {inventory.length} items
-            {lowStockCount > 0 && (
-              <span className="text-red-600 font-semibold ml-2">
-                • {lowStockCount} Low Stock
-              </span>
-            )}
+            {filteredItems.length} items displayed • {stats.lowStock} low stock • {stats.outOfStock} out of stock
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -190,53 +156,134 @@ const Inventory = () => {
         </Button>
       </div>
 
-      {/* Low Stock Alert */}
-      {lowStockCount > 0 && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-red-900">
-                تنبيه: {lowStockCount} {lowStockCount === 1 ? "مادة" : "مواد"}{" "}
-                قليلة المخزون
+      {/* ✅ IMPROVED Alert Banner */}
+      {(stats.lowStock > 0 || stats.outOfStock > 0) && (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 text-lg mb-2 flex items-center gap-2">
+                <span>⚠️ Inventory Alert</span>
+                <span className="bg-red-600 text-white text-xs px-3 py-1 rounded-full">
+                  {stats.lowStock + stats.outOfStock} items need attention
+                </span>
               </h3>
-              <p className="text-sm text-red-700">
-                يرجى إعادة تخزين هذه المواد في أقرب وقت ممكن
+              <div className="space-y-1 text-sm">
+                {stats.outOfStock > 0 && (
+                  <p className="text-red-800 font-semibold flex items-center gap-2">
+                    <PackageX className="w-4 h-4" />
+                    {stats.outOfStock} {stats.outOfStock === 1 ? "item is" : "items are"} completely out of stock
+                  </p>
+                )}
+                {stats.lowStock > 0 && (
+                  <p className="text-orange-800 font-semibold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    {stats.lowStock} {stats.lowStock === 1 ? "item has" : "items have"} low stock levels
+                  </p>
+                )}
+              </div>
+              <p className="text-red-700 text-xs mt-2 font-medium">
+                📢 Please restock these items as soon as possible
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Search */}
+      {/* Search & Tabs */}
       <Card>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder={t("common.search")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-      </Card>
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <Input
+              placeholder={t("common.search")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              icon={Search}
+              className="w-full"
+            />
+          </div>
 
-      {/* Table */}
-      <Card>
-        {filteredInventory.length === 0 ? (
+          <div className="flex gap-2 border-b sm:border-b-0 border-gray-200 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                activeTab === "all"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              All ({stats.total})
+            </button>
+            <button
+              onClick={() => setActiveTab("in-stock")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                activeTab === "in-stock"
+                  ? "border-green-600 text-green-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <PackageCheck className="w-4 h-4" />
+              In Stock ({stats.inStock})
+            </button>
+            <button
+              onClick={() => setActiveTab("low-stock")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                activeTab === "low-stock"
+                  ? "border-yellow-600 text-yellow-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Low Stock ({stats.lowStock})
+            </button>
+            <button
+              onClick={() => setActiveTab("out-of-stock")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                activeTab === "out-of-stock"
+                  ? "border-red-600 text-red-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <PackageX className="w-4 h-4" />
+              Out of Stock ({stats.outOfStock})
+            </button>
+          </div>
+        </div>
+
+        {/* ✅ NEW TABLE */}
+        {filteredItems.length === 0 ? (
           <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500">{t("common.noData")}</p>
           </div>
         ) : (
-          <Table columns={columns} data={filteredInventory} />
+          <InventoryTable
+            items={paginatedItems}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            pagination={{
+              page: currentPage,
+              totalPages,
+              total: filteredItems.length,
+              limit: PAGE_SIZE
+            }}
+            onPageChange={setCurrentPage}
+          />
         )}
       </Card>
 
       {/* Modal */}
       <InventoryModal
         isOpen={isModalOpen}
-        onClose={handleModalClose}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedItem(null);
+        }}
         item={selectedItem}
         onSuccess={handleSuccess}
       />
