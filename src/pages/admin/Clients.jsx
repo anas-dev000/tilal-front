@@ -1,111 +1,131 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit, Trash2, Search, Power, Filter } from "lucide-react";
+import { Plus, Search, Users, UserCheck, UserX } from "lucide-react";
 import { clientsAPI } from "../../services/api";
 import Card from "../../components/common/Card";
-import Table from "../../components/common/Table";
 import Button from "../../components/common/Button";
-import Select from "../../components/common/Select";
-import ClientModal from "./ClientModal";
+import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
+import ClientModal from "./ClientModal";
+import ConfirmationModal from "../../components/workers/ConfirmationModal";
+import ClientsTable from "../../components/client/ClientsTable";
+
+const PAGE_SIZE = 10;
 
 const Clients = () => {
   const { t } = useTranslation();
 
+  // Data
   const [allClients, setAllClients] = useState([]);
-  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState("all");
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState("all"); // all, active, inactive
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Modal
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    client: null,
+    action: "",
+  });
 
+  // Fetch all clients once
   useEffect(() => {
-    const fetchAllClients = async () => {
-      try {
-        setLoading(true);
-        const response = await clientsAPI.getClients({}); // بدون أي params
-        setAllClients(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        alert("Failed to load clients. Check console.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAllClients();
-  }, []); 
+  }, []);
 
-  useEffect(() => {
-    let filtered = [...allClients];
-
-    if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      filtered = filtered.filter((client) => {
-        return (
-          client.name?.name?.toLowerCase().includes(lowerSearch) ||
-          client?.email?.toLowerCase().includes(lowerSearch) ||
-          client?.phone?.includes(searchTerm)
-        );
-      });
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((client) => client.status === statusFilter);
-    }
-
-    if (paymentTypeFilter !== "all") {
-      filtered = filtered.filter((client) => {
-        const clientPayment = client.paymentType || "online";
-        return clientPayment === paymentTypeFilter;
-      });
-    }
-
-    if (propertyTypeFilter !== "all") {
-      filtered = filtered.filter(
-        (client) => client.propertyType === propertyTypeFilter
-      );
-    }
-
-    setClients(filtered);
-  }, [
-    allClients,
-    searchTerm,
-    statusFilter,
-    paymentTypeFilter,
-    propertyTypeFilter,
-  ]);
-
-  const refreshClients = async () => {
+  const fetchAllClients = async () => {
     try {
       setLoading(true);
       const response = await clientsAPI.getClients({});
       setAllClients(response.data.data || []);
-    } catch (error) {
-      console.error("Error refreshing clients:", error);
-      alert("Failed to refresh clients.");
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching clients:", err);
+      setError("Failed to load clients");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
-    const action = currentStatus === "active" ? "deactivate" : "activate";
-    if (window.confirm(`Are you sure you want to ${action} this client?`)) {
-      try {
-        await clientsAPI.toggleClientStatus(id);
-        await refreshClients(); // نجيب البيانات جديدة
-      } catch (error) {
-        console.error("Error toggling status:", error);
-        alert(error.response?.data?.message || "Failed to toggle status");
-      }
+  // Client-side filtering
+  const filteredClients = useMemo(() => {
+    let filtered = allClients;
+
+    // Filter by tab
+    if (activeTab === "active") {
+      filtered = filtered.filter((c) => c.status === "active");
+    } else if (activeTab === "inactive") {
+      filtered = filtered.filter((c) => c.status !== "active");
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.name.toLowerCase().includes(term) ||
+          c.email.toLowerCase().includes(term) ||
+          (c.phone && c.phone.includes(term))
+      );
+    }
+
+    return filtered;
+  }, [allClients, activeTab, searchTerm]);
+
+  // Pagination
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return filteredClients.slice(start, end);
+  }, [filteredClients, currentPage]);
+
+  const totalPages = Math.ceil(filteredClients.length / PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
+
+  // Handlers
+  const handleToggleStatus = (client) => {
+    setConfirmModal({
+      isOpen: true,
+      client,
+      action: client.status === "active" ? "deactivate" : "activate",
+    });
+  };
+
+  const confirmToggle = async () => {
+    try {
+      await clientsAPI.toggleClientStatus(confirmModal.client._id);
+      await fetchAllClients();
+      setConfirmModal({ isOpen: false, client: null, action: "" });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to toggle status");
+    }
+  };
+
+  const handleDelete = (client) => {
+    setConfirmModal({
+      isOpen: true,
+      client,
+      action: "delete",
+    });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await clientsAPI.deleteClient(confirmModal.client._id);
+      await fetchAllClients();
+      setConfirmModal({ isOpen: false, client: null, action: "" });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete client");
     }
   };
 
@@ -114,255 +134,161 @@ const Clients = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(t("common.confirmDelete"))) {
-      try {
-        await clientsAPI.deleteClient(id);
-        await refreshClients();
-      } catch (error) {
-        console.error("Error deleting client:", error);
-        alert(error.response?.data?.message || "Failed to delete client");
-      }
-    }
-  };
-
   const handleAddNew = () => {
     setSelectedClient(null);
     setIsModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedClient(null);
-  };
-
   const handleSuccess = () => {
-    refreshClients();
+    fetchAllClients();
   };
 
-  const columns = [
-    { header: t("admin.clients.name"), accessor: "name" },
-    { header: t("admin.clients.email"), accessor: "email" },
-    { header: t("admin.clients.phone"), accessor: "phone" },
-    {
-      header: "Property Type",
-      render: (row) => {
-        const typeKey = `ar_additions.propertyTypes.${row.propertyType}`;
-        const translated = t(typeKey);
-        const label = translated === typeKey ? row.propertyType : translated;
-        return (
-          <span className="capitalize">
-            {row.propertyType === "residential" ? "House" : "Building"} {label}
-          </span>
-        );
-      },
-    },
-    {
-      header: "Payment Type",
-      render: (row) => {
-        const paymentType = row.paymentType || "online";
-        return (
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-              paymentType === "cash"
-                ? "bg-green-100 text-green-800"
-                : "bg-blue-100 text-blue-800"
-            }`}
-          >
-            {paymentType === "cash" ? "Cash" : "Online"}
-          </span>
-        );
-      },
-    },
-    {
-      header: t("admin.clients.status"),
-      render: (row) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-            row.status === "active"
-              ? "bg-green-100 text-green-800"
-              : row.status === "inactive"
-              ? "bg-gray-100 text-gray-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.status === "active" && "Active"}
-          {row.status === "inactive" && "Inactive"}
-          {row.status === "suspended" && "Suspended"}
-        </span>
-      ),
-    },
-    {
-      header: t("common.actions"),
-      render: (row) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-blue-600 hover:text-blue-800 p-1"
-            title={t("common.edit")}
-          >
-            <Edit className="w-4 h-4" />
-          </button>
+  // Stats
+  const activeCount = allClients.filter((c) => c.status === "active").length;
+  const inactiveCount = allClients.filter((c) => c.status !== "active").length;
 
-          <button
-            onClick={() => handleToggleStatus(row._id, row.status)}
-            className={`p-1 ${
-              row.status === "active"
-                ? "text-red-600 hover:text-red-800"
-                : "text-green-600 hover:text-green-800"
-            }`}
-            title={row.status === "active" ? "Deactivate" : "Activate"}
-          >
-            <Power className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => handleDelete(row._id)}
-            className="text-red-600 hover:text-red-800 p-1"
-            title={t("common.delete")}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  if (loading) {
-    return <Loading fullScreen />;
-  }
+  if (loading) return <Loading fullScreen />;
+  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900">
             {t("admin.clients.title")}
           </h1>
+          <p className="text-gray-600 mt-1">
+            {filteredClients.length} {t("admin.clients.displayed")} • {activeCount}{" "}
+            {t("admin.clients.active")} {t("common.of")} {allClients.length}{" "}
+            {t("admin.clients.total")}
+          </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
           {t("admin.clients.addClient")}
         </Button>
       </div>
 
-      {/* Status Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          variant={statusFilter === "all" ? "primary" : "secondary"}
-          onClick={() => setStatusFilter("all")}
-          size="sm"
-        >
-          All ({clients.length})
-        </Button>
-        <Button
-          variant={statusFilter === "active" ? "primary" : "secondary"}
-          onClick={() => setStatusFilter("active")}
-          size="sm"
-        >
-          Active
-        </Button>
-        <Button
-          variant={statusFilter === "inactive" ? "primary" : "secondary"}
-          onClick={() => setStatusFilter("inactive")}
-          size="sm"
-        >
-          Inactive
-        </Button>
-      </div>
-
-      {/* Search & Filters */}
+      {/* Search & Tabs */}
       <Card>
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder={t("common.search")}
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <Input
+              placeholder={t("common.searchByNameEmailPhone")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              icon={Search}
+              className="w-full"
             />
           </div>
 
-          <div className="flex justify-between items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              icon={Filter}
-              onClick={() => setShowFilters(!showFilters)}
+          <div className="flex gap-2 border-b sm:border-b-0 border-gray-200">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "all"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
             >
-              {showFilters ? "Hide Filters" : "Show Filters"}
-            </Button>
-
-            {(paymentTypeFilter !== "all" || propertyTypeFilter !== "all") && (
-              <button
-                onClick={() => {
-                  setPaymentTypeFilter("all");
-                  setPropertyTypeFilter("all");
-                }}
-                className="text-sm text-red-600 hover:text-red-800 underline"
-              >
-                Clear Filters
-              </button>
-            )}
+              <Users className="w-4 h-4" />
+              {t("common.all")} ({allClients.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("active")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "active"
+                  ? "border-green-600 text-green-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              {t("admin.clients.active")} ({activeCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("inactive")}
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === "inactive"
+                  ? "border-red-600 text-red-600"
+                  : "border-transparent text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <UserX className="w-4 h-4" />
+              {t("admin.clients.inactive")} ({inactiveCount})
+            </button>
           </div>
-
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-              <Select
-                label="Payment Type"
-                value={paymentTypeFilter}
-                onChange={(e) => setPaymentTypeFilter(e.target.value)}
-                options={[
-                  { value: "all", label: "All Payment Types" },
-                  { value: "cash", label: "Cash" },
-                  { value: "online", label: "Online" },
-                ]}
-              />
-
-              <Select
-                label="Property Type"
-                value={propertyTypeFilter}
-                onChange={(e) => setPropertyTypeFilter(e.target.value)}
-                options={[
-                  { value: "all", label: "All Property Types" },
-                  { value: "residential", label: "Residential" },
-                  { value: "commercial", label: "Commercial" },
-                ]}
-              />
-
-              <div className="flex items-end">
-                <div className="text-sm text-gray-500">
-                  Filtering is applied instantly
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      </Card>
 
-      {/* Table */}
-      <Card>
-        {clients.length === 0 ? (
+        {/* Table */}
+        {filteredClients.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">
-              {statusFilter === "inactive"
-                ? "No inactive clients found"
-                : t("common.noData")}
-            </p>
+            <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t("common.noData")}</p>
           </div>
         ) : (
-          <Table columns={columns} data={clients} />
+          <ClientsTable
+            clients={paginatedClients}
+            onEdit={handleEdit}
+            onToggleStatus={handleToggleStatus}
+            onDelete={handleDelete}
+            pagination={{
+              page: currentPage,
+              totalPages,
+              total: filteredClients.length,
+              limit: PAGE_SIZE,
+            }}
+            onPageChange={setCurrentPage}
+          />
         )}
       </Card>
 
-      {/* Modal */}
+      {/* Modals */}
       <ClientModal
         isOpen={isModalOpen}
-        onClose={handleModalClose}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedClient(null);
+        }}
         client={selectedClient}
         onSuccess={handleSuccess}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false })}
+        onConfirm={
+          confirmModal.action === "delete" ? confirmDelete : confirmToggle
+        }
+        title={
+          confirmModal.action === "delete"
+            ? t("common.confirmDelete")
+            : confirmModal.action === "deactivate"
+            ? t("admin.clients.deactivateClient")
+            : t("admin.clients.activateClient")
+        }
+        message={
+          confirmModal.action === "delete"
+            ? t("common.actionIrreversible")
+            : `${t("common.areYouSure")} ${
+                confirmModal.action === "deactivate"
+                  ? t("common.deactivate")
+                  : t("common.activate")
+              } ${t("common.thisClient")}?`
+        }
+        confirmText={
+          confirmModal.action === "delete"
+            ? t("common.delete")
+            : confirmModal.action === "deactivate"
+            ? t("common.deactivate")
+            : t("common.activate")
+        }
+        confirmVariant={
+          confirmModal.action === "delete"
+            ? "danger"
+            : confirmModal.action === "deactivate"
+            ? "warning"
+            : "success"
+        }
       />
     </div>
   );

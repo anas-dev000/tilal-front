@@ -141,7 +141,22 @@ const WorkerModal = ({ isOpen, onClose, worker, onSuccess }) => {
             ]}
           />
         )}
-
+      {/* ✅ Notes Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t("admin.workers.notes")}
+          </label>
+          <textarea
+            {...register("notes")}
+            rows={3}
+            maxLength={1000}
+            placeholder="Add notes about this worker (optional)..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Max 1000 characters • {WATCH("notes")?.length || 0}/1000
+          </p>
+        </div>
         {/* ❌ Specialization REMOVED */}
 
         <div className="flex justify-end gap-3 pt-4 border-t">

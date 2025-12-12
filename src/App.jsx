@@ -28,6 +28,7 @@ import TaskDetail from "./pages/worker/TaskDetail";
 
 // Client Pages
 import ClientPortal from "./pages/client/ClientPortal";
+import ClientDetails from "./pages/admin/ClientDetails";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -155,6 +156,26 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <SectionTasksView />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/clients"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <Clients />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/clients/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <ClientDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }
