@@ -136,12 +136,12 @@ const WorkerModal = ({ isOpen, onClose, worker, onSuccess }) => {
             label="Status"
             {...register("isActive")}
             options={[
-              { value: "true", label: "✅ Active (نشط)" },
+              { value: "true", label: "Active (نشط)" },
               { value: "false", label: "🔴 Inactive (متوقف)" },
             ]}
           />
         )}
-      {/* ✅ Notes Field */}
+        {/* ✅ Notes Field */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t("admin.workers.notes")}

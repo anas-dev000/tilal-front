@@ -107,8 +107,44 @@ const MyTasks = () => {
         </p>
       </div>
 
+      {/* Statistics Footer */}
+      {tasks.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            📊 Your Statistics
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+              <p className="text-xs text-blue-800">Total Tasks</p>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <p className="text-2xl font-bold text-purple-600">
+                {stats.inProgress}
+              </p>
+              <p className="text-xs text-purple-800">In Progress</p>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <p className="text-2xl font-bold text-green-600">
+                {stats.completed}
+              </p>
+              <p className="text-xs text-green-800">Completed</p>
+            </div>
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <p className="text-2xl font-bold text-orange-600">
+                {stats.completed > 0
+                  ? Math.round((stats.completed / stats.total) * 100)
+                  : 0}
+                %
+              </p>
+              <p className="text-xs text-orange-800">Completion Rate</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap justify-center items-center">
         <Button
           variant={filter === "all" ? "primary" : "secondary"}
           onClick={() => setFilter("all")}
@@ -318,7 +354,7 @@ const MyTasks = () => {
               >
                 {task.status === "assigned" && "🚀 Start Task"}
                 {task.status === "in-progress" && "⏳ Continue Task"}
-                {task.status === "completed" && "✅ View Details"}
+                {task.status === "completed" && "View Details"}
                 {!["assigned", "in-progress", "completed"].includes(
                   task.status
                 ) && "View Details"}
@@ -328,7 +364,7 @@ const MyTasks = () => {
               {task.status === "completed" && (
                 <div className="text-center">
                   <span className="text-xs text-green-600 font-medium">
-                    ✅ Task Completed
+                    Task Completed
                   </span>
                 </div>
               )}
@@ -359,42 +395,6 @@ const MyTasks = () => {
               ? "Completed tasks will appear here"
               : "New tasks will appear here when assigned"}
           </p>
-        </div>
-      )}
-
-      {/* Statistics Footer */}
-      {tasks.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📊 Your Statistics
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-              <p className="text-xs text-blue-800">Total Tasks</p>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">
-                {stats.inProgress}
-              </p>
-              <p className="text-xs text-purple-800">In Progress</p>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
-                {stats.completed}
-              </p>
-              <p className="text-xs text-green-800">Completed</p>
-            </div>
-            <div className="text-center p-3 bg-orange-50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">
-                {stats.completed > 0
-                  ? Math.round((stats.completed / stats.total) * 100)
-                  : 0}
-                %
-              </p>
-              <p className="text-xs text-orange-800">Completion Rate</p>
-            </div>
-          </div>
         </div>
       )}
     </div>

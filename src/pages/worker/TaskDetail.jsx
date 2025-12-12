@@ -166,7 +166,6 @@ const TaskDetail = () => {
         })),
       });
 
-      alert("Materials confirmed successfully");
       fetchTask();
     } catch (error) {
       console.error("Error confirming materials:", error);
@@ -196,10 +195,6 @@ const TaskDetail = () => {
 
       // Refresh task to get updated images
       await fetchTask();
-
-      alert(
-        `${type === "before" ? "Before" : "After"} photo uploaded successfully!`
-      );
     } catch (error) {
       console.error("Error uploading image:", error);
       alert("Failed to upload image");
@@ -254,7 +249,6 @@ const TaskDetail = () => {
 
   const handleFinishTask = async () => {
     try {
-      // ✅ Validation for reference-based images
       const beforeCount = beforePreviews.filter((p) => p !== null).length;
       const afterCount = afterPreviews.filter((p) => p !== null).length;
       const refCount = referenceImages.length;
@@ -273,7 +267,6 @@ const TaskDetail = () => {
           return;
         }
       } else {
-        // Fallback: at least one before/after if no reference images
         if (beforeCount === 0) {
           alert("Please upload at least one before photo");
           return;
@@ -295,7 +288,6 @@ const TaskDetail = () => {
 
       setUploading(true);
 
-      // Upload before images (filter out nulls)
       const beforeFilesToUpload = beforeImages.filter((f) => f !== null);
       if (beforeFilesToUpload.length > 0) {
         const beforeFormData = new FormData();
@@ -304,11 +296,9 @@ const TaskDetail = () => {
         });
         beforeFormData.append("imageType", "before");
         beforeFormData.append("isVisibleToClient", "true");
-
         await tasksAPI.uploadTaskImages(id, beforeFormData);
       }
 
-      // Upload after images (filter out nulls)
       const afterFilesToUpload = afterImages.filter((f) => f !== null);
       if (afterFilesToUpload.length > 0) {
         const afterFormData = new FormData();
@@ -317,33 +307,38 @@ const TaskDetail = () => {
         });
         afterFormData.append("imageType", "after");
         afterFormData.append("isVisibleToClient", "true");
-
         await tasksAPI.uploadTaskImages(id, afterFormData);
       }
 
-      // Complete task with location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            await tasksAPI.completeTask(id, {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-
-            alert("Task completed successfully!");
-            navigate("/worker/tasks");
-          },
-          async (error) => {
-            console.error("Geolocation error:", error);
-            await tasksAPI.completeTask(id, {});
-            alert("Task completed successfully!");
-            navigate("/worker/tasks");
+      const getLocation = () =>
+        new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by your browser."));
+            return;
           }
-        );
-      }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 10000,
+            maximumAge: 60000,
+            enableHighAccuracy: true,
+          });
+        });
+
+      const position = await getLocation();
+      await tasksAPI.completeTask(id, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      alert("Task completed successfully!");
+      navigate("/worker/tasks");
     } catch (error) {
       console.error("Error finishing task:", error);
-      alert(error.response?.data?.message || "Failed to complete task");
+      if (error.message.includes("Geolocation")) {
+        alert(
+          "Failed to get location. Please allow location access and try again."
+        );
+      } else {
+        alert(error.response?.data?.message || "Failed to complete task");
+      }
     } finally {
       setUploading(false);
     }
@@ -576,7 +571,7 @@ const TaskDetail = () => {
                                 )}
                               {beforePreviews[refIndex].existing && (
                                 <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  ✅ Uploaded
+                                  Uploaded
                                 </div>
                               )}
                             </div>
@@ -608,7 +603,7 @@ const TaskDetail = () => {
                         {/* After Photo Upload */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-2">
-                            ✅ After Work
+                            After Work
                           </label>
                           {afterPreviews[refIndex] ? (
                             <div className="relative group">
@@ -632,7 +627,7 @@ const TaskDetail = () => {
                                 )}
                               {afterPreviews[refIndex].existing && (
                                 <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  ✅ Uploaded
+                                  Uploaded
                                 </div>
                               )}
                             </div>
@@ -842,7 +837,7 @@ const TaskDetail = () => {
                         onClick={handleConfirmMaterials}
                         icon={CheckCircle}
                       >
-                        ✅ Confirm All Materials ({selectedMaterials.length})
+                        Confirm All Materials ({selectedMaterials.length})
                       </Button>
                       <p className="text-xs text-orange-600 text-center mt-2">
                         You must confirm materials before finishing task
@@ -916,7 +911,7 @@ const TaskDetail = () => {
                       referenceImages.length
                   }
                 >
-                  {uploading ? "⏳ Uploading Images..." : "✅ Finish Task"}
+                  {uploading ? "⏳ Uploading Images..." : "Finish Task"}
                 </Button>
 
                 {!materialsConfirmed && (
@@ -930,7 +925,7 @@ const TaskDetail = () => {
                 {materialsConfirmed && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                     <p className="text-sm text-blue-800 font-medium">
-                      ✅ Ready to finish! Make sure all photos are uploaded
+                      Ready to finish! Make sure all photos are uploaded
                     </p>
                   </div>
                 )}
