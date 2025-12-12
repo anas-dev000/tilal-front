@@ -1,8 +1,8 @@
-// frontend/src/pages/admin/Tasks.jsx - ✅ UPDATED
+// frontend/src/pages/admin/Tasks.jsx - ✅ UPDATED: Multiple Sections Display
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, Eye } from "lucide-react";
+import { Plus, Search, Eye, Layers, AlertCircle } from "lucide-react";
 import { tasksAPI } from "../../services/api";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -70,6 +70,7 @@ const Tasks = () => {
       "in-progress": "bg-purple-100 text-purple-800",
       completed: "bg-green-100 text-green-800",
       review: "bg-orange-100 text-orange-800",
+      rejected: "bg-red-100 text-red-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -88,7 +89,8 @@ const Tasks = () => {
     (task) =>
       task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.worker?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      task.worker?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.site?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -114,56 +116,48 @@ const Tasks = () => {
       <div className="bg-white p-4 rounded-lg shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={t("common.search")}
+              placeholder={t("admin.tasks.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={statusFilter === "all" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setStatusFilter("all")}
-          >
-            All ({tasks.length})
-          </Button>
-          <Button
-            variant={statusFilter === "pending" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setStatusFilter("pending")}
-          >
-            Pending
-          </Button>
-          <Button
-            variant={statusFilter === "in-progress" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setStatusFilter("in-progress")}
-          >
-            In Progress
-          </Button>
-          <Button
-            variant={statusFilter === "completed" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setStatusFilter("completed")}
-          >
-            Completed
-          </Button>
+        <div className="flex gap-2">
+          {[
+            "all",
+            "pending",
+            "assigned",
+            "in-progress",
+            "completed",
+            "review",
+            "rejected",
+          ].map((stat) => (
+            <Button
+              key={stat}
+              variant={statusFilter === stat ? "primary" : "outline"}
+              onClick={() => setStatusFilter(stat)}
+              className="text-sm"
+            >
+              {t(`status.${stat}`)}
+            </Button>
+          ))}
         </div>
       </div>
 
-      {/* Tasks Table */}
       <Card>
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">{t("common.noData")}</p>
+            <p className="text-gray-500 text-lg mb-2">No tasks found</p>
+            <p className="text-gray-400 text-sm">
+              Try adjusting your filters or search
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -171,7 +165,7 @@ const Tasks = () => {
                     Task
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Site / Section {/* ✅ UPDATED */}
+                    Site / Sections
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Client
@@ -208,15 +202,17 @@ const Tasks = () => {
                         {task.description}
                       </div>
                     </td>
-                    {/* ✅ UPDATED: Show Site + Section */}
+                    {/* ✅ UPDATED: Show Site + Multiple Sections */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1">
                         <span className="font-medium text-gray-900">
                           {task.site?.name || "N/A"}
                         </span>
-                        {task.section && (
-                          <span className="text-xs text-gray-500">
-                            Section: {task.section}
+                        {task.sections && task.sections.length > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-primary-600">
+                            <Layers className="w-3 h-3" />
+                            {task.sections.length} section
+                            {task.sections.length > 1 ? "s" : ""}
                           </span>
                         )}
                       </div>
@@ -233,6 +229,9 @@ const Tasks = () => {
                           task.status
                         )}`}
                       >
+                        {task.status === "rejected" && (
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                        )}
                         {t(`status.${task.status}`)}
                       </span>
                     </td>

@@ -87,6 +87,8 @@ const AdminTaskDetail = () => {
       let newTaskStatus = task.status;
       if (status === "approved") {
         newTaskStatus = "completed";
+      } else if (status === "pending") {
+        newTaskStatus = "in-progress";
       } else if (status === "rejected") {
         newTaskStatus = "in-progress";
       }

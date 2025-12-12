@@ -128,7 +128,8 @@
       "beforePhoto": "صورة قبل",
       "afterPhoto": "صورة بعد",
       "aiScore": "درجة الذكاء الاصطناعي",
-      "adminComments": "تعليقات المدير"
+      "adminComments": "تعليقات المدير",
+      "worker":"عامل"
     },
     "invoices": {
       "title": "مركز الفواتير",

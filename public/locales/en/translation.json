@@ -128,7 +128,8 @@
       "beforePhoto": "Before Photo",
       "afterPhoto": "After Photo",
       "aiScore": "AI Score",
-      "adminComments": "Admin Comments"
+      "adminComments": "Admin Comments",
+      "worker": "Worker"
     },
     "invoices": {
       "title": "Invoices Center",

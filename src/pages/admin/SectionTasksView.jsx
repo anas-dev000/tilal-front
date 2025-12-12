@@ -19,7 +19,7 @@ const SectionTasksView = () => {
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);

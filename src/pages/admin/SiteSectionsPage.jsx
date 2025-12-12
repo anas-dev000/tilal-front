@@ -1,9 +1,11 @@
+// frontend/src/pages/admin/SiteSectionsPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Layers, Edit } from "lucide-react";
+import { ArrowLeft, MapPin, Layers, Edit, Plus } from "lucide-react";
 import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
 import SiteModal from "./SiteModal";
+import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
 import { sitesAPI, clientsAPI } from "../../services/api";
 
@@ -13,6 +15,7 @@ const SiteSectionsPage = () => {
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [clients, setClients] = useState([]);
 
   const fetchSite = useCallback(async () => {
@@ -47,12 +50,25 @@ const SiteSectionsPage = () => {
     setIsEditModalOpen(true);
   };
 
+  const handleAddTask = () => {
+    setIsTaskModalOpen(true);
+  };
+
   const handleModalClose = () => {
     setIsEditModalOpen(false);
   };
 
+  const handleTaskModalClose = () => {
+    setIsTaskModalOpen(false);
+  };
+
   const handleSuccess = () => {
     fetchSite();
+  };
+
+  const handleTaskSuccess = () => {
+    fetchSite();
+    // Could also show a success message
   };
 
   if (loading) {
@@ -70,13 +86,23 @@ const SiteSectionsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
         <Button
           variant="secondary"
           icon={ArrowLeft}
           onClick={() => navigate("/admin/sites")}
         >
           Back to Sites
+        </Button>
+
+        {/* ✅ NEW: Add Task Button */}
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={handleAddTask}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Add Task
         </Button>
       </div>
 
@@ -99,17 +125,17 @@ const SiteSectionsPage = () => {
           {/* Edit Site Button (Floating) */}
           <button
             onClick={handleEditSite}
-            className="absolute top-4 right-4 bg-white text-gray-700 px-4 py-2 rounded-lg shadow-lg hover:bg-gray-100 transition-colors flex items-center gap-2 font-medium"
+            className="absolute top-4 right-4 bg-white text-gray-700 px-4 py-2 rounded-lg shadow-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
           >
             <Edit className="w-4 h-4" />
-            Edit Site Info
+            Edit Site
           </button>
         </div>
 
-        {/* Site Details */}
+        {/* Site Info */}
         <div className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
+          <div className="flex items-center justify-between mb-4">
+            <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {site.name}
               </h1>
@@ -200,6 +226,15 @@ const SiteSectionsPage = () => {
         site={site}
         clients={clients}
         onSuccess={handleSuccess}
+      />
+
+      {/* ✅ NEW: Task Modal (Pre-filled with this site) */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={handleTaskModalClose}
+        task={null}
+        onSuccess={handleTaskSuccess}
+        preFillSite={site}
       />
     </div>
   );

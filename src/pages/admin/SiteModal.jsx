@@ -7,6 +7,7 @@ import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import ImageUpload from "../../components/common/ImageUpload";
 import { sitesAPI } from "../../services/api";
+import ReactSelect from "react-select";
 
 const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -87,19 +88,34 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
     try {
       const formDataToSend = new FormData();
 
-      formDataToSend.append("name", formData.name);
+      // Required fields - must be sent even if empty (except client which is required)
+      formDataToSend.append("name", formData.name.trim());
+
+      // Client is REQUIRED - validate before sending
+      if (!formData.client || formData.client === "") {
+        setError("Please select a client");
+        setLoading(false);
+        return;
+      }
       formDataToSend.append("client", formData.client);
-      formDataToSend.append("siteType", formData.siteType);
-      formDataToSend.append("totalArea", formData.totalArea || 0);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("location[address]", formData.location.address);
-      formDataToSend.append("location[city]", formData.location.city);
+
+      formDataToSend.append("siteType", formData.siteType || "residential");
+      formDataToSend.append("totalArea", formData.totalArea || "0");
+      formDataToSend.append("description", formData.description || "");
+      formDataToSend.append("notes", formData.notes || "");
+
+      // Location fields
+      formDataToSend.append(
+        "location[address]",
+        formData.location.address || ""
+      );
+      formDataToSend.append("location[city]", formData.location.city || "");
       formDataToSend.append(
         "location[googleMapsLink]",
         formData.location.googleMapsLink || ""
       );
-      formDataToSend.append("notes", formData.notes || "");
 
+      // Cover Image
       if (coverImage) {
         formDataToSend.append("coverImage", coverImage);
       }
@@ -123,6 +139,9 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
   const siteTypes = [
     { value: "residential", label: "Individual Client" },
     { value: "commercial", label: "Company / Organization" },
+    { value: "industrial", label: "Industrial Site" },
+    { value: "public", label: "Public Space" },
+    { value: "agricultural", label: "Agricultural Site" },
   ];
 
   return (
@@ -130,7 +149,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
       isOpen={isOpen}
       onClose={onClose}
       title={site ? "Edit Site" : "Add New Site"}
-      size="large"
+      size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
@@ -139,71 +158,81 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
           </div>
         )}
 
-        {/* Cover Image - Using shared ImageUpload component */}
-        <ImageUpload
-          label="Cover Image"
-          id="cover-image-upload"
-          onChange={handleCoverImageChange}
-          preview={coverImagePreview}
-          onRemove={handleRemoveCoverImage}
+        {/* Cover Image */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cover Image (Optional)
+          </label>
+          <ImageUpload
+            onChange={handleCoverImageChange}
+            preview={coverImagePreview}
+            onRemove={handleRemoveCoverImage}
+          />
+        </div>
+
+        {/* Name */}
+        <Input
+          label="Site Name *"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="e.g., Villa Garden"
+          required
         />
 
-        {/* Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Site Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g., Villa Garden Project"
-            required
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client <span className="text-red-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={formData.client}
-                onChange={(e) =>
-                  setFormData({ ...formData, client: e.target.value })
-                }
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                required
-              >
-                <option value="">Select client...</option>
-                {clients.map((client) => (
-                  <option key={client._id} value={client._id}>
-                    {client.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Client <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-2">
+            <ReactSelect
+              placeholder="Select client..."
+              value={
+                clients.find((c) => c._id === formData.client)
+                  ? {
+                      value: formData.client,
+                      label: clients.find((c) => c._id === formData.client)
+                        .name,
+                    }
+                  : null
+              }
+              onChange={(option) =>
+                setFormData({ ...formData, client: option ? option.value : "" })
+              }
+              options={clients.map((client) => ({
+                value: client._id,
+                label: client.name,
+              }))}
+              isClearable
+              className="flex-1"
+            />
           </div>
         </div>
 
-        {/* Site Type & Area */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Site Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Site Type
+          </label>
           <Select
-            label="Site Type"
-            value={formData.siteType}
-            onChange={(e) =>
-              setFormData({ ...formData, siteType: e.target.value })
+            value={siteTypes.find((opt) => opt.value === formData.siteType)}
+            onChange={(opt) =>
+              setFormData({ ...formData, siteType: opt.value })
             }
             options={siteTypes}
-            required
-          />
-          <Input
-            label="Total Area (m²)"
-            type="number"
-            value={formData.totalArea}
-            onChange={(e) =>
-              setFormData({ ...formData, totalArea: e.target.value })
-            }
-            placeholder="e.g., 500"
-            min="0"
           />
         </div>
+
+        {/* Total Area */}
+        <Input
+          label="Total Area (m²)"
+          type="number"
+          value={formData.totalArea}
+          onChange={(e) =>
+            setFormData({ ...formData, totalArea: e.target.value })
+          }
+          placeholder="e.g., 500"
+          min="0"
+        />
 
         {/* Location */}
         <div className="space-y-2">

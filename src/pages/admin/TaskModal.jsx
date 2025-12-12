@@ -1,25 +1,41 @@
-// frontend/src/pages/admin/TaskModal.jsx - ✅ SIMPLIFIED
+/* eslint-disable no-unused-vars */
+// frontend/src/pages/admin/TaskModal.jsx - ✅ UPDATED: Multiple Sections Support + preFillSite Handling
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
-import { MapPin, Layers, Image as ImageIcon, AlertCircle } from "lucide-react";
+import {
+  MapPin,
+  Layers,
+  Image as ImageIcon,
+  AlertCircle,
+  X,
+  Search,
+} from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import { tasksAPI, sitesAPI, usersAPI } from "../../services/api";
+import ReactSelect from "react-select";
 
-const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
+const fetchSiteDetails = async (siteId) => {
+  const response = await sitesAPI.getSite(siteId);
+  return response.data.data;
+};
+
+const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Data
   const [sites, setSites] = useState([]);
+  const [filteredSites, setFilteredSites] = useState([]);
+  const [siteSearch, setSiteSearch] = useState("");
   const [workers, setWorkers] = useState([]);
   const [selectedSite, setSelectedSite] = useState(null);
   const [availableSections, setAvailableSections] = useState([]);
-  const [selectedSection, setSelectedSection] = useState(null);
+  const [selectedSections, setSelectedSections] = useState([]);
 
   const {
     register,
@@ -33,58 +49,154 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
   });
 
   const watchSite = watch("site");
-  const watchSection = watch("section");
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Filter sites based on search
   useEffect(() => {
-    if (task) {
-      reset({
-        ...task,
-        site: task.site?._id || "",
-        section: task.section || "",
-        client: task.client?._id || "",
-        worker: task.worker?._id || "",
-      });
-
-      if (task.site?._id) {
-        loadSiteDetails(task.site._id);
-      }
+    if (siteSearch.trim()) {
+      const filtered = sites.filter(
+        (site) =>
+          site.name.toLowerCase().includes(siteSearch.toLowerCase()) ||
+          site.client?.name.toLowerCase().includes(siteSearch.toLowerCase())
+      );
+      setFilteredSites(filtered);
     } else {
+      setFilteredSites(sites);
+    }
+  }, [siteSearch, sites]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!task) {
       reset({
         title: "",
         description: "",
         site: "",
-        section: "",
+        sections: [],
         client: "",
         worker: "",
         scheduledDate: "",
       });
-    }
-  }, [task, reset]);
 
-  useEffect(() => {
-    if (watchSite) {
-      loadSiteDetails(watchSite);
-    } else {
       setSelectedSite(null);
       setAvailableSections([]);
-      setSelectedSection(null);
-      setValue("client", "");
-      setValue("section", "");
+      setSelectedSections([]);
+      return;
     }
-  }, [watchSite]);
+
+    reset({
+      ...task,
+      site: task.site?._id || "",
+      sections: task.sections || [],
+      client: task.client?._id || "",
+      worker: task.worker?._id || "",
+    });
+
+    if (!task.site?._id) {
+      setSelectedSite(null);
+      setAvailableSections([]);
+      setSelectedSections(task.sections || []);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const siteData = await fetchSiteDetails(task.site._id);
+
+        if (isCancelled) return;
+
+        setSelectedSite(siteData);
+        setAvailableSections(siteData.sections || []);
+        setSelectedSections(task.sections || []);
+
+        if (siteData.client?._id) {
+          setValue("client", siteData.client._id);
+        }
+      } catch (err) {
+        if (isCancelled) return;
+
+        console.error("Error loading site:", err);
+        setSelectedSite(null);
+        setAvailableSections([]);
+      }
+    };
+
+    load();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [task, reset, setValue]);
+
+  // ✅ NEW: Handle preFillSite
+  useEffect(() => {
+    if (preFillSite && !task) {
+      setValue("site", preFillSite._id);
+      const loadPreFillSite = async () => {
+        try {
+          const response = await sitesAPI.getSite(preFillSite._id);
+          const siteData = response.data.data;
+          setSelectedSite(siteData);
+          setAvailableSections(siteData.sections || []);
+          if (siteData.client?._id) {
+            setValue("client", siteData.client._id);
+          }
+        } catch (error) {
+          console.error("Error loading pre-filled site:", error);
+        }
+      };
+      loadPreFillSite();
+    }
+  }, [preFillSite, task, setValue]);
 
   useEffect(() => {
-    if (watchSection && availableSections.length > 0) {
-      const section = availableSections.find((s) => s._id === watchSection);
-      setSelectedSection(section);
-    } else {
-      setSelectedSection(null);
+    if (watchSite && !preFillSite) {
+      // Avoid reloading if pre-filled
+      const loadSiteDetails = async (siteId) => {
+        try {
+          const response = await sitesAPI.getSite(siteId);
+          const siteData = response.data.data;
+
+          setSelectedSite(siteData);
+          setAvailableSections(siteData.sections || []);
+
+          if (siteData.client?._id) {
+            setValue("client", siteData.client._id);
+          }
+        } catch (error) {
+          console.error("Error loading site:", error);
+          setSelectedSite(null);
+          setAvailableSections([]);
+        }
+      };
+
+      loadSiteDetails(watchSite);
+    } else if (!watchSite) {
+      setSelectedSite(null);
+      setAvailableSections([]);
+      setSelectedSections([]);
+      setValue("client", "");
+      setValue("sections", []);
     }
-  }, [watchSection, availableSections]);
+  }, [watchSite, setValue, preFillSite]);
+
+  // Filter sites based on search
+  useEffect(() => {
+    if (siteSearch.trim()) {
+      const filtered = sites.filter(
+        (site) =>
+          site.name.toLowerCase().includes(siteSearch.toLowerCase()) ||
+          site.client?.name.toLowerCase().includes(siteSearch.toLowerCase())
+      );
+      setFilteredSites(filtered);
+    } else {
+      setFilteredSites(sites);
+    }
+  }, [siteSearch, sites]);
 
   const fetchData = async () => {
     try {
@@ -92,72 +204,46 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
         sitesAPI.getAllSites(),
         usersAPI.getWorkers(),
       ]);
-
       setSites(sitesRes.data.data || []);
+      setFilteredSites(sitesRes.data.data || []);
       setWorkers(workersRes.data.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
 
-  const loadSiteDetails = async (siteId) => {
-    try {
-      const response = await sitesAPI.getSite(siteId);
-      const siteData = response.data.data;
-
-      setSelectedSite(siteData);
-      setAvailableSections(siteData.sections || []);
-
-      if (siteData.client?._id) {
-        setValue("client", siteData.client._id);
-      }
-    } catch (error) {
-      console.error("Error loading site:", error);
-      setSelectedSite(null);
-      setAvailableSections([]);
-    }
+  const toggleSection = (sectionId) => {
+    setSelectedSections((prev) =>
+      prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId]
+    );
   };
 
   const onSubmit = async (data) => {
+    if (selectedSections.length === 0) {
+      setError("Please select at least one section");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      if (!data.site) {
-        setError("Please select a site");
-        setLoading(false);
-        return;
-      }
-
-      if (!data.section) {
-        setError("Please select a section");
-        setLoading(false);
-        return;
-      }
-
-      if (!data.client) {
-        setError("Client is required");
-        setLoading(false);
-        return;
-      }
-
-      const taskData = {
+      const payload = {
         ...data,
-        site: data.site,
-        section: data.section,
-        client: data.client,
-        worker: data.worker || null,
+        sections: selectedSections,
       };
 
+      let response;
       if (task) {
-        await tasksAPI.updateTask(task._id, taskData);
+        response = await tasksAPI.updateTask(task._id, payload);
       } else {
-        await tasksAPI.createTask(taskData);
+        response = await tasksAPI.createTask(payload);
       }
 
-      onSuccess();
+      onSuccess(response.data.data);
       onClose();
-      reset();
     } catch (err) {
       setError(err.response?.data?.message || "An error occurred");
     } finally {
@@ -165,25 +251,35 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
     }
   };
 
+  const getSectionLastStatusColor = (status) => {
+    const colors = {
+      completed: "bg-green-100 text-green-800 border-green-300",
+      rejected: "bg-red-100 text-red-800 border-red-300",
+      "in-progress": "bg-blue-100 text-blue-800 border-blue-300",
+      pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={task ? t("common.edit") : t("admin.tasks.createTask")}
+      title={task ? t("admin.tasks.editTask") : t("admin.tasks.createTask")}
       size="xl"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <span>{error}</span>
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {error}
           </div>
         )}
 
-        {/* Task Name */}
+        {/* Title */}
         <Input
-          label={t("admin.tasks.taskName")}
-          {...register("title", { required: "Task name is required" })}
+          label={t("admin.tasks.taskTitle")}
+          {...register("title", { required: "Title is required" })}
           error={errors.title?.message}
           required
         />
@@ -191,178 +287,211 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t("admin.tasks.description")}{" "}
-            <span className="text-red-500">*</span>
+            {t("admin.tasks.description")}
           </label>
           <textarea
             {...register("description", {
               required: "Description is required",
             })}
-            rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            placeholder="Detailed task instructions..."
           />
           {errors.description && (
-            <p className="mt-1 text-sm text-red-500">
+            <p className="text-red-500 text-xs mt-1">
               {errors.description.message}
             </p>
           )}
         </div>
 
-        {/* Site Selection */}
+        {/* Site Selection with Search */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MapPin className="w-4 h-4 inline mr-1" />
             Site <span className="text-red-500">*</span>
           </label>
-          <select
-            {...register("site", { required: "Site is required" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Select site...</option>
-            {sites.map((site) => (
-              <option key={site._id} value={site._id}>
-                {site.name} ({site.client?.name})
-              </option>
-            ))}
-          </select>
+
+          {/* Site Select */}
+          <ReactSelect
+            placeholder="Search and select site..."
+            value={
+              selectedSite
+                ? {
+                    value: selectedSite._id,
+                    label: `${selectedSite.name} - ${selectedSite.client?.name}`,
+                  }
+                : null
+            }
+            onChange={(option) => {
+              setSelectedSite(sites.find((s) => s._id === option.value));
+              setValue("site", option.value);
+            }}
+            options={filteredSites.map((site) => ({
+              value: site._id,
+              label: `${site.name} - ${site.client?.name || ""}`,
+            }))}
+            isClearable
+            className="w-full"
+          />
           {errors.site && (
             <p className="mt-1 text-sm text-red-500">{errors.site.message}</p>
           )}
+
+          {filteredSites.length === 0 && siteSearch && (
+            <p className="mt-1 text-sm text-gray-500">
+              No sites found matching "{siteSearch}"
+            </p>
+          )}
         </div>
 
-        {/* Site Preview */}
-        {selectedSite && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              {selectedSite.coverImage?.url ? (
-                <img
-                  src={selectedSite.coverImage.url}
-                  alt={selectedSite.name}
-                  className="w-16 h-16 rounded object-cover shrink-0"
-                />
-              ) : (
-                <div className="w-16 h-16 bg-primary-100 rounded flex items-center justify-center shrink-0">
-                  <MapPin className="w-8 h-8 text-primary-400" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-900">
-                  {selectedSite.name}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Client: {selectedSite.client?.name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Type: {selectedSite.siteType} • Area: {selectedSite.totalArea}
-                  m²
-                </p>
-                <p className="text-sm text-primary-600 font-medium mt-1">
-                  <Layers className="w-4 h-4 inline mr-1" />
-                  {selectedSite.sections?.length || 0} sections available
-                </p>
-              </div>
+        {/* Sections Multi-Select */}
+        {availableSections.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary-600" />
+              Select Sections ({availableSections.length} available)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border rounded-lg">
+              {availableSections.map((section) => {
+                const isSelected = selectedSections.includes(section._id);
+                return (
+                  <div
+                    key={section._id}
+                    onClick={() => toggleSection(section._id)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-gray-300 hover:border-primary-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="w-4 h-4 text-primary-600"
+                          />
+                          <span className="font-medium text-sm text-gray-900">
+                            {section.name}
+                          </span>
+                        </div>
+                        {section.description && (
+                          <p className="text-xs text-gray-600 truncate mt-1">
+                            {section.description}
+                          </p>
+                        )}
+                      </div>
+                      {section.lastTaskStatus && (
+                        <span
+                          className={`px-2 py-1 text-xs rounded border ${getSectionLastStatusColor(
+                            section.lastTaskStatus
+                          )}`}
+                        >
+                          {section.lastTaskStatus}
+                        </span>
+                      )}
+                    </div>
+                    {section.referenceImages?.length > 0 && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                        <ImageIcon className="w-3 h-3" />
+                        {section.referenceImages.length} ref. images
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {selectedSections.length === 0 && (
+              <p className="text-sm text-red-500 mt-2">
+                Please select at least one section
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Selected Sections Preview */}
+        {selectedSections.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-green-600" />
+              Selected Sections ({selectedSections.length})
+            </h4>
+            <div className="space-y-2">
+              {selectedSections.map((sectionId) => {
+                const section = availableSections.find(
+                  (s) => s._id === sectionId
+                );
+                if (!section) return null;
+                return (
+                  <div
+                    key={sectionId}
+                    className="flex items-center justify-between bg-white p-3 rounded border"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm text-gray-900">
+                        {section.name}
+                      </p>
+                      {section.description && (
+                        <p className="text-xs text-gray-600 truncate">
+                          {section.description}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(sectionId)}
+                      className="text-red-600 hover:text-red-800 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Section Selection */}
-        {availableSections.length > 0 && (
-          <div>
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Worker Selection */}
+          <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Layers className="w-4 h-4 inline mr-1" />
-              Section <span className="text-red-500">*</span>
+              {t("admin.tasks.worker")} *
             </label>
-            <select
-              {...register("section", { required: "Section is required" })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select section...</option>
-              {availableSections.map((section) => (
-                <option key={section._id} value={section._id}>
-                  {section.name}
-                  {section.referenceImages?.length > 0 &&
-                    ` (${section.referenceImages.length} ref. images)`}
-                </option>
-              ))}
-            </select>
-            {errors.section && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.section.message}
-              </p>
-            )}
+            <ReactSelect
+              placeholder="Select worker (optional)"
+              value={
+                workers.find((w) => w._id === watch("worker"))
+                  ? {
+                      value: watch("worker"),
+                      label: workers.find((w) => w._id === watch("worker"))
+                        .name,
+                    }
+                  : null
+              }
+              onChange={(option) =>
+                setValue("worker", option ? option.value : "")
+              }
+              options={workers.map((w) => ({ value: w._id, label: w.name }))}
+              isClearable
+              className="w-full"
+            />
           </div>
-        )}
 
-        {/* Section Preview */}
-        {selectedSection && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-2">
-              Selected Section: {selectedSection.name}
-            </h4>
-            {selectedSection.description && (
-              <p className="text-sm text-gray-600 mb-2">
-                {selectedSection.description}
-              </p>
-            )}
-            {selectedSection.area > 0 && (
-              <p className="text-sm text-gray-700">
-                Area: {selectedSection.area}m²
-              </p>
-            )}
-            {selectedSection.referenceImages?.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <ImageIcon className="w-4 h-4" />
-                  Reference Images ({selectedSection.referenceImages.length})
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {selectedSection.referenceImages
-                    .slice(0, 8)
-                    .map((img, idx) => (
-                      <img
-                        key={idx}
-                        src={img.url}
-                        alt={`Ref ${idx + 1}`}
-                        className="w-full h-16 object-cover rounded border cursor-pointer hover:opacity-80"
-                        onClick={() => window.open(img.url, "_blank")}
-                      />
-                    ))}
-                  {selectedSection.referenceImages.length > 8 && (
-                    <div className="w-full h-16 bg-gray-200 rounded border flex items-center justify-center text-xs text-gray-600">
-                      +{selectedSection.referenceImages.length - 8} more
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Scheduled Date */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t("admin.tasks.dueDate")} *
+            </label>
+            <Input
+              type="date"
+              {...register("scheduledDate", { required: "Date is required" })}
+              error={errors.scheduledDate?.message}
+              required
+            />
           </div>
-        )}
-
-        {/* Client (Auto-filled) */}
-        <Input
-          label="Client"
-          value={selectedSite?.client?.name || "Select a site first"}
-          disabled
-          className="bg-gray-100"
-        />
-        <input type="hidden" {...register("client")} />
-
-        {/* Worker Selection */}
-        <Select
-          label={t("admin.tasks.assignedTo")}
-          {...register("worker")}
-          options={workers.map((w) => ({ value: w._id, label: w.name }))}
-          placeholder="Select worker (optional)"
-        />
-
-        {/* Scheduled Date */}
-        <Input
-          label={t("admin.tasks.dueDate")}
-          type="date"
-          {...register("scheduledDate", { required: "Date is required" })}
-          error={errors.scheduledDate?.message}
-          required
-        />
+        </div>
 
         {/* Info Message */}
         {!task && (
@@ -371,7 +500,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess }) => {
             <div className="text-sm text-yellow-800">
               <p className="font-medium">Note:</p>
               <p>
-                Workers will see reference images from the selected section
+                Workers will see reference images from ALL selected sections
                 during task execution.
               </p>
             </div>
