@@ -1,0 +1,157 @@
+// src/components/admin/EditImageModal.jsx
+import { useState, useEffect } from 'react';
+import { X, Save, Image as ImageIcon } from 'lucide-react';
+import Modal from '../common/Modal';
+import Button from '../common/Button';
+import Input from '../common/Input';
+
+const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
+  const [formData, setFormData] = useState({
+    qtn: 1,
+    caption: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (image) {
+      setFormData({
+        qtn: image.qtn || 1,
+        caption: image.caption || '',
+        description: image.description || ''
+      });
+    }
+  }, [image]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (formData.qtn < 1) {
+      setError('Quantity must be at least 1');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update image');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!image) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Reference Image"
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Image Preview */}
+        <div className="flex justify-center">
+          <div className="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-gray-200">
+            <img
+              src={image.url}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Quantity (QTN) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Quantity (QTN) <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            name="qtn"
+            value={formData.qtn}
+            onChange={handleChange}
+            min="1"
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-lg font-semibold"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            How many times does this plant/location appear in this section?
+          </p>
+        </div>
+
+        {/* Caption */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Caption
+          </label>
+          <input
+            type="text"
+            name="caption"
+            value={formData.caption}
+            onChange={handleChange}
+            placeholder="e.g., Main Palm Tree"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Description
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+            placeholder="Detailed description of the location or plant..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            icon={Save}
+          >
+            {loading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default EditImageModal;

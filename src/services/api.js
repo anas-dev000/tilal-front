@@ -204,6 +204,10 @@ export const sitesAPI = {
     api.put(`/sites/${siteId}/sections/${sectionId}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+      // Update reference image
+  updateReferenceImage: (siteId, sectionId, imageId, data) =>
+    api.put(`/sites/${siteId}/sections/${sectionId}/images/${imageId}`, data),
+  
   deleteSection: (siteId, sectionId) =>
     api.delete(`/sites/${siteId}/sections/${sectionId}`),
   deleteReferenceImage: (siteId, sectionId, imageId) =>

@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/SectionManagement.jsx - ✅ UPDATED: Show Last Task Status
+// src/pages/admin/SectionManagement.jsx - COMPLETE FILE
 import { useState } from "react";
 import {
   Plus,
@@ -9,7 +9,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  FileText,
+  Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { sitesAPI } from "../../services/api";
@@ -27,12 +27,14 @@ const SectionManagement = ({ site, onUpdate }) => {
     setIsModalOpen(true);
   };
 
-  const handleEditSection = (section) => {
+  const handleEditSection = (e, section) => {
+    e.stopPropagation();
     setSelectedSection(section);
     setIsModalOpen(true);
   };
 
-  const handleDeleteSection = async (sectionId) => {
+  const handleDeleteSection = async (e, sectionId) => {
+    e.stopPropagation();
     if (
       !window.confirm(
         "Are you sure you want to delete this section? All reference images will be deleted."
@@ -62,13 +64,12 @@ const SectionManagement = ({ site, onUpdate }) => {
     onUpdate();
   };
 
-  const handleViewTasks = (sectionId, sectionName) => {
-    navigate(`/admin/sites/${site._id}/sections/${sectionId}/tasks`, {
-      state: { sectionName, siteName: site.name },
-    });
+  // Navigate to section detail
+  const handleViewSection = (sectionId) => {
+    navigate(`/admin/sites/${site._id}/sections/${sectionId}`);
   };
 
-  // ✅ Get last task status badge
+  // Get last task status badge
   const getLastTaskStatusBadge = (section) => {
     if (!section.lastTaskStatus) return null;
 
@@ -143,12 +144,13 @@ const SectionManagement = ({ site, onUpdate }) => {
           {site.sections.map((section) => (
             <div
               key={section._id}
-              className="border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg transition-all hover:border-primary-300 flex flex-col h-full"
+              className="border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg transition-all hover:border-primary-300 flex flex-col h-full cursor-pointer group"
+              onClick={() => handleViewSection(section._id)}
             >
               {/* Section Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg text-gray-900 truncate">
+                  <h3 className="font-semibold text-lg text-gray-900 truncate group-hover:text-primary-600 transition-colors">
                     {section.name}
                   </h3>
                   {section.area > 0 && (
@@ -158,7 +160,7 @@ const SectionManagement = ({ site, onUpdate }) => {
                   )}
                 </div>
 
-                {/* ✅ Show Last Task Status Badge */}
+                {/* Show Last Task Status Badge */}
                 {getLastTaskStatusBadge(section)}
               </div>
 
@@ -182,13 +184,23 @@ const SectionManagement = ({ site, onUpdate }) => {
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {section.referenceImages.slice(0, 3).map((img, idx) => (
-                        <img
-                          key={idx}
-                          src={img.url}
-                          alt={`Reference ${idx + 1}`}
-                          className="w-full h-20 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80"
-                          onClick={() => window.open(img.url, "_blank")}
-                        />
+                        <div key={idx} className="relative">
+                          <img
+                            src={img.url}
+                            alt={`Reference ${idx + 1}`}
+                            className="w-full h-20 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(img.url, "_blank");
+                            }}
+                          />
+                          {/* QTN Badge on Thumbnail */}
+                          {img.qtn && img.qtn > 1 && (
+                            <div className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                              x{img.qtn}
+                            </div>
+                          )}
+                        </div>
                       ))}
                       {section.referenceImages.length > 3 && (
                         <div className="w-full h-20 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-xs text-gray-600 font-medium">
@@ -220,7 +232,7 @@ const SectionManagement = ({ site, onUpdate }) => {
               {section.notes && (
                 <div className="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200">
                   <div className="flex items-start gap-2">
-                    <FileText className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
                     <p className="text-xs text-yellow-800 line-clamp-2">
                       {section.notes}
                     </p>
@@ -229,22 +241,30 @@ const SectionManagement = ({ site, onUpdate }) => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-3 border-t mt-auto">
+              <div className="flex gap-2 pt-3 border-t mt-auto shrink-0">
+                {/* View Details Button */}
                 <button
-                  onClick={() => handleViewTasks(section._id, section.name)}
-                  className="flex-1 px-3 py-2 text-sm border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium flex items-center justify-center gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewSection(section._id);
+                  }}
+                  className="flex-1 px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-1"
                 >
-                  <FileText className="w-4 h-4" />
-                  View Tasks
+                  <Eye className="w-4 h-4" />
+                  View Details
                 </button>
+                
+                {/* Edit Button */}
                 <button
-                  onClick={() => handleEditSection(section)}
-                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  onClick={(e) => handleEditSection(e, section)}
+                  className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
+                
+                {/* Delete Button */}
                 <button
-                  onClick={() => handleDeleteSection(section._id)}
+                  onClick={(e) => handleDeleteSection(e, section._id)}
                   disabled={deletingSection === section._id}
                   className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center disabled:opacity-50"
                 >

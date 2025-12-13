@@ -20,9 +20,10 @@ import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
 import Sites from "./pages/admin/Sites";
 import SiteSectionsPage from "./pages/admin/SiteSectionsPage";
 import SectionTasksView from "./pages/admin/SectionTasksView";
+import SectionDetail from "./pages/admin/SectionDetail"; // ✅ NEW
 
 // Worker Pages
-import WorkerLogin from "./pages/worker/Login"; // ✅ Now unified for all
+import WorkerLogin from "./pages/worker/Login";
 import MyTasks from "./pages/worker/MyTasks";
 import TaskDetail from "./pages/worker/TaskDetail";
 
@@ -53,10 +54,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* ✅ UNIFIED: Single login for all user types */}
+      {/* Login */}
       <Route path="/login" element={<WorkerLogin />} />
-
-      {/* ✅ REMOVED: /client/login (now uses /login) */}
 
       {/* Client Routes */}
       <Route
@@ -90,11 +89,31 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/admin/clients/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <ClientDetails />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/workers"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Workers />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workers/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <WorkerDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }
@@ -150,32 +169,24 @@ const AppRoutes = () => {
         }
       />
 
+      {/* ✅ NEW: Section Detail Route */}
+      <Route
+        path="/admin/sites/:siteId/sections/:sectionId"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <SectionDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/admin/sites/:siteId/sections/:sectionId/tasks"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <SectionTasksView />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/clients"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <DashboardLayout>
-              <Clients />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/clients/:id"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <DashboardLayout>
-              <ClientDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }
@@ -208,16 +219,6 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["worker"]}>
             <DashboardLayout>
               <TaskDetail />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/workers/:id"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <DashboardLayout>
-              <WorkerDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }
