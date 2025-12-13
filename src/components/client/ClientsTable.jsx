@@ -21,6 +21,7 @@ const ClientsTable = ({
   onToggleStatus,
   onDelete,
   pagination,
+  onRowClick,
   onPageChange,
 }) => {
   return (
@@ -55,6 +56,7 @@ const ClientsTable = ({
           {clients.map((client) => (
             <tr
               key={client._id}
+              onClick={() => onRowClick && onRowClick(client)}
               className="border-b border-gray-100 hover:bg-gray-50 transition"
             >
               <td className="py-4 px-6">
@@ -90,20 +92,24 @@ const ClientsTable = ({
                 <div className="flex items-center justify-center gap-3">
                   <Link
                     to={`/admin/clients/${client._id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-blue-600 hover:text-blue-800 transition"
                     title="View Details"
                   >
                     <Eye className="w-5 h-5" />
                   </Link>
                   <button
-                    onClick={() => onEdit(client)}
+                    onClick={(e) => {e.stopPropagation();onEdit(client);}}
                     className="text-indigo-600 hover:text-indigo-800 transition"
                     title="Edit"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => onToggleStatus(client)}
+                    onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(client);
+                  }}
                     className={`transition ${
                       client.status === "active"
                         ? "text-red-600 hover:text-red-800"
@@ -114,7 +120,10 @@ const ClientsTable = ({
                     <Power className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => onDelete(client)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(client);
+                    }}
                     className="text-red-600 hover:text-red-900 transition"
                     title="Delete"
                   >
