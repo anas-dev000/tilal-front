@@ -130,7 +130,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
                       )}
                       
                       {/* Click to View Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
                         <div className="p-3 text-white w-full">
                           <p className="text-xs font-medium">
                             {isVideo ? 'Click to play' : 'Click to view full size'}

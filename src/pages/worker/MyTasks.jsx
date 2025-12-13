@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+
 import {
   Eye,
   Clock,
@@ -63,12 +65,16 @@ const MyTasks = () => {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       });
-      alert("Task started successfully!");
+      toast.success("تم فتح المهمة", {
+        duration: 8000,
+      });
+
       fetchTasks();
     } catch (locationError) {
       if (locationError.code === 1) {
-        alert(
-          "Location access denied. Please enable location in your browser settings."
+        toast.error(
+          "Location access denied. Please enable location in your browser settings.",
+          { duration: 5000 }
         );
       } else if (locationError.code === 2) {
         const confirm = window.confirm(

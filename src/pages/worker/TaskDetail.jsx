@@ -70,19 +70,17 @@ const TaskDetail = () => {
 
   useEffect(() => {
     if (task) {
-      console.log("🔍 Task Status:", task.status);
-      console.log("🖼️ Reference Images:", task.referenceImages);
+      console.log("Task Status:", task.status);
 
-      // ✅ Load reference images from task
+      // ✅ NOW USE task.referenceImages directly (snapshotted)
       if (task.referenceImages && task.referenceImages.length > 0) {
         setReferenceImages(task.referenceImages);
 
-        // Initialize arrays for reference-based upload
         const refCount = task.referenceImages.length;
         setBeforePreviews(new Array(refCount).fill(null));
         setAfterPreviews(new Array(refCount).fill(null));
 
-        // ✅ LOAD EXISTING UPLOADED IMAGES (if any)
+        // Load existing before/after if any
         if (task.images?.before) {
           const loadedBefore = [...new Array(refCount).fill(null)];
           task.images.before.forEach((img, idx) => {
@@ -103,7 +101,8 @@ const TaskDetail = () => {
           setAfterPreviews(loadedAfter);
         }
       } else {
-        console.warn("⚠️ No reference images found");
+        console.warn("No reference images in this task");
+        setReferenceImages([]);
       }
 
       // Load existing materials

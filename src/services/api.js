@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
@@ -68,6 +69,13 @@ api.interceptors.request.use(
         }
       }
       console.groupEnd();
+    } // JSON / Plain object
+    else if (config.data && typeof config.data === "object") {
+      console.log(
+        "%cRequest Body:",
+        "color: #3498db; font-weight: bold;",
+        config.data
+      );
     }
 
     console.groupEnd();
@@ -112,6 +120,44 @@ api.interceptors.response.use(
     const status = error.response?.status || "Network Error";
     const url = error.config?.url || "Unknown";
     const method = error.config?.method?.toUpperCase() || "GET";
+    const config = error.config;
+
+    if (status === 429 && !config._retryCount) {
+      const maxRetries = 3;
+      config._retryCount = (config._retryCount || 0) + 1;
+
+      if (config._retryCount <= maxRetries) {
+        const delay = config._retryCount * 3000; // 3s, 6s, 9s ...
+
+        if (config._retryCount === 1) {
+          toast.loading(
+            "تم تجاوز الحد المؤقت للطلبات... جاري المحاولة تلقائيًا",
+            {
+              duration: 5000,
+            }
+          );
+        }
+
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            console.log(
+              `%cRetrying request (${
+                config._retryCount
+              }/${maxRetries}): ${config.method?.toUpperCase()} ${config.url}`,
+              "color: #f39c12; font-weight: bold;"
+            );
+            resolve(api(config));
+          }, delay);
+        });
+      } else {
+        toast.error(
+          "فشلت المحاولة بعد عدة مرات بسبب كثرة الطلبات. حاول مرة أخرى بعد قليل.",
+          {
+            duration: 8000,
+          }
+        );
+      }
+    }
 
     console.group(
       `%c${method} ${status} ERROR → ${url}`,
@@ -204,10 +250,10 @@ export const sitesAPI = {
     api.put(`/sites/${siteId}/sections/${sectionId}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-      // Update reference image
+  // Update reference image
   updateReferenceImage: (siteId, sectionId, imageId, data) =>
     api.put(`/sites/${siteId}/sections/${sectionId}/images/${imageId}`, data),
-  
+
   deleteSection: (siteId, sectionId) =>
     api.delete(`/sites/${siteId}/sections/${sectionId}`),
   deleteReferenceImage: (siteId, sectionId, imageId) =>
