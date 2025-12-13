@@ -36,6 +36,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
   const [selectedSite, setSelectedSite] = useState(null);
   const [availableSections, setAvailableSections] = useState([]);
   const [selectedSections, setSelectedSections] = useState([]);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const {
     register,
@@ -198,6 +199,15 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
     }
   }, [siteSearch, sites]);
 
+  useEffect(() => {
+    if (
+      submitAttempted &&
+      (watch("title") || watch("description") || selectedSections.length > 0)
+    ) {
+      setError(""); // Clear previous error
+    }
+  }, [selectedSections, submitAttempted, watch]);
+
   const fetchData = async () => {
     try {
       const [sitesRes, workersRes] = await Promise.all([
@@ -221,8 +231,14 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
   };
 
   const onSubmit = async (data) => {
+    setSubmitAttempted(true);
     if (selectedSections.length === 0) {
       setError("Please select at least one section");
+      return;
+    }
+
+    if (!data.worker) {
+      setError("Please select a worker");
       return;
     }
 
@@ -403,7 +419,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
                 );
               })}
             </div>
-            {selectedSections.length === 0 && (
+            {submitAttempted && selectedSections.length === 0 && (
               <p className="text-sm text-red-500 mt-2">
                 Please select at least one section
               </p>
@@ -477,6 +493,9 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
               isClearable
               className="w-full"
             />
+            {submitAttempted && !watch("worker") && (
+              <p className="text-sm text-red-500 mt-1">Worker is required</p>
+            )}
           </div>
 
           {/* Scheduled Date */}
@@ -484,12 +503,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t("admin.tasks.dueDate")} *
             </label>
-            <Input
-              type="date"
-              {...register("scheduledDate", { required: "Date is required" })}
-              error={errors.scheduledDate?.message}
-              required
-            />
+            <Input type="date" />
           </div>
         </div>
 

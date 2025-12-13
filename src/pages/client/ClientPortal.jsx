@@ -1,5 +1,5 @@
 // frontend/src/pages/client/ClientPortal.jsx - ✅ WITH MEDIA MODAL
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LogOut,
@@ -32,27 +32,17 @@ const ClientPortal = () => {
   // Modal States
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  
+
   // ✅ Media Modal States
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [selectedMediaType, setSelectedMediaType] = useState('image');
-  const [selectedMediaTitle, setSelectedMediaTitle] = useState('');
+  const [selectedMediaType, setSelectedMediaType] = useState("image");
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
 
   // Toast State
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  useEffect(() => {
-    if (!user || user.role !== "client") {
-      console.log("❌ Not authenticated as client, redirecting to login");
-      navigate("/login");
-      return;
-    }
-
-    fetchTasks();
-  }, [user, navigate]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const clientId = user._id || user.id;
@@ -77,7 +67,18 @@ const ClientPortal = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout, navigate, user]);
+
+  useEffect(() => {
+    if (user === undefined) return;
+    if (!user || user.role !== "client") {
+      console.log("❌ Not authenticated as client, redirecting to login");
+      navigate("/login");
+      return;
+    }
+
+    fetchTasks();
+  }, [user, navigate, fetchTasks]);
 
   const handleLogout = () => {
     logout();
@@ -135,7 +136,11 @@ const ClientPortal = () => {
   };
 
   // ✅ Handle media click
-  const handleMediaClick = (mediaUrl, mediaType = 'image', title = 'Task Media') => {
+  const handleMediaClick = (
+    mediaUrl,
+    mediaType = "image",
+    title = "Task Media"
+  ) => {
     setSelectedMedia(mediaUrl);
     setSelectedMediaType(mediaType);
     setSelectedMediaTitle(title);
@@ -440,8 +445,8 @@ const ClientPortal = () => {
         isOpen={!!selectedMedia}
         onClose={() => {
           setSelectedMedia(null);
-          setSelectedMediaType('image');
-          setSelectedMediaTitle('');
+          setSelectedMediaType("image");
+          setSelectedMediaTitle("");
         }}
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}
