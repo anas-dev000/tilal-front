@@ -149,13 +149,14 @@ const AdminTaskDetail = () => {
 
   return (
     <div className="space-y-6">
-      <Button
-        variant="secondary"
-        icon={ArrowLeft}
-        onClick={() => navigate("/admin/tasks")}
-      >
-        Back to Tasks
-      </Button>
+   <Button
+      variant="secondary"
+      icon={ArrowLeft}
+      onClick={() => navigate(-1)}
+    >
+      Back
+    </Button>
+
 
       {/* Header */}
       <Card>

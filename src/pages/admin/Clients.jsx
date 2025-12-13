@@ -9,11 +9,13 @@ import Loading from "../../components/common/Loading";
 import ClientModal from "./ClientModal";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import ClientsTable from "../../components/client/ClientsTable";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 10;
 
 const Clients = () => {
   const { t } = useTranslation();
+const navigate = useNavigate();
 
   // Data
   const [allClients, setAllClients] = useState([]);
@@ -33,7 +35,9 @@ const Clients = () => {
     client: null,
     action: "",
   });
-
+const handleRowClick = (client) => {
+  navigate(`/admin/clients/${client._id}`);
+};
   // Fetch all clients once
   useEffect(() => {
     fetchAllClients();
@@ -231,6 +235,7 @@ const Clients = () => {
             onEdit={handleEdit}
             onToggleStatus={handleToggleStatus}
             onDelete={handleDelete}
+            onRowClick={handleRowClick}
             pagination={{
               page: currentPage,
               totalPages,

@@ -11,7 +11,7 @@ import WorkersTable from "../../components/workers/WorkersTable";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import { usersAPI } from "../../services/api";
 import useWorkers from "../../hooks/useWorkers";
-
+import { useNavigate } from "react-router-dom";
 const PAGE_SIZE = 10;
 
 const Workers = () => {
@@ -26,7 +26,10 @@ const Workers = () => {
     worker: null,
     action: "",
   });
-
+  const navigate = useNavigate();
+const handleRowClick = (worker) => {
+  navigate(`/admin/workers/${worker._id}`);
+};
   const { allWorkers, loading, error, refetch } = useWorkers();
 
   const filteredWorkers = useMemo(() => {
@@ -190,6 +193,7 @@ const Workers = () => {
             }}
             onToggleStatus={handleToggleStatus}
             onDelete={handleDelete}
+            onRowClick={handleRowClick}
             pagination={{
               page: currentPage,
               totalPages,

@@ -6,6 +6,7 @@ const WorkersTable = ({
   workers,
   onEdit,
   onToggleStatus,
+  onRowClick,
   onDelete,
   pagination,
   onPageChange,
@@ -36,6 +37,7 @@ const WorkersTable = ({
           {workers.map((worker) => (
             <tr
               key={worker._id}
+              onClick={() => onRowClick && onRowClick(worker)}
               className="border-b border-gray-100 hover:bg-gray-50 transition"
             >
               <td className="py-4 px-6">
@@ -52,20 +54,27 @@ const WorkersTable = ({
                 <div className="flex items-center justify-center gap-3">
                   <Link
                     to={`/admin/workers/${worker._id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-blue-600 hover:text-blue-800 transition"
                     title="View Details"
                   >
                     <Eye className="w-5 h-5" />
                   </Link>
                   <button
-                    onClick={() => onEdit(worker)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(worker);
+                    }}
                     className="text-indigo-600 hover:text-indigo-800 transition"
                     title="Edit"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => onToggleStatus(worker)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleStatus(worker);
+                      }}
                     className={`transition ${
                       worker.isActive
                         ? "text-red-600 hover:text-red-800"
@@ -76,7 +85,10 @@ const WorkersTable = ({
                     <Power className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => onDelete(worker)}
+                     onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(worker);
+                          }}
                     className="text-red-600 hover:text-red-900 transition"
                     title="Delete"
                   >
