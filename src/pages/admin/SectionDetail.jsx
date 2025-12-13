@@ -1,4 +1,4 @@
-// src/pages/admin/SectionDetail.jsx - COMPLETE FILE
+// src/pages/admin/SectionDetail.jsx - ✅ ALL ISSUES FIXED
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -12,11 +12,14 @@ import {
   Layers,
   Image as ImageIcon,
   Edit,
+  Play,
+  Video,
 } from 'lucide-react';
 import { sitesAPI, tasksAPI } from '../../services/api';
 import Loading from '../../components/common/Loading';
 import Button from '../../components/common/Button';
 import EditImageModal from '../../components/admin/EditImageModal';
+import MediaModal from '../../components/common/MediaModal';
 
 const SectionDetail = () => {
   const { siteId, sectionId } = useParams();
@@ -26,7 +29,12 @@ const SectionDetail = () => {
   const [site, setSite] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
+  
+  // ✅ Media Modal States
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState('image');
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState('');
+  
   const [editingImage, setEditingImage] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -39,20 +47,17 @@ const SectionDetail = () => {
     try {
       setLoading(true);
       
-      // Fetch site data
       const siteResponse = await sitesAPI.getSite(siteId);
       
       if (siteResponse.data.success) {
         setSite(siteResponse.data.data);
         
-        // Find the specific section
         const foundSection = siteResponse.data.data.sections.find(
           s => s._id === sectionId
         );
         setSection(foundSection);
       }
 
-      // Fetch related tasks
       const tasksResponse = await tasksAPI.getTasks({ 
         site: siteId, 
         section: sectionId 
@@ -70,12 +75,14 @@ const SectionDetail = () => {
 
   const handleEditImage = (e, image) => {
     e.stopPropagation();
+    console.log('📝 Opening edit modal for:', image);
     setEditingImage(image);
     setIsEditModalOpen(true);
   };
 
   const handleSaveImage = async (formData) => {
     try {
+      console.log('💾 Saving image updates:', formData);
       await sitesAPI.updateReferenceImage(
         siteId,
         sectionId,
@@ -83,14 +90,35 @@ const SectionDetail = () => {
         formData
       );
       
-      // Refresh section details
       await fetchSectionDetails();
       setIsEditModalOpen(false);
       setEditingImage(null);
+      console.log('✅ Image updated successfully');
     } catch (error) {
-      console.error('Error updating image:', error);
+      console.error('❌ Error updating image:', error);
       throw error;
     }
+  };
+
+  // ✅ Handle media click - FIXED
+  const handleMediaClick = (media, idx) => {
+    console.log('🎬 Media clicked:', media);
+    
+    // Make sure we have the URL
+    if (!media.url) {
+      console.error('❌ Media URL is missing!');
+      return;
+    }
+
+    setSelectedMedia(media.url);
+    setSelectedMediaType(media.mediaType || 'image');
+    setSelectedMediaTitle(media.caption || `Reference ${idx + 1}`);
+    
+    console.log('✅ Media modal opened:', {
+      url: media.url,
+      type: media.mediaType,
+      title: media.caption || `Reference ${idx + 1}`
+    });
   };
 
   const getStatusColor = (status) => {
@@ -195,7 +223,6 @@ const SectionDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
       <Button
         variant="secondary"
         icon={ArrowLeft}
@@ -225,7 +252,6 @@ const SectionDetail = () => {
           </div>
         </div>
 
-        {/* Site Info */}
         <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
           <MapPin className="w-5 h-5 text-gray-400" />
           <div>
@@ -234,7 +260,6 @@ const SectionDetail = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
             <ImageIcon className="w-8 h-8 text-blue-600 mx-auto mb-2" />
@@ -242,7 +267,7 @@ const SectionDetail = () => {
               {section.referenceImages?.length || 0}
             </p>
             <p className="text-xs text-blue-600 uppercase font-medium">
-              Reference Images
+              Reference Media
             </p>
           </div>
 
@@ -287,15 +312,15 @@ const SectionDetail = () => {
         )}
       </div>
 
-      {/* Reference Images Grid */}
+      {/* Reference Images/Videos Grid */}
       <div className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <ImageIcon className="w-7 h-7 text-primary-600" />
-            Reference Images
+            Reference Media
             {section.referenceImages?.length > 0 && (
               <span className="bg-primary-100 text-primary-700 text-sm font-bold px-3 py-1 rounded-full">
-                {section.referenceImages.length} images
+                {section.referenceImages.length} items
               </span>
             )}
           </h2>
@@ -310,101 +335,155 @@ const SectionDetail = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-blue-900 mb-1">
-                    📸 How to Read Reference Images
+                    📸 How to Read Reference Media
                   </h3>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    The <strong className="text-blue-900">badge number (QTN)</strong> on each image represents <strong>how many times</strong> this plant/location appears in this section. For example, if badge shows "x5", it means this plant exists 5 times in different spots.
+                    The <strong className="text-blue-900">badge number (QTN)</strong> on each item represents <strong>how many times</strong> this plant/location appears in this section.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {section.referenceImages.map((img, idx) => (
-                <div
-                  key={idx}
-                  className="group relative bg-white rounded-xl shadow-md overflow-hidden border-2 border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  {/* Image Container */}
-                  <div className="relative h-64 bg-gray-100 overflow-hidden">
-                    <img
-                      src={img.url}
-                      alt={img.caption || `Reference ${idx + 1}`}
-                      className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-500"
-                      onClick={() => setSelectedImage(img.url)}
-                    />
-                    
-                    {/* Overlay on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-                      <div className="p-4 text-white w-full">
-                        <p className="text-sm font-medium">
-                          Click to view full size
-                        </p>
+              {section.referenceImages.map((media, idx) => {
+                const isVideo = media.mediaType === 'video';
+                
+                return (
+                  <div
+                    key={idx}
+                    className="group relative bg-white rounded-xl shadow-md overflow-hidden border-2 border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    {/* Media Container */}
+                    <div className="relative h-64 bg-gray-100 overflow-hidden">
+                      {/* ✅ Video or Image */}
+                      {isVideo ? (
+                        <div 
+                          className="relative w-full h-full cursor-pointer"
+                          onClick={() => handleMediaClick(media, idx)}
+                        >
+                          <video
+                            src={media.url}
+                            className="w-full h-full object-cover"
+                            preload="metadata"
+                            onError={(e) => {
+                              console.error('❌ Video failed to load:', media.url);
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          {/* Play Overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                            <div className="bg-white rounded-full p-4 group-hover:scale-110 transition-transform">
+                              <Play className="w-12 h-12 text-primary-600 fill-primary-600" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.caption || `Reference ${idx + 1}`}
+                          className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-500"
+                          onClick={() => handleMediaClick(media, idx)}
+                          onError={(e) => {
+                            console.error('❌ Image failed to load:', media.url);
+                            e.target.onerror = null;
+                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                      )}
+                      
+                      {/* Overlay on Hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end pointer-events-none">
+                        <div className="p-4 text-white w-full">
+                          <p className="text-sm font-medium">
+                            {isVideo ? 'Click to play video' : 'Click to view full size'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* QTN Badge */}
+                      <div className="absolute top-3 right-3 z-10">
+                        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white transform group-hover:scale-110 transition-transform duration-300">
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-5 h-5" />
+                            <span className="text-2xl font-black">
+                              x{media.qtn || 1}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Media Type Badge */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <div className={`text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center gap-1 ${
+                          isVideo ? 'bg-purple-600' : 'bg-blue-600'
+                        }`}>
+                          {isVideo ? (
+                            <>
+                              <Video className="w-3 h-3" />
+                              <span>VIDEO</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon className="w-3 h-3" />
+                              <span>IMAGE</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Edit Button */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                        <button
+                          onClick={(e) => handleEditImage(e, media)}
+                          className="bg-white text-primary-600 p-2 rounded-full shadow-lg hover:bg-primary-50 transition-colors border-2 border-primary-200"
+                          title="Edit details"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* QTN Badge */}
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white transform group-hover:scale-110 transition-transform duration-300">
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-5 h-5" />
-                          <span className="text-2xl font-black">
-                            x{img.qtn || 1}
+                    {/* Media Info */}
+                    <div className="p-4 bg-white">
+                      {media.caption && (
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {media.caption}
+                        </h3>
+                      )}
+                      
+                      {media.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {media.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            {new Date(media.uploadedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        <div className="bg-red-50 text-red-700 px-3 py-1 rounded-full border border-red-200">
+                          <span className="text-xs font-bold">
+                            QTY: {media.qtn || 1}
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Image Number Badge */}
-                    <div className="absolute top-3 left-3">
-                      <div className="bg-white text-gray-900 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg border-2 border-gray-300">
-                        {idx + 1}
-                      </div>
-                    </div>
-
-                    {/* Edit Button */}
-                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <button
-                        onClick={(e) => handleEditImage(e, img)}
-                        className="bg-white text-primary-600 p-2 rounded-full shadow-lg hover:bg-primary-50 transition-colors border-2 border-primary-200"
-                        title="Edit image details"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
+                      {/* ✅ Duration Badge for Videos */}
+                      {isVideo && media.duration && (
+                        <div className="mt-2 bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-200 text-center">
+                          <span className="text-xs font-bold">
+                            Duration: {Math.round(media.duration)}s
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {/* Image Info */}
-                  <div className="p-4 bg-white">
-                    {img.caption && (
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {img.caption}
-                      </h3>
-                    )}
-                    
-                    {img.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {img.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {new Date(img.uploadedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      
-                      <div className="bg-red-50 text-red-700 px-3 py-1 rounded-full border border-red-200">
-                        <span className="text-xs font-bold">
-                          QTY: {img.qtn || 1}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Summary */}
@@ -439,10 +518,10 @@ const SectionDetail = () => {
           <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <ImageIcon className="w-20 h-20 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg font-medium">
-              No reference images uploaded yet
+              No reference media uploaded yet
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              Add reference images to help workers identify locations
+              Add reference images/videos to help workers identify locations
             </p>
           </div>
         )}
@@ -538,38 +617,35 @@ const SectionDetail = () => {
         </div>
       )}
 
-      {/* Image Modal */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-5xl max-h-[90vh]">
-            <img
-              src={selectedImage}
-              alt="Full size"
-              className="max-w-full max-h-[90vh] object-contain"
-            />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
+      {/* ✅ Media Modal - FIXED */}
+      {selectedMedia && (
+        <MediaModal
+          isOpen={true}
+          onClose={() => {
+            console.log('🔴 Closing media modal');
+            setSelectedMedia(null);
+            setSelectedMediaType('image');
+            setSelectedMediaTitle('');
+          }}
+          mediaUrl={selectedMedia}
+          mediaType={selectedMediaType}
+          title={selectedMediaTitle}
+        />
       )}
 
       {/* Edit Image Modal */}
-      <EditImageModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingImage(null);
-        }}
-        image={editingImage}
-        onSave={handleSaveImage}
-      />
+      {editingImage && (
+        <EditImageModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            console.log('🔴 Closing edit modal');
+            setIsEditModalOpen(false);
+            setEditingImage(null);
+          }}
+          image={editingImage}
+          onSave={handleSaveImage}
+        />
+      )}
     </div>
   );
 };

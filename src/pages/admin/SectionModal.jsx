@@ -1,17 +1,19 @@
-// frontend/src/pages/admin/SectionModal.jsx - Complete Section Modal
+// src/pages/admin/SectionModal.jsx - ✅ WITH VIDEO UPLOAD SUPPORT
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Image as ImageIcon, X, Upload } from "lucide-react";
+import { Image as ImageIcon, X, Upload, Play, Video } from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import MediaUpload from "../../components/common/MediaUpload";
 import { sitesAPI } from "../../services/api";
 
 const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [newImages, setNewImages] = useState([]);
+  const [newMedia, setNewMedia] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [previewTypes, setPreviewTypes] = useState([]);
 
   const {
     register,
@@ -38,25 +40,32 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
         notes: "",
       });
     }
-    setNewImages([]);
+    setNewMedia([]);
     setPreviewUrls([]);
+    setPreviewTypes([]);
   }, [section, reset]);
 
-  const handleImageChange = (e) => {
+  const handleMediaChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      setNewImages((prev) => [...prev, ...files]);
+      setNewMedia((prev) => [...prev, ...files]);
 
-      // Create preview URLs
-      const urls = files.map((file) => URL.createObjectURL(file));
-      setPreviewUrls((prev) => [...prev, ...urls]);
+      // Create preview URLs and detect types
+      files.forEach((file) => {
+        const url = URL.createObjectURL(file);
+        const isVideo = file.type.startsWith('video/');
+        
+        setPreviewUrls((prev) => [...prev, url]);
+        setPreviewTypes((prev) => [...prev, isVideo ? 'video' : 'image']);
+      });
     }
   };
 
-  const removeNewImage = (index) => {
+  const removeNewMedia = (index) => {
     URL.revokeObjectURL(previewUrls[index]);
-    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setNewMedia((prev) => prev.filter((_, i) => i !== index));
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    setPreviewTypes((prev) => prev.filter((_, i) => i !== index));
   };
 
   const onSubmit = async (data) => {
@@ -71,8 +80,8 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
       formData.append("status", data.status);
       formData.append("notes", data.notes || "");
 
-      // Append new images
-      newImages.forEach((file) => {
+      // Append new media files
+      newMedia.forEach((file) => {
         formData.append("referenceImages", file);
       });
 
@@ -88,8 +97,9 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
       // Cleanup
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
       reset();
-      setNewImages([]);
+      setNewMedia([]);
       setPreviewUrls([]);
+      setPreviewTypes([]);
     } catch (err) {
       setError(err.response?.data?.message || "An error occurred");
     } finally {
@@ -170,82 +180,143 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
           />
         </div>
 
-        {/* Existing Reference Images (if editing) */}
+        {/* Existing Reference Media (if editing) */}
         {section &&
           section.referenceImages &&
           section.referenceImages.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Existing Reference Images
+                Existing Reference Media
               </label>
               <div className="grid grid-cols-4 gap-2">
-                {section.referenceImages.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img.url}
-                    alt={`Reference ${idx + 1}`}
-                    className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => window.open(img.url, "_blank")}
-                  />
-                ))}
+                {section.referenceImages.map((media, idx) => {
+                  const isVideo = media.mediaType === 'video';
+                  
+                  return (
+                    <div key={idx} className="relative group">
+                      {isVideo ? (
+                        <div className="relative">
+                          <video
+                            src={media.url}
+                            className="w-full h-20 object-cover rounded border cursor-pointer"
+                            onClick={() => window.open(media.url, "_blank")}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                            <Play className="w-6 h-6 text-white fill-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={`Reference ${idx + 1}`}
+                          className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                          onClick={() => window.open(media.url, "_blank")}
+                        />
+                      )}
+                      
+                      {/* Media Type Badge */}
+                      <div className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-xs font-bold text-white ${
+                        isVideo ? 'bg-purple-600' : 'bg-blue-600'
+                      }`}>
+                        {isVideo ? <Video className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Click images to view full size
+                Click to view full size
               </p>
             </div>
           )}
 
-        {/* New Reference Images */}
+        {/* New Reference Media Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <ImageIcon className="w-4 h-4 inline mr-1" />
-            Add Reference Images
+            Add Reference Media (Images or Videos)
           </label>
 
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition-colors">
             <input
               type="file"
               multiple
-              accept="image/*"
-              onChange={handleImageChange}
+              accept="image/*,video/*"
+              onChange={handleMediaChange}
               className="hidden"
-              id="section-images"
+              id="section-media"
             />
             <label
-              htmlFor="section-images"
+              htmlFor="section-media"
               className="cursor-pointer flex flex-col items-center gap-2"
             >
-              <Upload className="w-8 h-8 text-gray-400" />
+              <div className="flex gap-3">
+                <ImageIcon className="w-8 h-8 text-gray-400" />
+                <Video className="w-8 h-8 text-gray-400" />
+              </div>
               <span className="text-sm text-gray-600">
                 Click to upload or drag and drop
               </span>
               <span className="text-xs text-gray-500">
-                PNG, JPG, WEBP up to 10MB
+                Images (PNG, JPG, WEBP) or Videos (MP4, MOV, WEBM) up to 100MB
               </span>
             </label>
           </div>
 
-          {/* Preview New Images */}
+          {/* Preview New Media */}
           {previewUrls.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mt-3">
-              {previewUrls.map((url, idx) => (
-                <div key={idx} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Preview ${idx + 1}`}
-                    className="w-full h-20 object-cover rounded border"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeNewImage(idx)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
+              {previewUrls.map((url, idx) => {
+                const isVideo = previewTypes[idx] === 'video';
+                
+                return (
+                  <div key={idx} className="relative group">
+                    {isVideo ? (
+                      <div className="relative">
+                        <video
+                          src={url}
+                          className="w-full h-20 object-cover rounded border"
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                          <Play className="w-6 h-6 text-white fill-white" />
+                        </div>
+                        <div className="absolute top-1 left-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                          VIDEO
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <img
+                          src={url}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full h-20 object-cover rounded border"
+                        />
+                        <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                          IMAGE
+                        </div>
+                      </>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => removeNewMedia(idx)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
+        </div>
+
+        {/* Info Message */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            💡 <strong>Tip:</strong> Upload both images and videos to help workers identify the work areas more clearly.
+          </p>
         </div>
 
         {/* Actions */}

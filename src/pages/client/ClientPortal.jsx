@@ -1,4 +1,4 @@
-// frontend/src/pages/client/ClientPortal.jsx - ✅ WITH SATISFIED BUTTON
+// frontend/src/pages/client/ClientPortal.jsx - ✅ WITH MEDIA MODAL
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -15,12 +15,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import { tasksAPI, clientsAPI } from "../../services/api";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import Modal from "../../components/common/Modal";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Loading from "../../components/common/Loading";
 import SuccessToast from "../../components/common/SuccessToast";
 import TaskDetailModal from "./modals/TaskDetailModal";
 import FeedbackModal from "./modals/FeedbackModal";
+import MediaModal from "../../components/common/MediaModal";
 
 const ClientPortal = () => {
   const navigate = useNavigate();
@@ -32,7 +32,11 @@ const ClientPortal = () => {
   // Modal States
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  
+  // ✅ Media Modal States
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState('image');
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState('');
 
   // Toast State
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -46,7 +50,6 @@ const ClientPortal = () => {
     }
 
     fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   const fetchTasks = async () => {
@@ -109,7 +112,6 @@ const ClientPortal = () => {
     }
   };
 
-  // ✅ NEW: Handle Satisfied Button
   const handleMarkSatisfied = async (taskId) => {
     if (
       !window.confirm(
@@ -130,6 +132,13 @@ const ClientPortal = () => {
       console.error("Error marking satisfied:", error);
       alert("Failed to mark task as satisfied");
     }
+  };
+
+  // ✅ Handle media click
+  const handleMediaClick = (mediaUrl, mediaType = 'image', title = 'Task Media') => {
+    setSelectedMedia(mediaUrl);
+    setSelectedMediaType(mediaType);
+    setSelectedMediaTitle(title);
   };
 
   const getStatusColor = (status) => {
@@ -180,7 +189,7 @@ const ClientPortal = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           <Card className="bg-white">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -222,6 +231,20 @@ const ClientPortal = () => {
               </div>
             </div>
           </Card>
+
+          <Card className="bg-white">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Star className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {tasks.filter((t) => t.status === "pending").length}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Tasks Grid */}
@@ -248,9 +271,7 @@ const ClientPortal = () => {
                     key={task._id}
                     className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow flex flex-col h-full overflow-hidden"
                   >
-                    {/* Main scrollable/growing content */}
                     <div className="flex-1 p-6 space-y-4 min-h-0">
-                      {/* Feedback Badge */}
                       {task.feedback && (
                         <div
                           className={`border rounded-lg p-3 ${
@@ -295,7 +316,6 @@ const ClientPortal = () => {
                         </div>
                       )}
 
-                      {/* Title + Status */}
                       <div className="flex justify-between items-start gap-2">
                         <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 flex-1">
                           {task.title}
@@ -309,7 +329,6 @@ const ClientPortal = () => {
                         </span>
                       </div>
 
-                      {/* Site */}
                       {task.site && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 p-2 rounded">
                           <MapPin className="w-4 h-4 text-green-600 shrink-0" />
@@ -317,7 +336,6 @@ const ClientPortal = () => {
                         </div>
                       )}
 
-                      {/* Dates */}
                       <div className="text-sm text-gray-600 space-y-1">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 shrink-0" />
@@ -337,18 +355,16 @@ const ClientPortal = () => {
                         )}
                       </div>
 
-                      {/* Images */}
                       {visibleAfterImages.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <ImageIcon className="w-4 h-4 shrink-0" />
                           <span>
-                            {visibleAfterImages.length} images available
+                            {visibleAfterImages.length} media files available
                           </span>
                         </div>
                       )}
                     </div>
 
-                    {/* FIXED BUTTONS FOOTER – always stuck to the bottom */}
                     <div className="border-t border-gray-200 px-6 py-4 mt-auto">
                       <div className="flex gap-2 justify-center">
                         <Button
@@ -364,7 +380,6 @@ const ClientPortal = () => {
                           !task.feedback?.isSatisfiedOnly &&
                           !task.feedback?.rating && (
                             <>
-                              {/* ✅ Satisfied Button */}
                               <Button
                                 variant="success"
                                 size="sm"
@@ -375,7 +390,6 @@ const ClientPortal = () => {
                                 Satisfied
                               </Button>
 
-                              {/* Feedback Button */}
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -407,7 +421,7 @@ const ClientPortal = () => {
           setShowDetailModal(false);
           setShowFeedbackModal(true);
         }}
-        onImageClick={setSelectedImage}
+        onImageClick={handleMediaClick}
       />
 
       {/* Feedback Modal */}
@@ -421,23 +435,18 @@ const ClientPortal = () => {
         onSubmit={handleSubmitFeedback}
       />
 
-      {/* Image Viewer Modal */}
-      {selectedImage && (
-        <Modal
-          isOpen={!!selectedImage}
-          onClose={() => setSelectedImage(null)}
-          title="Image Viewer"
-          size="xl"
-        >
-          <div className="text-center">
-            <img
-              src={selectedImage}
-              alt="Full view"
-              className="max-w-full max-h-[70vh] mx-auto rounded-lg"
-            />
-          </div>
-        </Modal>
-      )}
+      {/* ✅ Media Modal */}
+      <MediaModal
+        isOpen={!!selectedMedia}
+        onClose={() => {
+          setSelectedMedia(null);
+          setSelectedMediaType('image');
+          setSelectedMediaTitle('');
+        }}
+        mediaUrl={selectedMedia}
+        mediaType={selectedMediaType}
+        title={selectedMediaTitle}
+      />
 
       {/* Success Toast */}
       {showSuccessToast && (
@@ -447,7 +456,6 @@ const ClientPortal = () => {
         />
       )}
 
-      {/* CSS for animations */}
       <style>{`
         @keyframes slide-in {
           from {

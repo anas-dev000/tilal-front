@@ -1,303 +1,305 @@
-// src/pages/admin/SectionManagement.jsx - COMPLETE FILE
+// src/pages/admin/SectionManagement.jsx - ✅ FIXED VIDEO DISPLAY
 import { useState } from "react";
 import {
   Plus,
   Edit,
   Trash2,
-  Image as ImageIcon,
   Layers,
+  MapPin,
+  Image as ImageIcon,
   AlertCircle,
   CheckCircle,
   Clock,
-  Eye,
+  Play,
+  Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { sitesAPI } from "../../services/api";
 import Button from "../../components/common/Button";
 import SectionModal from "./SectionModal";
+import { sitesAPI } from "../../services/api";
 
 const SectionManagement = ({ site, onUpdate }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
-  const [deletingSection, setDeletingSection] = useState(null);
 
   const handleAddSection = () => {
     setSelectedSection(null);
     setIsModalOpen(true);
   };
 
-  const handleEditSection = (e, section) => {
-    e.stopPropagation();
+  const handleEditSection = (section) => {
     setSelectedSection(section);
     setIsModalOpen(true);
   };
 
-  const handleDeleteSection = async (e, sectionId) => {
-    e.stopPropagation();
+  const handleDeleteSection = async (sectionId) => {
     if (
-      !window.confirm(
-        "Are you sure you want to delete this section? All reference images will be deleted."
+      window.confirm(
+        "Are you sure? This will delete all reference images/videos in this section."
       )
     ) {
-      return;
-    }
-
-    try {
-      setDeletingSection(sectionId);
-      await sitesAPI.deleteSection(site._id, sectionId);
-      onUpdate();
-    } catch (error) {
-      console.error("Error deleting section:", error);
-      alert("Failed to delete section");
-    } finally {
-      setDeletingSection(null);
+      try {
+        await sitesAPI.deleteSection(site._id, sectionId);
+        onUpdate();
+      } catch (error) {
+        console.error("Error deleting section:", error);
+        alert("Failed to delete section");
+      }
     }
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedSection(null);
-  };
-
-  const handleSuccess = () => {
-    onUpdate();
-  };
-
-  // Navigate to section detail
-  const handleViewSection = (sectionId) => {
+  const handleSectionClick = (sectionId) => {
     navigate(`/admin/sites/${site._id}/sections/${sectionId}`);
   };
 
-  // Get last task status badge
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+      "in-progress": "bg-blue-100 text-blue-800 border-blue-300",
+      completed: "bg-green-100 text-green-800 border-green-300",
+      maintenance: "bg-orange-100 text-orange-800 border-orange-300",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
+  };
+
   const getLastTaskStatusBadge = (section) => {
     if (!section.lastTaskStatus) return null;
 
     const statusConfig = {
       completed: {
-        bg: "bg-green-100",
-        text: "text-green-800",
-        border: "border-green-300",
+        bg: "bg-green-50",
+        text: "text-green-700",
+        border: "border-green-200",
         icon: CheckCircle,
         label: "Last: Completed",
       },
       rejected: {
-        bg: "bg-red-100",
-        text: "text-red-800",
-        border: "border-red-300",
+        bg: "bg-red-50",
+        text: "text-red-700",
+        border: "border-red-200",
         icon: AlertCircle,
         label: "Last: Rejected",
       },
       "in-progress": {
-        bg: "bg-blue-100",
-        text: "text-blue-800",
-        border: "border-blue-300",
+        bg: "bg-blue-50",
+        text: "text-blue-700",
+        border: "border-blue-200",
         icon: Clock,
         label: "Last: In Progress",
       },
-      pending: {
-        bg: "bg-yellow-100",
-        text: "text-yellow-800",
-        border: "border-yellow-300",
-        icon: Clock,
-        label: "Last: Pending",
-      },
     };
 
-    const config =
-      statusConfig[section.lastTaskStatus] || statusConfig["pending"];
+    const config = statusConfig[section.lastTaskStatus] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
       <div
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.text} ${config.border}`}
+        className={`flex items-center gap-1 px-2 py-1 rounded border ${config.bg} ${config.text} ${config.border}`}
       >
-        <Icon className="w-4 h-4" />
-        <div className="flex flex-col">
-          <span className="text-xs font-semibold">{config.label}</span>
-          {section.lastTaskDate && (
-            <span className="text-xs opacity-80">
-              {new Date(section.lastTaskDate).toLocaleDateString()}
-            </span>
-          )}
-        </div>
+        <Icon className="w-3 h-3" />
+        <span className="text-xs font-semibold">{config.label}</span>
       </div>
     );
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Layers className="w-6 h-6 text-primary-600" />
-          <h2 className="text-2xl font-bold text-gray-900">
-            Site Sections ({site.sections?.length || 0})
-          </h2>
+          <Layers className="w-7 h-7 text-primary-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Site Sections
+            </h2>
+            <p className="text-sm text-gray-600">
+              {site.sections?.length || 0} sections
+            </p>
+          </div>
         </div>
         <Button onClick={handleAddSection} icon={Plus}>
           Add Section
         </Button>
       </div>
 
-      {site.sections && site.sections.length > 0 ? (
+      {!site.sections || site.sections.length === 0 ? (
+        <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <Layers className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg font-medium">
+            No sections created yet
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            Add sections to organize this site's work areas
+          </p>
+          <Button
+            onClick={handleAddSection}
+            icon={Plus}
+            className="mt-4"
+          >
+            Create First Section
+          </Button>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {site.sections.map((section) => (
-            <div
-              key={section._id}
-              className="border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg transition-all hover:border-primary-300 flex flex-col h-full cursor-pointer group"
-              onClick={() => handleViewSection(section._id)}
-            >
-              {/* Section Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                    {section.name}
-                  </h3>
-                  {section.area > 0 && (
-                    <p className="text-sm text-gray-600">
-                      Area: {section.area}m²
-                    </p>
-                  )}
-                </div>
+          {site.sections.map((section) => {
+            const totalQuantity = section.referenceImages?.reduce(
+              (sum, img) => sum + (img.qtn || 1),
+              0
+            ) || 0;
 
-                {/* Show Last Task Status Badge */}
-                {getLastTaskStatusBadge(section)}
-              </div>
-
-              {/* Description */}
-              {section.description && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {section.description}
-                </p>
-              )}
-
-              {/* Reference Images */}
-              {section.referenceImages &&
-                section.referenceImages.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ImageIcon className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700">
-                        {section.referenceImages.length} Reference Image
-                        {section.referenceImages.length > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {section.referenceImages.slice(0, 3).map((img, idx) => (
-                        <div key={idx} className="relative">
+            return (
+              <div
+                key={section._id}
+                className="group bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-primary-400 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+                onClick={() => handleSectionClick(section._id)}
+              >
+                {/* Section Preview */}
+                <div className="relative h-48 bg-gray-200 overflow-hidden">
+                  {section.referenceImages && section.referenceImages.length > 0 ? (
+                    <div className="relative w-full h-full">
+                      {/* ✅ FIX: Check media type and render accordingly */}
+                      {section.referenceImages[0].mediaType === 'video' ? (
+                        <>
+                          <video
+                            src={section.referenceImages[0].url}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            preload="metadata"
+                          />
+                          {/* Play Button Overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                            <div className="bg-white rounded-full p-3">
+                              <Play className="w-8 h-8 text-primary-600 fill-primary-600" />
+                            </div>
+                          </div>
+                          
+                          {/* Video Badge */}
+                          <div className="absolute top-3 left-3 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                            <Video className="w-3 h-3" />
+                            <span>VIDEO</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
                           <img
-                            src={img.url}
-                            alt={`Reference ${idx + 1}`}
-                            className="w-full h-20 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(img.url, "_blank");
+                            src={section.referenceImages[0].url}
+                            alt={section.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
                             }}
                           />
-                          {/* QTN Badge on Thumbnail */}
-                          {img.qtn && img.qtn > 1 && (
-                            <div className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                              x{img.qtn}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {section.referenceImages.length > 3 && (
-                        <div className="w-full h-20 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-xs text-gray-600 font-medium">
-                          +{section.referenceImages.length - 3} more
+                          {/* Image Badge */}
+                          <div className="absolute top-3 left-3 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>IMAGE</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Media Count Badge */}
+                      {section.referenceImages.length > 1 && (
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-bold">
+                          +{section.referenceImages.length - 1} more
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                      <Layers className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )}
 
-              {/* Status Badge */}
-              <div className="flex items-center gap-2 mb-4">
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    section.status === "completed"
-                      ? "bg-green-100 text-green-800"
-                      : section.status === "in-progress"
-                      ? "bg-blue-100 text-blue-800"
-                      : section.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {section.status}
-                </span>
-              </div>
-
-              {/* Notes */}
-              {section.notes && (
-                <div className="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-yellow-800 line-clamp-2">
-                      {section.notes}
-                    </p>
+                  {/* Status Badge */}
+                  <div className="absolute top-3 right-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border shadow-lg ${getStatusColor(
+                        section.status
+                      )}`}
+                    >
+                      {section.status}
+                    </span>
                   </div>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-3 border-t mt-auto shrink-0">
-                {/* View Details Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewSection(section._id);
-                  }}
-                  className="flex-1 px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  View Details
-                </button>
-                
-                {/* Edit Button */}
-                <button
-                  onClick={(e) => handleEditSection(e, section)}
-                  className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => handleDeleteSection(e, section._id)}
-                  disabled={deletingSection === section._id}
-                  className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center disabled:opacity-50"
-                >
-                  {deletingSection === section._id ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </button>
+                {/* Section Info */}
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-1">
+                      {section.name}
+                    </h3>
+                    {section.description && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {section.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">Media</p>
+                      <p className="font-semibold text-sm flex items-center justify-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-primary-600" />
+                        {section.referenceImages?.length || 0}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">Quantity</p>
+                      <p className="font-semibold text-sm text-purple-600">
+                        {totalQuantity}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">Area</p>
+                      <p className="font-semibold text-sm">
+                        {section.area || 0}m²
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Last Task Status */}
+                  {getLastTaskStatusBadge(section)}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-3 border-t border-gray-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditSection(section);
+                      }}
+                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSection(section._id);
+                      }}
+                      className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Layers className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg mb-2">No sections yet</p>
-          <p className="text-gray-500 text-sm mb-4">
-            Add sections to organize this site's tasks
-          </p>
-          <Button onClick={handleAddSection} icon={Plus}>
-            Add First Section
-          </Button>
+            );
+          })}
         </div>
       )}
 
-      {/* Section Modal */}
+      {/* Modal */}
       <SectionModal
         isOpen={isModalOpen}
-        onClose={handleModalClose}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedSection(null);
+        }}
         site={site}
         section={selectedSection}
-        onSuccess={handleSuccess}
+        onSuccess={onUpdate}
       />
     </div>
   );
