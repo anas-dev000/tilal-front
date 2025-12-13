@@ -75,16 +75,6 @@ const Tasks = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      low: "text-gray-600",
-      medium: "text-yellow-600",
-      high: "text-orange-600",
-      urgent: "text-red-600",
-    };
-    return colors[priority] || "text-gray-600";
-  };
-
   const filteredTasks = tasks.filter(
     (task) =>
       task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -177,10 +167,7 @@ const Tasks = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Due Date
+                    Admin Review
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -194,12 +181,12 @@ const Tasks = () => {
                     onClick={() => handleRowClick(task)}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap max-w-[300px]">
+                      <div className="text-l font-medium text-gray-900 truncate">
                         {task.title}
                       </div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {task.description}
+                      <div className="text-l text-red-500 truncate block max-w-full overflow-hidden whitespace-nowrap">
+                        {task.adminReview.comments}
                       </div>
                     </td>
                     {/* ✅ UPDATED: Show Site + Multiple Sections */}
@@ -218,7 +205,7 @@ const Tasks = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {task.client?.name || "N/A"}
+                      {task.client?.name || "Not Found"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {task.worker?.name || "Unassigned"}
@@ -235,17 +222,14 @@ const Tasks = () => {
                         {t(`status.${task.status}`)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span
-                        className={`text-sm font-medium ${getPriorityColor(
-                          task.priority
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          task.adminReview.status
                         )}`}
                       >
-                        {t(`priority.${task.priority}`)}
+                        {t(`status.${task.adminReview.status}`)}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(task.scheduledDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button

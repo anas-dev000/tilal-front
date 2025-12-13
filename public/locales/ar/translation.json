@@ -129,7 +129,10 @@
       "afterPhoto": "صورة بعد",
       "aiScore": "درجة الذكاء الاصطناعي",
       "adminComments": "تعليقات المدير",
-      "worker":"عامل"
+      "worker":"عامل",
+      "adminReview": {
+        "status": "حالة التقييم"
+      }
     },
     "invoices": {
       "title": "مركز الفواتير",

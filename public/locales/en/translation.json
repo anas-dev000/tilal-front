@@ -129,7 +129,10 @@
       "afterPhoto": "After Photo",
       "aiScore": "AI Score",
       "adminComments": "Admin Comments",
-      "worker": "Worker"
+      "worker": "Worker",
+      "adminReview": {
+        "status": "Review Status"
+      }
     },
     "invoices": {
       "title": "Invoices Center",
