@@ -1,8 +1,9 @@
-// frontend/src/pages/worker/TaskDetail.jsx - WITH SKELETON & PARALLEL UPLOADS
+// frontend/src/pages/worker/TaskDetail.jsx - WITH VIDEO SUPPORT & MEDIA MODAL
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import DeleteImageButton from "../../components/common/DeleteImageButton";
+import MediaModal from "../../components/common/MediaModal";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -17,6 +18,8 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Loader2,
+  Video,
+  Play,
 } from "lucide-react";
 import { tasksAPI, inventoryAPI } from "../../services/api";
 import Card from "../../components/common/Card";
@@ -43,6 +46,11 @@ const TaskDetail = () => {
   const [previewsByRef, setPreviewsByRef] = useState({});
   const [referenceImages, setReferenceImages] = useState([]);
 
+  // Media Modal
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState("image");
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -59,7 +67,7 @@ const TaskDetail = () => {
         initializeQTNStructure(taskData);
       } catch (error) {
         console.error("Error loading task:", error);
-        alert("Failed to load task details");
+        toast.error("Failed to load task details");
       } finally {
         setLoading(false);
       }
@@ -108,6 +116,7 @@ const TaskDetail = () => {
         if (taskData.images?.before?.[globalBeforeIdx]) {
           previews[refIdx][qtnIdx].before = {
             url: taskData.images.before[globalBeforeIdx].url,
+            mediaType: taskData.images.before[globalBeforeIdx].mediaType || "image",
             existing: true,
           };
           globalBeforeIdx++;
@@ -115,6 +124,7 @@ const TaskDetail = () => {
         if (taskData.images?.after?.[globalAfterIdx]) {
           previews[refIdx][qtnIdx].after = {
             url: taskData.images.after[globalAfterIdx].url,
+            mediaType: taskData.images.after[globalAfterIdx].mediaType || "image",
             existing: true,
           };
           globalAfterIdx++;
@@ -145,11 +155,29 @@ const TaskDetail = () => {
   const handleImageUpload = async (type, refIndex, qtnIndex, file) => {
     if (!file) return;
 
+    // Validate file type
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      toast.error("Please select an image or video file");
+      return;
+    }
+
+    // Validate file size (100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 100MB");
+      return;
+    }
+
     const uploadKey = getUploadKey(type, refIndex, qtnIndex);
 
     try {
       // Mark this specific location as uploading
       setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
+
+      toast.info(`Uploading ${isVideo ? "video" : "image"}...`);
 
       const formData = new FormData();
       formData.append("images", file);
@@ -158,13 +186,17 @@ const TaskDetail = () => {
 
       await tasksAPI.uploadTaskImages(id, formData);
 
+      toast.success(`${isVideo ? "Video" : "Image"} uploaded successfully!`);
+
       // Refresh task data
       const res = await tasksAPI.getTask(id);
       setTask(res.data.data);
       initializeQTNStructure(res.data.data);
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload image. Please try again.");
+      toast.error(
+        error.response?.data?.message || "Failed to upload. Please try again."
+      );
     } finally {
       // Remove uploading state for this specific location
       setUploadingImages((prev) => {
@@ -206,7 +238,7 @@ const TaskDetail = () => {
   // Materials Handlers
   const handleAddMaterial = (item) => {
     if (selectedMaterials.find((m) => m.item === item._id)) {
-      alert("Material already added");
+      toast.warning("Material already added");
       return;
     }
     setSelectedMaterials([
@@ -220,6 +252,7 @@ const TaskDetail = () => {
       },
     ]);
     setShowAddMaterial(false);
+    toast.success(`${item.name} added`);
   };
 
   const handleUpdateMaterialQuantity = (index, change) => {
@@ -229,7 +262,9 @@ const TaskDetail = () => {
   };
 
   const handleRemoveMaterial = (index) => {
+    const materialName = selectedMaterials[index].name;
     setSelectedMaterials(selectedMaterials.filter((_, i) => i !== index));
+    toast.success(`${materialName} removed`);
   };
 
   const handleConfirmMaterials = async () => {
@@ -244,8 +279,9 @@ const TaskDetail = () => {
       const res = await tasksAPI.getTask(id);
       setTask(res.data.data);
       initializeQTNStructure(res.data.data);
+      toast.success("Materials confirmed successfully!");
     } catch (error) {
-      alert("Failed to confirm materials", error);
+      toast.error(error.response?.data?.message || "Failed to confirm materials");
     }
   };
 
@@ -273,15 +309,16 @@ const TaskDetail = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        alert("Task started successfully!");
+        toast.success("Task started successfully!");
         setLoading(true);
         const response = await tasksAPI.getTask(id);
         setTask(response.data.data);
         setLoading(false);
       } catch (locationError) {
         if (locationError.code === 1) {
-          alert(
-            "Location access denied. Please enable location access in your browser settings and try again."
+          toast.error(
+            "Location access denied. Please enable location access in your browser settings and try again.",
+            { duration: 6000 }
           );
           return;
         } else if (locationError.code === 2) {
@@ -290,7 +327,7 @@ const TaskDetail = () => {
           );
           if (confirm) {
             await tasksAPI.startTask(id, {});
-            alert("Task started successfully (location not saved)!");
+            toast.success("Task started successfully (location not saved)!");
             setLoading(true);
             const response = await tasksAPI.getTask(id);
             setTask(response.data.data);
@@ -298,31 +335,32 @@ const TaskDetail = () => {
           }
           return;
         } else {
-          alert("An error occurred while getting location. Please try again.");
+          toast.error("An error occurred while getting location. Please try again.");
           return;
         }
       }
     } catch (error) {
       console.error("Error starting task:", error);
-      alert(error.response?.data?.message || "Failed to start task");
+      toast.error(error.response?.data?.message || "Failed to start task");
     }
   };
 
   const handleFinishTask = async () => {
     if (!allPhotosComplete) {
-      alert(
-        `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`
+      toast.error(
+        `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`,
+        { duration: 5000 }
       );
       return;
     }
 
     if (!materialsConfirmed) {
-      alert("Please confirm all materials before finishing the task");
+      toast.warning("Please confirm all materials before finishing the task");
       return;
     }
 
     if (hasAnyUploading) {
-      alert("Please wait for all images to finish uploading");
+      toast.info("Please wait for all images to finish uploading");
       return;
     }
 
@@ -345,7 +383,7 @@ const TaskDetail = () => {
         });
       } catch (err) {
         if (err.code === 1) {
-          alert("Location access denied.");
+          toast.error("Location access denied.", { duration: 4000 });
           return;
         }
         const confirm = window.confirm("Complete without location?");
@@ -353,10 +391,10 @@ const TaskDetail = () => {
         await tasksAPI.completeTask(id, {});
       }
 
-      alert("Task completed successfully!");
-      navigate("/worker/tasks");
+      toast.success("Task completed successfully! 🎉", { duration: 4000 });
+      setTimeout(() => navigate("/worker/tasks"), 1000);
     } catch (error) {
-      alert("Failed to complete task", error);
+      toast.error(error.response?.data?.message || "Failed to complete task");
     }
   };
 
@@ -370,10 +408,17 @@ const TaskDetail = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  // Open Media Modal
+  const openMediaModal = (url, mediaType) => {
+    setSelectedMedia(url);
+    setSelectedMediaType(mediaType || "image");
+    setShowMediaModal(true);
+  };
+
   // Skeleton Loader Component with animated shimmer
   const SkeletonLoader = () => (
     <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-2" />
@@ -405,6 +450,15 @@ const TaskDetail = () => {
           animation: shimmer 2s infinite;
         }
       `}</style>
+
+      {/* Media Modal */}
+      <MediaModal
+        isOpen={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        mediaUrl={selectedMedia}
+        mediaType={selectedMediaType}
+        title={selectedMediaType === "video" ? "Video Preview" : "Image Preview"}
+      />
 
       <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate(-1)}>
         {t("common.back")}
@@ -443,7 +497,7 @@ const TaskDetail = () => {
           {referenceImages.length > 0 && (
             <Card title="📸 Work Reference Guide">
               {/* Progress Header */}
-              <div className="bg-linear-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
                 <div className="flex items-center gap-4">
                   <AlertCircle className="w-10 h-10 text-indigo-600" />
                   <div>
@@ -467,13 +521,15 @@ const TaskDetail = () => {
               <div className="space-y-12">
                 {referenceImages.map((ref, refIdx) => {
                   const qtn = ref.qtn || 1;
+                  const refMediaType = ref.mediaType || "image";
+                  
                   return (
                     <div
                       key={refIdx}
                       className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
                     >
                       {/* Header */}
-                      <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
+                      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <span className="text-3xl font-bold">
                             Reference #{refIdx + 1}
@@ -491,38 +547,58 @@ const TaskDetail = () => {
 
                       {/* NEW LAYOUT: Reference Left, QTN Rows Right */}
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 bg-gray-50">
-                        {/* Reference Image - Left Column (spans full height) */}
+                        {/* Reference Media - Left Column */}
                         <div className="lg:col-span-1 flex flex-col">
                           <h4 className="text-xl font-bold text-center mb-4 text-gray-800">
-                            Reference Image
+                            Reference {refMediaType === "video" ? "Video" : "Image"}
                           </h4>
-                          <img
-                            src={ref.url}
-                            alt="Reference"
-                            className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
-                            onClick={() => window.open(ref.url, "_blank")}
-                          />
+                          
+                          {refMediaType === "video" ? (
+                            <div className="relative group">
+                              <video
+                                src={ref.url}
+                                className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                                onClick={() => openMediaModal(ref.url, "video")}
+                                preload="metadata"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-xl">
+                                <Play className="w-16 h-16 text-white fill-white" />
+                              </div>
+                              <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-1">
+                                <Video className="w-4 h-4" />
+                                <span>VIDEO</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative group">
+                              <img
+                                src={ref.url}
+                                alt="Reference"
+                                className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                                onClick={() => openMediaModal(ref.url, "image")}
+                              />
+                              <div className="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-1">
+                                <ImageIcon className="w-4 h-4" />
+                                <span>IMAGE</span>
+                              </div>
+                            </div>
+                          )}
+                          
                           <p className="text-center mt-4 text-gray-600 font-medium">
                             Click to enlarge
                           </p>
                         </div>
 
-                        {/* QTN Locations - Right 2 Columns (stacked vertically) */}
+                        {/* QTN Locations - Right 2 Columns */}
                         <div className="lg:col-span-2 space-y-8">
                           {Array.from({ length: qtn }, (_, locIdx) => {
-                            const beforeKey = getUploadKey(
-                              "before",
-                              refIdx,
-                              locIdx
-                            );
-                            const afterKey = getUploadKey(
-                              "after",
-                              refIdx,
-                              locIdx
-                            );
-                            const isBeforeUploading =
-                              uploadingImages[beforeKey];
+                            const beforeKey = getUploadKey("before", refIdx, locIdx);
+                            const afterKey = getUploadKey("after", refIdx, locIdx);
+                            const isBeforeUploading = uploadingImages[beforeKey];
                             const isAfterUploading = uploadingImages[afterKey];
+
+                            const beforeData = previewsByRef[refIdx]?.[locIdx]?.before;
+                            const afterData = previewsByRef[refIdx]?.[locIdx]?.after;
 
                             return (
                               <div
@@ -543,68 +619,65 @@ const TaskDetail = () => {
                                     </label>
                                     {isBeforeUploading ? (
                                       <SkeletonLoader />
-                                    ) : previewsByRef[refIdx]?.[locIdx]
-                                        ?.before ? (
+                                    ) : beforeData ? (
                                       <div className="relative group">
-                                        <img
-                                          src={
-                                            previewsByRef[refIdx][locIdx].before
-                                              .url
-                                          }
-                                          alt="Before"
-                                          className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md"
-                                        />
-                                        {previewsByRef[refIdx][locIdx].before
-                                          .existing && (
-                                          <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
+                                        {beforeData.mediaType === "video" ? (
+                                          <div className="relative">
+                                            <video
+                                              src={beforeData.url}
+                                              className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md cursor-pointer hover:opacity-90 transition"
+                                              onClick={() => openMediaModal(beforeData.url, "video")}
+                                              preload="metadata"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-lg">
+                                              <Play className="w-12 h-12 text-white fill-white" />
+                                            </div>
+                                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                              VIDEO
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <img
+                                            src={beforeData.url}
+                                            alt="Before"
+                                            className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md cursor-pointer hover:opacity-90 transition"
+                                            onClick={() => openMediaModal(beforeData.url, "image")}
+                                          />
+                                        )}
+                                        
+                                        {beforeData.existing && (
+                                          <div className="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
                                             Uploaded
                                           </div>
                                         )}
-                                        {/* Delete Button - Only show if task is not completed */}
-                                        {task.status !== "completed" &&
-                                          previewsByRef[refIdx][locIdx].before
-                                            .existing && (
-                                            <DeleteImageButton
-                                              imageData={{
-                                                cloudinaryId:
-                                                  task.images.before.find(
-                                                    (img) =>
-                                                      img.url ===
-                                                      previewsByRef[refIdx][
-                                                        locIdx
-                                                      ].before.url
-                                                  )?.cloudinaryId,
-                                                mediaType:
-                                                  task.images.before.find(
-                                                    (img) =>
-                                                      img.url ===
-                                                      previewsByRef[refIdx][
-                                                        locIdx
-                                                      ].before.url
-                                                  )?.mediaType || "image",
-                                                _id: task.images.before.find(
-                                                  (img) =>
-                                                    img.url ===
-                                                    previewsByRef[refIdx][
-                                                      locIdx
-                                                    ].before.url
-                                                )?._id,
-                                              }}
-                                              entityType="task"
-                                              entityId={task._id}
-                                              imageType="before"
-                                              onSuccess={refreshTaskData}
-                                              position="top-right"
-                                              size="md"
-                                              showOnHover={true}
-                                            />
-                                          )}
+                                        
+                                        {/* Delete Button */}
+                                        {task.status !== "completed" && beforeData.existing && (
+                                          <DeleteImageButton
+                                            imageData={{
+                                              cloudinaryId: task.images.before.find(
+                                                (img) => img.url === beforeData.url
+                                              )?.cloudinaryId,
+                                              mediaType: beforeData.mediaType,
+                                              _id: task.images.before.find(
+                                                (img) => img.url === beforeData.url
+                                              )?._id,
+                                            }}
+                                            entityType="task"
+                                            entityId={task._id}
+                                            imageType="before"
+                                            onSuccess={refreshTaskData}
+                                            position="top-left"
+                                            size="md"
+                                            showOnHover={true}
+                                          />
+                                        )}
                                       </div>
                                     ) : (
                                       <label className="block cursor-pointer">
                                         <input
                                           type="file"
-                                          accept="image/*"
+                                          accept="image/*,video/*"
                                           className="hidden"
                                           disabled={task.status === "completed"}
                                           onChange={(e) =>
@@ -617,9 +690,15 @@ const TaskDetail = () => {
                                           }
                                         />
                                         <div className="h-56 border-4 border-dashed border-blue-400 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50 transition">
-                                          <Camera className="w-12 h-12 text-blue-500 mb-2" />
+                                          <div className="flex gap-3 mb-2">
+                                            <Camera className="w-10 h-10 text-blue-500" />
+                                            <Video className="w-10 h-10 text-blue-500" />
+                                          </div>
                                           <span className="text-blue-600 font-medium">
                                             Upload Before
+                                          </span>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            Image or Video
                                           </span>
                                         </div>
                                       </label>
@@ -633,68 +712,65 @@ const TaskDetail = () => {
                                     </label>
                                     {isAfterUploading ? (
                                       <SkeletonLoader />
-                                    ) : previewsByRef[refIdx]?.[locIdx]
-                                        ?.after ? (
+                                    ) : afterData ? (
                                       <div className="relative group">
-                                        <img
-                                          src={
-                                            previewsByRef[refIdx][locIdx].after
-                                              .url
-                                          }
-                                          alt="After"
-                                          className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md"
-                                        />
-                                        {previewsByRef[refIdx][locIdx].after
-                                          .existing && (
-                                          <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
+                                        {afterData.mediaType === "video" ? (
+                                          <div className="relative">
+                                            <video
+                                              src={afterData.url}
+                                              className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md cursor-pointer hover:opacity-90 transition"
+                                              onClick={() => openMediaModal(afterData.url, "video")}
+                                              preload="metadata"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-lg">
+                                              <Play className="w-12 h-12 text-white fill-white" />
+                                            </div>
+                                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                              VIDEO
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <img
+                                            src={afterData.url}
+                                            alt="After"
+                                            className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md cursor-pointer hover:opacity-90 transition"
+                                            onClick={() => openMediaModal(afterData.url, "image")}
+                                          />
+                                        )}
+                                        
+                                        {afterData.existing && (
+                                          <div className="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
                                             Uploaded
                                           </div>
                                         )}
+                                        
                                         {/* Delete Button */}
-                                        {task.status !== "completed" &&
-                                          previewsByRef[refIdx][locIdx].after
-                                            .existing && (
-                                            <DeleteImageButton
-                                              imageData={{
-                                                cloudinaryId:
-                                                  task.images.after.find(
-                                                    (img) =>
-                                                      img.url ===
-                                                      previewsByRef[refIdx][
-                                                        locIdx
-                                                      ].after.url
-                                                  )?.cloudinaryId,
-                                                mediaType:
-                                                  task.images.after.find(
-                                                    (img) =>
-                                                      img.url ===
-                                                      previewsByRef[refIdx][
-                                                        locIdx
-                                                      ].after.url
-                                                  )?.mediaType || "image",
-                                                _id: task.images.after.find(
-                                                  (img) =>
-                                                    img.url ===
-                                                    previewsByRef[refIdx][
-                                                      locIdx
-                                                    ].after.url
-                                                )?._id,
-                                              }}
-                                              entityType="task"
-                                              entityId={task._id}
-                                              imageType="after"
-                                              onSuccess={refreshTaskData}
-                                              position="top-right"
-                                              size="md"
-                                              showOnHover={true}
-                                            />
-                                          )}
+                                        {task.status !== "completed" && afterData.existing && (
+                                          <DeleteImageButton
+                                            imageData={{
+                                              cloudinaryId: task.images.after.find(
+                                                (img) => img.url === afterData.url
+                                              )?.cloudinaryId,
+                                              mediaType: afterData.mediaType,
+                                              _id: task.images.after.find(
+                                                (img) => img.url === afterData.url
+                                              )?._id,
+                                            }}
+                                            entityType="task"
+                                            entityId={task._id}
+                                            imageType="after"
+                                            onSuccess={refreshTaskData}
+                                            position="top-left"
+                                            size="md"
+                                            showOnHover={true}
+                                          />
+                                        )}
                                       </div>
                                     ) : (
                                       <label className="block cursor-pointer">
                                         <input
                                           type="file"
-                                          accept="image/*"
+                                          accept="image/*,video/*"
                                           className="hidden"
                                           disabled={task.status === "completed"}
                                           onChange={(e) =>
@@ -707,9 +783,15 @@ const TaskDetail = () => {
                                           }
                                         />
                                         <div className="h-56 border-4 border-dashed border-green-400 rounded-lg flex flex-col items-center justify-center hover:bg-green-50 transition">
-                                          <Camera className="w-12 h-12 text-green-500 mb-2" />
+                                          <div className="flex gap-3 mb-2">
+                                            <Camera className="w-10 h-10 text-green-500" />
+                                            <Video className="w-10 h-10 text-green-500" />
+                                          </div>
                                           <span className="text-green-600 font-medium">
                                             Upload After
+                                          </span>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            Image or Video
                                           </span>
                                         </div>
                                       </label>
@@ -721,27 +803,21 @@ const TaskDetail = () => {
                                 <div className="mt-4 flex justify-center gap-6 text-md">
                                   <span
                                     className={
-                                      previewsByRef[refIdx]?.[locIdx]?.before
+                                      beforeData
                                         ? "text-green-600 font-bold"
                                         : "text-gray-400"
                                     }
                                   >
-                                    {previewsByRef[refIdx]?.[locIdx]?.before
-                                      ? "✓"
-                                      : "○"}{" "}
-                                    Before
+                                    {beforeData ? "✓" : "○"} Before
                                   </span>
                                   <span
                                     className={
-                                      previewsByRef[refIdx]?.[locIdx]?.after
+                                      afterData
                                         ? "text-green-600 font-bold"
                                         : "text-gray-400"
                                     }
                                   >
-                                    {previewsByRef[refIdx]?.[locIdx]?.after
-                                      ? "✓"
-                                      : "○"}{" "}
-                                    After
+                                    {afterData ? "✓" : "○"} After
                                   </span>
                                 </div>
                               </div>
@@ -755,7 +831,7 @@ const TaskDetail = () => {
               </div>
 
               {/* Final Progress */}
-              <div className="mt-10 bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
+              <div className="mt-10 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
                 <p className="text-3xl font-bold text-green-800">
                   {beforeCount + afterCount} / {totalLocations * 2} Photos
                   Completed
@@ -817,10 +893,11 @@ const TaskDetail = () => {
                       </button>
                       {task.status !== "completed" && (
                         <button
-                          onClick={() =>
-                            window.confirm("Remove this material?") &&
-                            handleRemoveMaterial(idx)
-                          }
+                          onClick={() => {
+                            if (window.confirm("Remove this material?")) {
+                              handleRemoveMaterial(idx);
+                            }
+                          }}
                           className="ml-auto text-red-600 hover:text-red-700"
                         >
                           <X className="w-6 h-6" />
@@ -933,4 +1010,5 @@ const TaskDetail = () => {
     </div>
   );
 };
+
 export default TaskDetail;
