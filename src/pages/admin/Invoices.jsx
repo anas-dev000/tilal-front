@@ -94,7 +94,7 @@ const Invoices = () => {
     { header: t("admin.invoices.invoiceNumber"), accessor: "invoiceNumber" },
     {
       header: t("admin.invoices.client"),
-      render: (row) => row.client?.name || "N/A",
+      render: (row) => row.client?.name || "Not Found",
     },
     {
       header: t("admin.invoices.amount"),

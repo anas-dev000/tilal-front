@@ -193,7 +193,7 @@ const Tasks = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-gray-900">
-                          {task.site?.name || "N/A"}
+                          {task.site?.name || "Not Found"}
                         </span>
                         {task.sections && task.sections.length > 0 && (
                           <span className="flex items-center gap-1 text-xs text-primary-600">

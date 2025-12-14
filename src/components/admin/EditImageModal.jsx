@@ -1,54 +1,54 @@
 // src/components/admin/EditImageModal.jsx - ✅ WITH FULL VIDEO SUPPORT
-import { useState, useEffect } from 'react';
-import { X, Save, Image as ImageIcon, Play, Video } from 'lucide-react';
-import Modal from '../common/Modal';
-import Button from '../common/Button';
-import Input from '../common/Input';
+import { useState, useEffect } from "react";
+import { X, Save, Image as ImageIcon, Play, Video } from "lucide-react";
+import Modal from "../common/Modal";
+import Button from "../common/Button";
+import Input from "../common/Input";
 
 const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
   const [formData, setFormData] = useState({
     qtn: 1,
-    caption: '',
-    description: ''
+    caption: "",
+    description: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (image) {
       setFormData({
         qtn: image.qtn || 1,
-        caption: image.caption || '',
-        description: image.description || ''
+        caption: image.caption || "",
+        description: image.description || "",
       });
     }
   }, [image]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (formData.qtn < 1) {
-      setError('Quantity must be at least 1');
+      setError("Quantity must be at least 1");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       await onSave(formData);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update media');
+      setError(err.response?.data?.message || "Failed to update media");
     } finally {
       setLoading(false);
     }
@@ -56,13 +56,13 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
 
   if (!image) return null;
 
-  const isVideo = image.mediaType === 'video';
+  const isVideo = image.mediaType === "video";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Edit Reference ${isVideo ? 'Video' : 'Image'}`}
+      title={`Edit Reference ${isVideo ? "Video" : "Image"}`}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -89,7 +89,7 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
                   <Video className="w-4 h-4" />
                   <span>VIDEO</span>
                 </div>
-                
+
                 {/* Duration Badge */}
                 {image.duration && (
                   <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-semibold">
@@ -105,7 +105,8 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
                   className="w-full h-auto max-h-80 object-contain"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
+                    e.target.src =
+                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
                   }}
                 />
                 {/* Image Badge */}
@@ -124,13 +125,13 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
             <div>
               <p className="text-gray-600">Type</p>
               <p className="font-semibold text-gray-900">
-                {isVideo ? '🎬 Video' : '🖼️ Image'}
+                {isVideo ? "🎬 Video" : "🖼️ Image"}
               </p>
             </div>
             <div>
               <p className="text-gray-600">Format</p>
               <p className="font-semibold text-gray-900 uppercase">
-                {image.format || 'N/A'}
+                {image.format || "Not Found"}
               </p>
             </div>
             {isVideo && image.duration && (
@@ -179,7 +180,11 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
             name="caption"
             value={formData.caption}
             onChange={handleChange}
-            placeholder={isVideo ? "e.g., Main Garden Overview Video" : "e.g., Main Palm Tree"}
+            placeholder={
+              isVideo
+                ? "e.g., Main Garden Overview Video"
+                : "e.g., Main Palm Tree"
+            }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
@@ -194,9 +199,10 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
             value={formData.description}
             onChange={handleChange}
             rows={4}
-            placeholder={isVideo 
-              ? "Detailed description of what the video shows..."
-              : "Detailed description of the location or plant..."
+            placeholder={
+              isVideo
+                ? "Detailed description of what the video shows..."
+                : "Detailed description of the location or plant..."
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           />
@@ -212,12 +218,8 @@ const EditImageModal = ({ isOpen, onClose, image, onSave }) => {
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            icon={Save}
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
+          <Button type="submit" disabled={loading} icon={Save}>
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </form>

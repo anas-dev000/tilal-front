@@ -33,8 +33,8 @@ const WorkerTaskList = ({ tasks }) => {
               <div>
                 <h4 className="font-medium text-gray-900">{task.title}</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  Site: {task.site?.name || "N/A"} • Client:{" "}
-                  {task.client?.name || "N/A"}
+                  Site: {task.site?.name || "Not Found"} • Client:{" "}
+                  {task.client?.name || "Not Found"}
                 </p>
               </div>
 

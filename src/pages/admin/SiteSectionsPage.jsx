@@ -141,7 +141,7 @@ const SiteSectionsPage = () => {
               </h1>
               <p className="text-gray-600 flex items-center gap-2">
                 <span className="font-medium">Client:</span>
-                {site.client?.name || "N/A"}
+                {site.client?.name || "Not Found"}
               </p>
             </div>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">

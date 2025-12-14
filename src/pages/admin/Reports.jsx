@@ -1,15 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { 
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from 'recharts';
-import { Calendar, TrendingUp, Users, DollarSign, Package, CheckCircle } from 'lucide-react';
-import Card from '../../components/common/Card';
-import StatCard from '../../components/common/StatCard';
-import Button from '../../components/common/Button';
-import Loading from '../../components/common/Loading';
-import { reportsAPI } from '../../services/api';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  Calendar,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Package,
+  CheckCircle,
+} from "lucide-react";
+import Card from "../../components/common/Card";
+import StatCard from "../../components/common/StatCard";
+import Button from "../../components/common/Button";
+import Loading from "../../components/common/Loading";
+import { reportsAPI } from "../../services/api";
 
 const Reports = () => {
   const { t } = useTranslation();
@@ -30,7 +48,7 @@ const Reports = () => {
         reportsAPI.getDashboardStats(),
         reportsAPI.getWeeklyReport(),
         reportsAPI.getMonthlyReport(),
-        reportsAPI.getWorkerPerformance()
+        reportsAPI.getWorkerPerformance(),
       ]);
 
       setDashboardStats(statsRes.data.data);
@@ -38,7 +56,7 @@ const Reports = () => {
       setMonthlyReport(monthlyRes.data.data);
       setWorkerPerformance(workersRes.data.data);
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      console.error("Error fetching reports:", error);
     } finally {
       setLoading(false);
     }
@@ -49,14 +67,19 @@ const Reports = () => {
   }
 
   // Chart Colors
-  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   // Task Status Data
-  const taskStatusData = dashboardStats ? [
-    { name: t('status.completed'), value: dashboardStats.tasks.completed },
-    { name: t('status.inProgress'), value: dashboardStats.tasks.inProgress },
-    { name: t('status.pending'), value: dashboardStats.tasks.pending }
-  ] : [];
+  const taskStatusData = dashboardStats
+    ? [
+        { name: t("status.completed"), value: dashboardStats.tasks.completed },
+        {
+          name: t("status.inProgress"),
+          value: dashboardStats.tasks.inProgress,
+        },
+        { name: t("status.pending"), value: dashboardStats.tasks.pending },
+      ]
+    : [];
 
   // Monthly Revenue Data
   const revenueData = monthlyReport?.revenueByCategory || [];
@@ -67,7 +90,7 @@ const Reports = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            {t('admin.reports.title')}
+            {t("admin.reports.title")}
           </h1>
           <p className="text-gray-600 mt-1">Comprehensive business analytics</p>
         </div>
@@ -84,31 +107,31 @@ const Reports = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
-          title={t('admin.stats.totalClients')}
+          title={t("admin.stats.totalClients")}
           value={dashboardStats?.clients.total || 0}
           icon={Users}
           color="blue"
         />
         <StatCard
-          title={t('admin.stats.totalWorkers')}
+          title={t("admin.stats.totalWorkers")}
           value={dashboardStats?.workers.total || 0}
           icon={Users}
           color="green"
         />
         <StatCard
-          title={t('admin.stats.activeTasks')}
+          title={t("admin.stats.activeTasks")}
           value={dashboardStats?.tasks.inProgress || 0}
           icon={CheckCircle}
           color="yellow"
         />
         <StatCard
-          title={t('admin.stats.completedTasks')}
+          title={t("admin.stats.completedTasks")}
           value={dashboardStats?.tasks.completed || 0}
           icon={CheckCircle}
           color="primary"
         />
         <StatCard
-          title={t('admin.stats.totalRevenue')}
+          title={t("admin.stats.totalRevenue")}
           value={`$${(dashboardStats?.revenue.total || 0).toLocaleString()}`}
           icon={DollarSign}
           color="green"
@@ -124,7 +147,7 @@ const Reports = () => {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Completion Rate */}
-        <Card title={t('admin.reports.taskCompletion')}>
+        <Card title={t("admin.reports.taskCompletion")}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -132,22 +155,28 @@ const Reports = () => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name}: ${(percent * 100).toFixed(0)}%`
+                }
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
               >
                 {taskStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          
+
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Completion Rate: <span className="font-bold text-green-600">
+              Completion Rate:{" "}
+              <span className="font-bold text-green-600">
                 {dashboardStats?.tasks.completionRate || 0}%
               </span>
             </p>
@@ -155,7 +184,7 @@ const Reports = () => {
         </Card>
 
         {/* Revenue by Category */}
-        <Card title={t('admin.reports.revenueAnalysis')}>
+        <Card title={t("admin.reports.revenueAnalysis")}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -170,7 +199,7 @@ const Reports = () => {
       </div>
 
       {/* Worker Performance */}
-      <Card title={t('admin.reports.workerPerformance')}>
+      <Card title={t("admin.reports.workerPerformance")}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -207,7 +236,9 @@ const Reports = () => {
                         <span className="text-yellow-500 mr-1">★</span>
                         {worker.avgRating.toFixed(1)}
                       </span>
-                    ) : 'N/A'}
+                    ) : (
+                      "Not Found"
+                    )}
                   </td>
                 </tr>
               ))}
