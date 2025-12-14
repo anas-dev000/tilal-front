@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/AdminTaskDetail.jsx - ✅ WITH VIDEO SUPPORT
+// frontend/src/pages/admin/AdminTaskDetail.jsx - ✅ WITH QTN SUPPORT
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,6 @@ import {
   ThumbsUp,
   AlertTriangle,
   Play,
-  Video,
 } from "lucide-react";
 import { tasksAPI } from "../../services/api";
 import Card from "../../components/common/Card";
@@ -33,13 +32,14 @@ const AdminTaskDetail = () => {
   const [reviewComments, setReviewComments] = useState("");
 
   const [referenceImages, setReferenceImages] = useState([]);
-  const [beforePreviews, setBeforePreviews] = useState([]);
-  const [afterPreviews, setAfterPreviews] = useState([]);
 
-  // ✅ Media Modal State
+  // ✅ QTN-Based Previews Structure
+  const [previewsByRef, setPreviewsByRef] = useState({});
+
+  // Media Modal State
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [selectedMediaType, setSelectedMediaType] = useState('image');
-  const [selectedMediaTitle, setSelectedMediaTitle] = useState('');
+  const [selectedMediaType, setSelectedMediaType] = useState("image");
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
 
   const fetchTask = useCallback(async () => {
     try {
@@ -54,33 +54,60 @@ const AdminTaskDetail = () => {
       if (data.referenceImages?.length > 0) {
         setReferenceImages(data.referenceImages);
 
-        const refCount = data.referenceImages.length;
-        const loadedBefore = new Array(refCount).fill(null);
-        const loadedAfter = new Array(refCount).fill(null);
+        // ✅ Initialize QTN-based preview structure
+        const initialPreviews = {};
 
-        data.images?.before?.forEach((img, idx) => {
-          if (idx < refCount)
-            loadedBefore[idx] = { 
-              url: img.url, 
-              _id: img._id,
-              mediaType: img.mediaType || 'image',
-              duration: img.duration
-            };
+        data.referenceImages.forEach((refImg, refIndex) => {
+          const qtn = refImg.qtn || 1;
+          initialPreviews[refIndex] = {};
+
+          for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+            initialPreviews[refIndex][qtnIdx] = { before: null, after: null };
+          }
         });
 
-        data.images?.after?.forEach((img, idx) => {
-          if (idx < refCount)
-            loadedAfter[idx] = {
-              url: img.url,
-              _id: img._id,
-              mediaType: img.mediaType || 'image',
-              duration: img.duration,
-              isVisibleToClient: img.isVisibleToClient || false,
-            };
-        });
+        // ✅ Load existing uploaded images
+        if (data.images?.before) {
+          let globalIndex = 0;
+          data.referenceImages.forEach((refImg, refIndex) => {
+            const qtn = refImg.qtn || 1;
+            for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+              if (data.images.before[globalIndex]) {
+                initialPreviews[refIndex][qtnIdx].before = {
+                  url: data.images.before[globalIndex].url,
+                  _id: data.images.before[globalIndex]._id,
+                  mediaType:
+                    data.images.before[globalIndex].mediaType || "image",
+                  duration: data.images.before[globalIndex].duration,
+                };
+              }
+              globalIndex++;
+            }
+          });
+        }
 
-        setBeforePreviews(loadedBefore);
-        setAfterPreviews(loadedAfter);
+        if (data.images?.after) {
+          let globalIndex = 0;
+          data.referenceImages.forEach((refImg, refIndex) => {
+            const qtn = refImg.qtn || 1;
+            for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+              if (data.images.after[globalIndex]) {
+                initialPreviews[refIndex][qtnIdx].after = {
+                  url: data.images.after[globalIndex].url,
+                  _id: data.images.after[globalIndex]._id,
+                  mediaType:
+                    data.images.after[globalIndex].mediaType || "image",
+                  duration: data.images.after[globalIndex].duration,
+                  isVisibleToClient:
+                    data.images.after[globalIndex].isVisibleToClient || false,
+                };
+              }
+              globalIndex++;
+            }
+          });
+        }
+
+        setPreviewsByRef(initialPreviews);
       }
     } catch (error) {
       console.error("Error fetching task:", error);
@@ -112,7 +139,6 @@ const AdminTaskDetail = () => {
       });
 
       setReviewStatus(status);
-
       alert(`Task ${status} successfully ✅`);
       fetchTask();
     } catch (error) {
@@ -140,10 +166,9 @@ const AdminTaskDetail = () => {
     }
   };
 
-  // ✅ Handle media click
   const handleMediaClick = (media, title) => {
     setSelectedMedia(media.url);
-    setSelectedMediaType(media.mediaType || 'image');
+    setSelectedMediaType(media.mediaType || "image");
     setSelectedMediaTitle(title);
   };
 
@@ -161,11 +186,7 @@ const AdminTaskDetail = () => {
 
   return (
     <div className="space-y-6">
-      <Button
-        variant="secondary"
-        icon={ArrowLeft}
-        onClick={() => navigate(-1)}
-      >
+      <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate(-1)}>
         Back
       </Button>
 
@@ -209,18 +230,18 @@ const AdminTaskDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* ✅ CLIENT FEEDBACK SECTION */}
+          {/* Client Feedback Section */}
           {task.feedback && (
             <Card title="💬 Client Feedback">
               <div
-                className={`rounded-xl p-5 border-2 border-gray-50 ${
+                className={`rounded-xl p-5 border-2 ${
                   task.feedback.isSatisfiedOnly
-                    ? "bg-linear-to-br from-green-50 to-emerald-50 "
+                    ? "bg-green-50 border-green-200"
                     : task.feedback.rating >= 4
-                    ? "bg-linear-to-br from-green-50 to-emerald-50 "
+                    ? "bg-green-50 border-green-200"
                     : task.feedback.rating === 3
-                    ? "bg-linear-to-br from-yellow-50 to-amber-50 "
-                    : "bg-linear-to-br from-red-50 to-rose-50 "
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-red-50 border-red-200"
                 }`}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -277,22 +298,6 @@ const AdminTaskDetail = () => {
                   </div>
                 )}
 
-                {task.feedback.imageNumber && (
-                  <div className="bg-orange-100 border-l-4 border-orange-500 rounded p-3 mb-4">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-orange-900">
-                          Issue Reported on Image
-                        </p>
-                        <p className="text-sm text-orange-800">
-                          Image #{task.feedback.imageNumber} needs attention
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {task.feedback.image && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-2">
@@ -310,7 +315,7 @@ const AdminTaskDetail = () => {
             </Card>
           )}
 
-          {/* Site & Section Info */}
+          {/* Site Info */}
           {task.site && (
             <Card title="🏢 Site Information">
               <div className="space-y-3">
@@ -326,7 +331,7 @@ const AdminTaskDetail = () => {
                       <MapPin className="w-10 h-10 text-primary-400" />
                     </div>
                   )}
-                  <div className="flex-1 flex flex-col space-y-1">
+                  <div className="flex-1">
                     <h3 className="font-semibold text-lg text-gray-900">
                       {task.site.name}
                     </h3>
@@ -338,28 +343,11 @@ const AdminTaskDetail = () => {
                     </p>
                   </div>
                 </div>
-
-                {task.section && referenceImages.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">
-                        Section: {task.section.name || "Specific Section"}
-                      </h4>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-800">
-                        <strong>
-                          {referenceImages.length} Reference Media Files
-                        </strong>
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
           )}
 
-          {/* GPS Tracking Card */}
+          {/* GPS Tracking */}
           {(task.startLocation || task.endLocation) && (
             <Card title="🌍 GPS Tracking">
               <div className="space-y-4">
@@ -408,43 +396,32 @@ const AdminTaskDetail = () => {
                     </a>
                   </div>
                 )}
-
-                {task.startLocation && task.endLocation && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                    <p className="text-sm text-purple-800 font-medium">
-                      <MapPin className="w-4 h-4 inline mr-1" />
-                      View both locations on map:
-                    </p>
-                    <a
-                      href={`https://www.google.com/maps/dir/${task.startLocation.coordinates.latitude},${task.startLocation.coordinates.longitude}/${task.endLocation.coordinates.latitude},${task.endLocation.coordinates.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-purple-600 hover:text-purple-800 underline text-sm"
-                    >
-                      Show Route on Google Maps →
-                    </a>
-                  </div>
-                )}
               </div>
             </Card>
           )}
 
-          {/* Reference Images/Videos with Before/After */}
+          {/* ✅ QTN-Based Work Documentation */}
           {referenceImages.length > 0 && (
             <Card title="📸 Work Documentation">
               <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800 font-medium">
+                    Total Required Photos:{" "}
+                    {referenceImages.reduce((sum, r) => sum + (r.qtn || 1), 0)}{" "}
+                    × Before + After
+                  </p>
+                </div>
+
                 {referenceImages.map((refMedia, refIndex) => {
-                  const isRefVideo = refMedia.mediaType === 'video';
-                  const beforeMedia = beforePreviews[refIndex];
-                  const afterMedia = afterPreviews[refIndex];
-                  const isBeforeVideo = beforeMedia?.mediaType === 'video';
-                  const isAfterVideo = afterMedia?.mediaType === 'video';
+                  const qtn = refMedia.qtn || 1;
+                  const isRefVideo = refMedia.mediaType === "video";
 
                   return (
                     <div
                       key={refIndex}
                       className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200"
                     >
+                      {/* Header */}
                       <div className="flex items-center gap-2 mb-3">
                         <span className="bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded">
                           #{refIndex + 1}
@@ -452,161 +429,221 @@ const AdminTaskDetail = () => {
                         <h4 className="font-semibold text-gray-900">
                           {refMedia.caption || `Work Area ${refIndex + 1}`}
                         </h4>
+                        {qtn > 1 && (
+                          <span className="ml-auto bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            {qtn} Locations
+                          </span>
+                        )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Reference */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            📋 Reference
-                          </label>
-                          <div 
-                            className="relative h-40 bg-gray-100 rounded-lg border-2 border-primary-300 overflow-hidden cursor-pointer hover:opacity-90"
-                            onClick={() => handleMediaClick(refMedia, `Reference ${refIndex + 1}`)}
-                          >
-                            {isRefVideo ? (
-                              <>
-                                <video
-                                  src={refMedia.url}
-                                  className="w-full h-full object-cover"
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                  <Play className="w-10 h-10 text-white fill-white" />
-                                </div>
-                              </>
-                            ) : (
-                              <img
+                      {/* Reference Media */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          📋 Reference {isRefVideo ? "Video" : "Image"}
+                        </label>
+                        <div
+                          className="relative h-48 bg-gray-100 rounded-lg border-2 border-primary-300 overflow-hidden cursor-pointer hover:opacity-90"
+                          onClick={() =>
+                            handleMediaClick(
+                              refMedia,
+                              `Reference ${refIndex + 1}`
+                            )
+                          }
+                        >
+                          {isRefVideo ? (
+                            <>
+                              <video
                                 src={refMedia.url}
-                                alt={`Reference ${refIndex + 1}`}
                                 className="w-full h-full object-cover"
+                                preload="metadata"
                               />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Before */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            📷 Before Work
-                          </label>
-                          {beforeMedia ? (
-                            <div 
-                              className="relative h-40 bg-gray-100 rounded-lg border-2 border-blue-300 overflow-hidden cursor-pointer hover:opacity-90"
-                              onClick={() => handleMediaClick(beforeMedia, `Before ${refIndex + 1}`)}
-                            >
-                              {isBeforeVideo ? (
-                                <>
-                                  <video
-                                    src={beforeMedia.url}
-                                    className="w-full h-full object-cover"
-                                    preload="metadata"
-                                  />
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                    <Play className="w-10 h-10 text-white fill-white" />
-                                  </div>
-                                </>
-                              ) : (
-                                <img
-                                  src={beforeMedia.url}
-                                  alt={`Before ${refIndex + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              )}
-                              <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                ✅ Uploaded
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                <Play className="w-12 h-12 text-white fill-white" />
                               </div>
-                            </div>
+                            </>
                           ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">
-                                Not uploaded
-                              </span>
-                            </div>
+                            <img
+                              src={refMedia.url}
+                              alt={`Reference ${refIndex + 1}`}
+                              className="w-full h-full object-cover"
+                            />
                           )}
                         </div>
+                      </div>
 
-                        {/* After */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            ✅ After Work
-                          </label>
-                          {afterMedia ? (
-                            <div className="relative group">
-                              <div 
-                                className="relative h-40 bg-gray-100 rounded-lg border-2 border-green-300 overflow-hidden cursor-pointer hover:opacity-90"
-                                onClick={() => handleMediaClick(afterMedia, `After ${refIndex + 1}`)}
-                              >
-                                {isAfterVideo ? (
-                                  <>
-                                    <video
-                                      src={afterMedia.url}
-                                      className="w-full h-full object-cover"
-                                      preload="metadata"
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                      <Play className="w-10 h-10 text-white fill-white" />
+                      {/* ✅ QTN-Based Upload Grid */}
+                      <div className="space-y-4">
+                        {Array.from({ length: qtn }).map((_, qtnIdx) => {
+                          const beforeMedia =
+                            previewsByRef[refIndex]?.[qtnIdx]?.before;
+                          const afterMedia =
+                            previewsByRef[refIndex]?.[qtnIdx]?.after;
+                          const isBeforeVideo =
+                            beforeMedia?.mediaType === "video";
+                          const isAfterVideo =
+                            afterMedia?.mediaType === "video";
+
+                          return (
+                            <div
+                              key={qtnIdx}
+                              className="bg-white rounded-lg p-3 border border-gray-300"
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                                  Location #{qtnIdx + 1}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Before */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    📷 Before Work
+                                  </label>
+                                  {beforeMedia ? (
+                                    <div
+                                      className="relative h-32 bg-gray-100 rounded-lg border-2 border-blue-300 overflow-hidden cursor-pointer hover:opacity-90"
+                                      onClick={() =>
+                                        handleMediaClick(
+                                          beforeMedia,
+                                          `Before ${refIndex + 1}-${qtnIdx + 1}`
+                                        )
+                                      }
+                                    >
+                                      {isBeforeVideo ? (
+                                        <>
+                                          <video
+                                            src={beforeMedia.url}
+                                            className="w-full h-full object-cover"
+                                            preload="metadata"
+                                          />
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                            <Play className="w-8 h-8 text-white fill-white" />
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <img
+                                          src={beforeMedia.url}
+                                          alt={`Before ${refIndex}-${qtnIdx}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      )}
+                                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                        ✅ Uploaded
+                                      </div>
                                     </div>
-                                  </>
-                                ) : (
-                                  <img
-                                    src={afterMedia.url}
-                                    alt={`After ${refIndex + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                )}
-                                <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  ✅ Uploaded
+                                  ) : (
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center">
+                                      <span className="text-xs text-gray-400">
+                                        Not uploaded
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* After */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    ✅ After Work
+                                  </label>
+                                  {afterMedia ? (
+                                    <div className="relative group">
+                                      <div
+                                        className="relative h-32 bg-gray-100 rounded-lg border-2 border-green-300 overflow-hidden cursor-pointer hover:opacity-90"
+                                        onClick={() =>
+                                          handleMediaClick(
+                                            afterMedia,
+                                            `After ${refIndex + 1}-${
+                                              qtnIdx + 1
+                                            }`
+                                          )
+                                        }
+                                      >
+                                        {isAfterVideo ? (
+                                          <>
+                                            <video
+                                              src={afterMedia.url}
+                                              className="w-full h-full object-cover"
+                                              preload="metadata"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                              <Play className="w-8 h-8 text-white fill-white" />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <img
+                                            src={afterMedia.url}
+                                            alt={`After ${refIndex}-${qtnIdx}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        )}
+                                        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                          ✅ Uploaded
+                                        </div>
+                                      </div>
+
+                                      {/* Toggle Visibility */}
+                                      <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <label className="flex items-center gap-2 text-xs cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={
+                                              afterMedia.isVisibleToClient
+                                            }
+                                            onChange={() =>
+                                              toggleImageVisibility(
+                                                afterMedia._id,
+                                                "after"
+                                              )
+                                            }
+                                            className="w-4 h-4 text-green-600"
+                                          />
+                                          <span className="font-medium text-gray-700">
+                                            👁️ Visible to Client
+                                          </span>
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center">
+                                      <span className="text-xs text-gray-400">
+                                        Not uploaded
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-
-                              {/* Toggle Visibility to Client */}
-                              <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={afterMedia.isVisibleToClient}
-                                    onChange={() =>
-                                      toggleImageVisibility(
-                                        afterMedia._id,
-                                        "after"
-                                      )
-                                    }
-                                    className="w-4 h-4 text-green-600"
-                                  />
-                                  <span className="font-medium text-gray-700">
-                                    👁️ Visible to Client
-                                  </span>
-                                </label>
-                              </div>
                             </div>
-                          ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">
-                                Not uploaded
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
                 })}
 
+                {/* Overall Progress */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium text-blue-800">
-                      Completion: {beforePreviews.filter((p) => p).length}/
-                      {referenceImages.length} Before •{" "}
-                      {afterPreviews.filter((p) => p).length}/
-                      {referenceImages.length} After
-                    </span>
-                    {beforePreviews.filter((p) => p).length ===
-                      referenceImages.length &&
-                      afterPreviews.filter((p) => p).length ===
-                        referenceImages.length && (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      Completion:{" "}
+                      {Object.values(previewsByRef).reduce(
+                        (sum, ref) =>
+                          sum +
+                          Object.values(ref).filter(
+                            (qtn) => qtn.before && qtn.after
+                          ).length,
+                        0
                       )}
+                      /
+                      {referenceImages.reduce(
+                        (sum, r) => sum + (r.qtn || 1),
+                        0
+                      )}{" "}
+                      Complete
+                    </span>
+                    {Object.values(previewsByRef).every((ref) =>
+                      Object.values(ref).every((qtn) => qtn.before && qtn.after)
+                    ) && <CheckCircle className="w-5 h-5 text-green-600" />}
                   </div>
                 </div>
               </div>
@@ -684,13 +721,6 @@ const AdminTaskDetail = () => {
                   {saving ? "..." : "❌ Reject"}
                 </Button>
               </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-800">
-                  <strong>Note:</strong> Approving will mark task as completed.
-                  Rejecting will send it back to worker.
-                </p>
-              </div>
             </div>
           </Card>
         </div>
@@ -759,13 +789,13 @@ const AdminTaskDetail = () => {
         </div>
       </div>
 
-      {/* ✅ Media Modal */}
+      {/* Media Modal */}
       <MediaModal
         isOpen={!!selectedMedia}
         onClose={() => {
           setSelectedMedia(null);
-          setSelectedMediaType('image');
-          setSelectedMediaTitle('');
+          setSelectedMediaType("image");
+          setSelectedMediaTitle("");
         }}
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}

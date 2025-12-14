@@ -1,4 +1,4 @@
-// frontend/src/pages/worker/TaskDetail.jsx - FINAL COMPLETE VERSION
+// frontend/src/pages/worker/TaskDetail.jsx - WITH SKELETON & PARALLEL UPLOADS
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,8 @@ import {
   MapPin,
   Layers,
   Image as ImageIcon,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { tasksAPI, inventoryAPI } from "../../services/api";
 import Card from "../../components/common/Card";
@@ -23,122 +25,184 @@ const TaskDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Reference-Based Image Upload
-  const [beforeImages, setBeforeImages] = useState([]);
-  const [afterImages, setAfterImages] = useState([]);
-  const [beforePreviews, setBeforePreviews] = useState([]);
-  const [afterPreviews, setAfterPreviews] = useState([]);
-  const [uploading, setUploading] = useState(false);
+  // Track uploading state per image location
+  const [uploadingImages, setUploadingImages] = useState({});
 
-  // ✅ Reference Images from Section
-  const [referenceImages, setReferenceImages] = useState([]);
-
-  // Materials Management
+  // Materials
   const [availableInventory, setAvailableInventory] = useState([]);
   const [selectedMaterials, setSelectedMaterials] = useState([]);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
 
+  // QTN-Based Previews
+  const [previewsByRef, setPreviewsByRef] = useState({});
+  const [referenceImages, setReferenceImages] = useState([]);
+
   useEffect(() => {
-    const fetchTask = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await tasksAPI.getTask(id);
-        setTask(response.data.data);
+        const [taskRes, invRes] = await Promise.all([
+          tasksAPI.getTask(id),
+          inventoryAPI.getInventory(),
+        ]);
+
+        const taskData = taskRes.data.data;
+        setTask(taskData);
+        setAvailableInventory(invRes.data.data || []);
+
+        initializeQTNStructure(taskData);
       } catch (error) {
-        console.error("Error fetching task:", error);
+        console.error("Error loading task:", error);
         alert("Failed to load task details");
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchInventory = async () => {
-      try {
-        const response = await inventoryAPI.getInventory();
-        setAvailableInventory(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching inventory:", error);
-      }
-    };
-
-    fetchTask();
-    fetchInventory();
+    fetchData();
   }, [id]);
 
-  useEffect(() => {
-    if (task) {
-      console.log("Task Status:", task.status);
-
-      // ✅ NOW USE task.referenceImages directly (snapshotted)
-      if (task.referenceImages && task.referenceImages.length > 0) {
-        setReferenceImages(task.referenceImages);
-
-        const refCount = task.referenceImages.length;
-        setBeforePreviews(new Array(refCount).fill(null));
-        setAfterPreviews(new Array(refCount).fill(null));
-
-        // Load existing before/after if any
-        if (task.images?.before) {
-          const loadedBefore = [...new Array(refCount).fill(null)];
-          task.images.before.forEach((img, idx) => {
-            if (idx < refCount) {
-              loadedBefore[idx] = { url: img.url, existing: true };
-            }
-          });
-          setBeforePreviews(loadedBefore);
-        }
-
-        if (task.images?.after) {
-          const loadedAfter = [...new Array(refCount).fill(null)];
-          task.images.after.forEach((img, idx) => {
-            if (idx < refCount) {
-              loadedAfter[idx] = { url: img.url, existing: true };
-            }
-          });
-          setAfterPreviews(loadedAfter);
-        }
-      } else {
-        console.warn("No reference images in this task");
-        setReferenceImages([]);
-      }
-
-      // Load existing materials
-      if (task.materials) {
-        setSelectedMaterials(
-          task.materials.map((m) => ({
-            item: m.item?._id || m.item,
-            name: m.name || m.item?.name,
-            quantity: m.quantity,
-            unit: m.unit || m.item?.unit,
-            confirmed: m.confirmed || false,
-          }))
-        );
-      }
-    }
-  }, [task]);
-
-  // ============================================
-  // Material Management Functions
-  // ============================================
-  const handleAddMaterial = (inventoryItem) => {
-    const existing = selectedMaterials.find(
-      (m) => m.item === inventoryItem._id
-    );
-    if (existing) {
-      alert("Material already added");
+  const initializeQTNStructure = (taskData) => {
+    if (!taskData.referenceImages || taskData.referenceImages.length === 0) {
+      setReferenceImages([]);
+      setPreviewsByRef({});
       return;
     }
 
+    const refs = taskData.referenceImages;
+    setReferenceImages(refs);
+
+    const previews = {};
+
+    refs.forEach((ref, refIdx) => {
+      const qtn = ref.qtn || 1;
+      previews[refIdx] = {};
+      for (let i = 0; i < qtn; i++) {
+        previews[refIdx][i] = { before: null, after: null };
+      }
+    });
+
+    let globalBeforeIdx = 0;
+    let globalAfterIdx = 0;
+
+    refs.forEach((ref, refIdx) => {
+      const qtn = ref.qtn || 1;
+      for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+        if (taskData.images?.before?.[globalBeforeIdx]) {
+          previews[refIdx][qtnIdx].before = {
+            url: taskData.images.before[globalBeforeIdx].url,
+            existing: true,
+          };
+          globalBeforeIdx++;
+        }
+        if (taskData.images?.after?.[globalAfterIdx]) {
+          previews[refIdx][qtnIdx].after = {
+            url: taskData.images.after[globalAfterIdx].url,
+            existing: true,
+          };
+          globalAfterIdx++;
+        }
+      }
+    });
+
+    setPreviewsByRef(previews);
+
+    if (taskData.materials) {
+      setSelectedMaterials(
+        taskData.materials.map((m) => ({
+          item: m.item?._id || m.item,
+          name: m.name || m.item?.name,
+          quantity: m.quantity,
+          unit: m.unit || m.item?.unit,
+          confirmed: m.confirmed || false,
+        }))
+      );
+    }
+  };
+
+  // Generate unique key for each upload location
+  const getUploadKey = (type, refIndex, qtnIndex) => {
+    return `${type}-${refIndex}-${qtnIndex}`;
+  };
+
+  const handleImageUpload = async (type, refIndex, qtnIndex, file) => {
+    if (!file) return;
+
+    const uploadKey = getUploadKey(type, refIndex, qtnIndex);
+
+    try {
+      // Mark this specific location as uploading
+      setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
+
+      const formData = new FormData();
+      formData.append("images", file);
+      formData.append("imageType", type);
+      formData.append("isVisibleToClient", "true");
+
+      await tasksAPI.uploadTaskImages(id, formData);
+
+      // Refresh task data
+      const res = await tasksAPI.getTask(id);
+      setTask(res.data.data);
+      initializeQTNStructure(res.data.data);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      // Remove uploading state for this specific location
+      setUploadingImages((prev) => {
+        const newState = { ...prev };
+        delete newState[uploadKey];
+        return newState;
+      });
+    }
+  };
+
+  const calculateProgress = () => {
+    let total = 0;
+    let beforeCount = 0;
+    let afterCount = 0;
+
+    referenceImages.forEach((ref, refIdx) => {
+      const qtn = ref.qtn || 1;
+      total += qtn;
+      for (let i = 0; i < qtn; i++) {
+        if (previewsByRef[refIdx]?.[i]?.before) beforeCount++;
+        if (previewsByRef[refIdx]?.[i]?.after) afterCount++;
+      }
+    });
+
+    return { total, beforeCount, afterCount };
+  };
+
+  const {
+    total: totalLocations,
+    beforeCount,
+    afterCount,
+  } = calculateProgress();
+  const allPhotosComplete =
+    beforeCount === totalLocations && afterCount === totalLocations;
+
+  // Check if any upload is in progress
+  const hasAnyUploading = Object.keys(uploadingImages).length > 0;
+
+  // Materials Handlers
+  const handleAddMaterial = (item) => {
+    if (selectedMaterials.find((m) => m.item === item._id)) {
+      alert("Material already added");
+      return;
+    }
     setSelectedMaterials([
       ...selectedMaterials,
       {
-        item: inventoryItem._id,
-        name: inventoryItem.name,
+        item: item._id,
+        name: item.name,
         quantity: 1,
-        unit: inventoryItem.unit,
+        unit: item.unit,
         confirmed: false,
       },
     ]);
@@ -164,83 +228,17 @@ const TaskDetail = () => {
           confirmedAt: new Date(),
         })),
       });
-
-      try {
-        setLoading(true);
-        const response = await tasksAPI.getTask(id);
-        setTask(response.data.data);
-      } catch (error) {
-        console.error("Error fetching task:", error);
-        alert("Failed to load task details");
-      } finally {
-        setLoading(false);
-      }
+      const res = await tasksAPI.getTask(id);
+      setTask(res.data.data);
+      initializeQTNStructure(res.data.data);
     } catch (error) {
-      console.error("Error confirming materials:", error);
-      alert("Failed to confirm materials");
+      alert("Failed to confirm materials", error);
     }
   };
 
-  // ============================================
-  // Image Upload Functions (Reference-Based)
-  // ============================================
-  const handleImageChange = async (type, event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const materialsConfirmed = selectedMaterials.every((m) => m.confirmed);
 
-    // Extract index from input id (e.g., "before-0" → 0)
-
-    try {
-      setUploading(true);
-
-      // Upload immediately
-      const formData = new FormData();
-      formData.append("images", file);
-      formData.append("imageType", type);
-      formData.append("isVisibleToClient", "true");
-
-      await tasksAPI.uploadTaskImages(id, formData);
-
-      // Refresh task to get updated images
-      try {
-        setLoading(true);
-        const response = await tasksAPI.getTask(id);
-        setTask(response.data.data);
-      } catch (error) {
-        console.error("Error fetching task:", error);
-        alert("Failed to load task details");
-      } finally {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Failed to upload image");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = (type, index) => {
-    if (type === "before") {
-      const newImages = [...beforeImages];
-      const newPreviews = [...beforePreviews];
-      newImages[index] = null;
-      newPreviews[index] = null;
-      setBeforeImages(newImages);
-      setBeforePreviews(newPreviews);
-    } else {
-      const newImages = [...afterImages];
-      const newPreviews = [...afterPreviews];
-      newImages[index] = null;
-      newPreviews[index] = null;
-      setAfterImages(newImages);
-      setAfterPreviews(newPreviews);
-    }
-  };
-
-  // ============================================
   // Task Actions
-  // ============================================
   const handleStartTask = async () => {
     try {
       const getLocation = () =>
@@ -263,16 +261,10 @@ const TaskDetail = () => {
           longitude: position.coords.longitude,
         });
         alert("Task started successfully!");
-        try {
-          setLoading(true);
-          const response = await tasksAPI.getTask(id);
-          setTask(response.data.data);
-        } catch (error) {
-          console.error("Error fetching task:", error);
-          alert("Failed to load task details");
-        } finally {
-          setLoading(false);
-        }
+        setLoading(true);
+        const response = await tasksAPI.getTask(id);
+        setTask(response.data.data);
+        setLoading(false);
       } catch (locationError) {
         if (locationError.code === 1) {
           alert(
@@ -286,16 +278,10 @@ const TaskDetail = () => {
           if (confirm) {
             await tasksAPI.startTask(id, {});
             alert("Task started successfully (location not saved)!");
-            try {
-              setLoading(true);
-              const response = await tasksAPI.getTask(id);
-              setTask(response.data.data);
-            } catch (error) {
-              console.error("Error fetching task:", error);
-              alert("Failed to load task details");
-            } finally {
-              setLoading(false);
-            }
+            setLoading(true);
+            const response = await tasksAPI.getTask(id);
+            setTask(response.data.data);
+            setLoading(false);
           }
           return;
         } else {
@@ -308,75 +294,29 @@ const TaskDetail = () => {
       alert(error.response?.data?.message || "Failed to start task");
     }
   };
+
   const handleFinishTask = async () => {
+    if (!allPhotosComplete) {
+      alert(
+        `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`
+      );
+      return;
+    }
+
+    if (!materialsConfirmed) {
+      alert("Please confirm all materials before finishing the task");
+      return;
+    }
+
+    if (hasAnyUploading) {
+      alert("Please wait for all images to finish uploading");
+      return;
+    }
+
     try {
-      const beforeCount = beforePreviews.filter((p) => p !== null).length;
-      const afterCount = afterPreviews.filter((p) => p !== null).length;
-      const refCount = referenceImages.length;
-
-      if (refCount > 0) {
-        if (beforeCount < refCount) {
-          alert(
-            `Please upload all ${refCount} before photos (${beforeCount}/${refCount} completed)`
-          );
-          return;
-        }
-        if (afterCount < refCount) {
-          alert(
-            `Please upload all ${refCount} after photos (${afterCount}/${refCount} completed)`
-          );
-          return;
-        }
-      } else {
-        if (beforeCount === 0) {
-          alert("Please upload at least one before photo");
-          return;
-        }
-        if (afterCount === 0) {
-          alert("Please upload at least one after photo");
-          return;
-        }
-      }
-
-      if (selectedMaterials.length === 0) {
-        alert("Please add materials used");
-        return;
-      }
-      if (selectedMaterials.some((m) => !m.confirmed)) {
-        alert("Please confirm all materials");
-        return;
-      }
-
-      setUploading(true);
-
-      const beforeFilesToUpload = beforeImages.filter((f) => f !== null);
-      if (beforeFilesToUpload.length > 0) {
-        const beforeFormData = new FormData();
-        beforeFilesToUpload.forEach((file) => {
-          beforeFormData.append("images", file);
-        });
-        beforeFormData.append("imageType", "before");
-        beforeFormData.append("isVisibleToClient", "true");
-        await tasksAPI.uploadTaskImages(id, beforeFormData);
-      }
-
-      const afterFilesToUpload = afterImages.filter((f) => f !== null);
-      if (afterFilesToUpload.length > 0) {
-        const afterFormData = new FormData();
-        afterFilesToUpload.forEach((file) => {
-          afterFormData.append("images", file);
-        });
-        afterFormData.append("imageType", "after");
-        afterFormData.append("isVisibleToClient", "true");
-        await tasksAPI.uploadTaskImages(id, afterFormData);
-      }
-
       const getLocation = () =>
         new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("Geolocation not supported"));
-            return;
-          }
+          if (!navigator.geolocation) reject(new Error("Not supported"));
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             maximumAge: 0,
@@ -385,45 +325,28 @@ const TaskDetail = () => {
         });
 
       try {
-        const position = await getLocation();
+        const pos = await getLocation();
         await tasksAPI.completeTask(id, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
         });
-        alert("Task completed successfully!");
-        navigate("/worker/tasks");
-      } catch (locationError) {
-        if (locationError.code === 1) {
-          alert(
-            "Location access denied. Please enable location access in your browser settings and try again."
-          );
-          return;
-        } else if (locationError.code === 2) {
-          const confirm = window.confirm(
-            "Unable to get your location. Do you want to complete the task without saving location?"
-          );
-          if (confirm) {
-            await tasksAPI.completeTask(id, {});
-            alert("Task completed successfully (location not saved)!");
-            navigate("/worker/tasks");
-          }
-          return;
-        } else {
-          alert("An error occurred while getting location. Please try again.");
+      } catch (err) {
+        if (err.code === 1) {
+          alert("Location access denied.");
           return;
         }
+        const confirm = window.confirm("Complete without location?");
+        if (!confirm) return;
+        await tasksAPI.completeTask(id, {});
       }
+
+      alert("Task completed successfully!");
+      navigate("/worker/tasks");
     } catch (error) {
-      console.error("Error finishing task:", error);
-      alert(error.response?.data?.message || "Failed to complete task");
-    } finally {
-      setUploading(false);
+      alert("Failed to complete task", error);
     }
   };
 
-  // ============================================
-  // Helper Functions
-  // ============================================
   const getStatusColor = (status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -434,437 +357,385 @@ const TaskDetail = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const materialsConfirmed =
-    selectedMaterials.length > 0 && selectedMaterials.every((m) => m.confirmed);
-
-  if (loading) {
-    return <Loading fullScreen />;
-  }
-
-  if (!task) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Task not found</p>
+  // Skeleton Loader Component with animated shimmer
+  const SkeletonLoader = () => (
+    <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
+      <div className="absolute inset-0 bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-2" />
+          <p className="text-gray-500 font-medium">Uploading...</p>
+        </div>
       </div>
+    </div>
+  );
+
+  if (loading) return <Loading fullScreen />;
+  if (!task)
+    return (
+      <div className="text-center py-12 text-gray-500">Task not found</div>
     );
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Button
-        variant="secondary"
-        icon={ArrowLeft}
-        onClick={() => navigate("/worker/tasks")}
-      >
-        Back to Tasks
+    <div className="space-y-6 pb-10">
+      {/* Add shimmer animation to global styles */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
+
+      <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate(-1)}>
+        {t("common.back")}
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ============================================ */}
-        {/* MAIN CONTENT - Left Column */}
-        {/* ============================================ */}
         <div className="lg:col-span-2 space-y-6">
           {/* Task Info Card */}
           <Card>
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {task.title}
-                </h1>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(
-                    task.status
-                  )}`}
-                >
-                  {t(`status.${task.status}`)}
-                </span>
+            <div className="flex justify-between items-start mb-4">
+              <h1 className="text-2xl font-bold">{task.title}</h1>
+              <span
+                className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(
+                  task.status
+                )}`}
+              >
+                {t(`status.${task.status}`)}
+              </span>
+            </div>
+            <p className="text-gray-600 mb-4">{task.description}</p>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Client:</span>{" "}
+                <strong>{task.client?.name}</strong>
               </div>
-
-              <p className="text-gray-600">{task.description}</p>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div>
-                  <p className="text-sm text-gray-500">Client</p>
-                  <p className="font-semibold">{task.client?.name || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Due Date</p>
-                  <p className="font-semibold">
-                    {new Date(task.scheduledDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Priority</p>
-                  <p className="font-semibold text-orange-600">
-                    {t(`priority.${task.priority}`)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Category</p>
-                  <p className="font-semibold">{task.category}</p>
-                </div>
+              <div>
+                <span className="text-gray-500">Priority:</span>{" "}
+                <strong className="text-orange-600">
+                  {t(`priority.${task.priority}`)}
+                </strong>
               </div>
             </div>
           </Card>
 
-          {/* ✅ Site & Section Info Card */}
-          {task.site && (
-            <Card title="📍 Site Information">
-              <div className="space-y-3">
-                <div className="flex gap-3">
-                  {task.site.coverImage?.url ? (
-                    <img
-                      src={task.site.coverImage.url}
-                      alt={task.site.name}
-                      className="w-30 h-20 rounded object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-primary-100 rounded flex items-center justify-center shrink-0">
-                      <MapPin className="w-10 h-10 text-primary-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 flex flex-col space-y-1">
-                    <h3 className="font-semibold text-lg text-gray-900">
-                      {task.site.name}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Type: {task.site.siteType}
+          {/* Reference Guide with NEW LAYOUT */}
+          {referenceImages.length > 0 && (
+            <Card title="📸 Work Reference Guide">
+              {/* Progress Header */}
+              <div className="bg-linear-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <AlertCircle className="w-10 h-10 text-indigo-600" />
+                  <div>
+                    <p className="text-xl font-bold text-indigo-900">
+                      Total Required Locations
                     </p>
-                    <p className="text-sm text-gray-600">
-                      • Area: {task.site.totalArea}m²
+                    <p className="text-3xl font-extrabold text-indigo-700">
+                      {totalLocations}
                     </p>
-                    {task.site.description && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {task.site.description}
-                      </p>
-                    )}
+                    <p className="text-sm text-indigo-600">
+                      Before: {beforeCount}/{totalLocations} • After:{" "}
+                      {afterCount}/{totalLocations}
+                    </p>
                   </div>
+                  {allPhotosComplete && (
+                    <CheckCircle className="w-12 h-12 text-green-600 ml-auto" />
+                  )}
                 </div>
+              </div>
 
-                {/* Section Info */}
-                {task.section && referenceImages.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Layers className="w-5 h-5 text-primary-600" />
-                      <h4 className="font-semibold text-gray-900">
-                        Assigned Section:{" "}
-                        {task.section.name || "Specific Section"}
-                      </h4>
+              <div className="space-y-12">
+                {referenceImages.map((ref, refIdx) => {
+                  const qtn = ref.qtn || 1;
+                  return (
+                    <div
+                      key={refIdx}
+                      className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
+                    >
+                      {/* Header */}
+                      <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-3xl font-bold">
+                            Reference #{refIdx + 1}
+                          </span>
+                          {qtn > 1 && (
+                            <span className="bg-orange-500 px-5 py-2 rounded-full text-lg font-bold">
+                              {qtn} Locations
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-lg opacity-90">
+                          {ref.caption || "Work Area"}
+                        </span>
+                      </div>
+
+                      {/* NEW LAYOUT: Reference Left, QTN Rows Right */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 bg-gray-50">
+                        {/* Reference Image - Left Column (spans full height) */}
+                        <div className="lg:col-span-1 flex flex-col">
+                          <h4 className="text-xl font-bold text-center mb-4 text-gray-800">
+                            Reference Image
+                          </h4>
+                          <img
+                            src={ref.url}
+                            alt="Reference"
+                            className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                            onClick={() => window.open(ref.url, "_blank")}
+                          />
+                          <p className="text-center mt-4 text-gray-600 font-medium">
+                            Click to enlarge
+                          </p>
+                        </div>
+
+                        {/* QTN Locations - Right 2 Columns (stacked vertically) */}
+                        <div className="lg:col-span-2 space-y-8">
+                          {Array.from({ length: qtn }, (_, locIdx) => {
+                            const beforeKey = getUploadKey(
+                              "before",
+                              refIdx,
+                              locIdx
+                            );
+                            const afterKey = getUploadKey(
+                              "after",
+                              refIdx,
+                              locIdx
+                            );
+                            const isBeforeUploading =
+                              uploadingImages[beforeKey];
+                            const isAfterUploading = uploadingImages[afterKey];
+
+                            return (
+                              <div
+                                key={locIdx}
+                                className="bg-white rounded-xl shadow-md p-6 border border-gray-300"
+                              >
+                                <h4 className="text-lg font-bold mb-4 text-center flex items-center justify-center gap-3">
+                                  <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg">
+                                    Location #{locIdx + 1}
+                                  </span>
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                  {/* Before */}
+                                  <div>
+                                    <label className="block text-center text-md font-semibold text-gray-700 mb-3">
+                                      📷 Before Work
+                                    </label>
+                                    {isBeforeUploading ? (
+                                      <SkeletonLoader />
+                                    ) : previewsByRef[refIdx]?.[locIdx]
+                                        ?.before ? (
+                                      <div className="relative">
+                                        <img
+                                          src={
+                                            previewsByRef[refIdx][locIdx].before
+                                              .url
+                                          }
+                                          alt="Before"
+                                          className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md"
+                                        />
+                                        {previewsByRef[refIdx][locIdx].before
+                                          .existing && (
+                                          <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
+                                            Uploaded
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <label className="block cursor-pointer">
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={task.status === "completed"}
+                                          onChange={(e) =>
+                                            handleImageUpload(
+                                              "before",
+                                              refIdx,
+                                              locIdx,
+                                              e.target.files[0]
+                                            )
+                                          }
+                                        />
+                                        <div className="h-56 border-4 border-dashed border-blue-400 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50 transition">
+                                          <Camera className="w-12 h-12 text-blue-500 mb-2" />
+                                          <span className="text-blue-600 font-medium">
+                                            Upload Before
+                                          </span>
+                                        </div>
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  {/* After */}
+                                  <div>
+                                    <label className="block text-center text-md font-semibold text-gray-700 mb-3">
+                                      ✅ After Work
+                                    </label>
+                                    {isAfterUploading ? (
+                                      <SkeletonLoader />
+                                    ) : previewsByRef[refIdx]?.[locIdx]
+                                        ?.after ? (
+                                      <div className="relative">
+                                        <img
+                                          src={
+                                            previewsByRef[refIdx][locIdx].after
+                                              .url
+                                          }
+                                          alt="After"
+                                          className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md"
+                                        />
+                                        {previewsByRef[refIdx][locIdx].after
+                                          .existing && (
+                                          <div className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
+                                            Uploaded
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <label className="block cursor-pointer">
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={task.status === "completed"}
+                                          onChange={(e) =>
+                                            handleImageUpload(
+                                              "after",
+                                              refIdx,
+                                              locIdx,
+                                              e.target.files[0]
+                                            )
+                                          }
+                                        />
+                                        <div className="h-56 border-4 border-dashed border-green-400 rounded-lg flex flex-col items-center justify-center hover:bg-green-50 transition">
+                                          <Camera className="w-12 h-12 text-green-500 mb-2" />
+                                          <span className="text-green-600 font-medium">
+                                            Upload After
+                                          </span>
+                                        </div>
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Mini progress indicators */}
+                                <div className="mt-4 flex justify-center gap-6 text-md">
+                                  <span
+                                    className={
+                                      previewsByRef[refIdx]?.[locIdx]?.before
+                                        ? "text-green-600 font-bold"
+                                        : "text-gray-400"
+                                    }
+                                  >
+                                    {previewsByRef[refIdx]?.[locIdx]?.before
+                                      ? "✓"
+                                      : "○"}{" "}
+                                    Before
+                                  </span>
+                                  <span
+                                    className={
+                                      previewsByRef[refIdx]?.[locIdx]?.after
+                                        ? "text-green-600 font-bold"
+                                        : "text-gray-400"
+                                    }
+                                  >
+                                    {previewsByRef[refIdx]?.[locIdx]?.after
+                                      ? "✓"
+                                      : "○"}{" "}
+                                    After
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-800 flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" />
-                        <strong>
-                          {referenceImages.length} Reference Images
-                        </strong>{" "}
-                        available below
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        Use these images as a guide for your work
-                      </p>
-                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Final Progress */}
+              <div className="mt-10 bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
+                <p className="text-3xl font-bold text-green-800">
+                  {beforeCount + afterCount} / {totalLocations * 2} Photos
+                  Completed
+                </p>
+                {allPhotosComplete && (
+                  <div className="mt-4 flex items-center justify-center gap-3 text-2xl text-green-600">
+                    <CheckCircle className="w-12 h-12" />
+                    <span>All photos uploaded successfully!</span>
+                  </div>
+                )}
+                {hasAnyUploading && (
+                  <div className="mt-4 flex items-center justify-center gap-3 text-lg text-blue-600">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <span>Uploading images...</span>
                   </div>
                 )}
               </div>
             </Card>
           )}
-
-          {/* ✅ Reference Images with Before/After Upload */}
-          {referenceImages.length > 0 && (
-            <Card title="📸 Work Reference Guide">
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800 font-medium">
-                    📋 Complete each section: Reference → Before → After
-                  </p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Take photos from the same angle as the reference images
-                  </p>
-                </div>
-
-                {/* Reference Image Cards */}
-                <div className="space-y-6">
-                  {referenceImages.map((refImg, refIndex) => (
-                    <div
-                      key={refIndex}
-                      className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded">
-                          #{refIndex + 1}
-                        </span>
-                        <h4 className="font-semibold text-gray-900">
-                          {refImg.caption || `Work Area ${refIndex + 1}`}
-                        </h4>
-                      </div>
-
-                      {/* 3-Column Layout: Reference | Before | After */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Reference Image */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            📋 Reference
-                          </label>
-                          <div className="relative">
-                            <img
-                              src={refImg.url}
-                              alt={`Reference ${refIndex + 1}`}
-                              className="w-full h-40 object-cover rounded-lg border-2 border-primary-300 bg-white cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(refImg.url, "_blank")}
-                              style={{
-                                display: "block",
-                                backgroundColor: "#fff",
-                              }}
-                            />
-                            <div className="absolute bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                              Click to enlarge
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Before Photo Upload */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            📷 Before Work
-                          </label>
-                          {beforePreviews[refIndex] ? (
-                            <div className="relative group">
-                              <img
-                                src={beforePreviews[refIndex].url}
-                                alt={`Before ${refIndex + 1}`}
-                                className="w-full h-40 object-cover rounded-lg border-2 border-blue-300"
-                              />
-                              {/* ✅ Only allow delete if NOT existing (newly uploaded) */}
-                              {!beforePreviews[refIndex].existing &&
-                                task.status !== "completed" && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      removeImage("before", refIndex)
-                                    }
-                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                )}
-                              {beforePreviews[refIndex].existing && (
-                                <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  Uploaded
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageChange("before", e)}
-                                className="hidden"
-                                id={`before-${refIndex}`}
-                                disabled={task.status === "completed"}
-                              />
-                              <label
-                                htmlFor={`before-${refIndex}`}
-                                className="cursor-pointer flex flex-col items-center"
-                              >
-                                <Camera className="w-8 h-8 text-gray-400 mb-1" />
-                                <span className="text-xs text-gray-600 text-center">
-                                  Upload
-                                  <br />
-                                  Before Photo
-                                </span>
-                              </label>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* After Photo Upload */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">
-                            After Work
-                          </label>
-                          {afterPreviews[refIndex] ? (
-                            <div className="relative group">
-                              <img
-                                src={afterPreviews[refIndex].url}
-                                alt={`After ${refIndex + 1}`}
-                                className="w-full h-40 object-cover rounded-lg border-2 border-green-300"
-                              />
-                              {/* ✅ Only allow delete if NOT existing (newly uploaded) */}
-                              {!afterPreviews[refIndex].existing &&
-                                task.status !== "completed" && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      removeImage("after", refIndex)
-                                    }
-                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                )}
-                              {afterPreviews[refIndex].existing && (
-                                <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  Uploaded
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center hover:border-green-400 hover:bg-green-50 transition-colors">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageChange("after", e)}
-                                className="hidden"
-                                id={`after-${refIndex}`}
-                                disabled={task.status === "completed"}
-                              />
-                              <label
-                                htmlFor={`after-${refIndex}`}
-                                className="cursor-pointer flex flex-col items-center"
-                              >
-                                <Camera className="w-8 h-8 text-gray-400 mb-1" />
-                                <span className="text-xs text-gray-600 text-center">
-                                  Upload
-                                  <br />
-                                  After Photo
-                                </span>
-                              </label>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Progress Indicator */}
-                      <div className="mt-3 flex items-center gap-2 text-xs">
-                        <div
-                          className={`flex items-center gap-1 ${
-                            beforePreviews[refIndex]
-                              ? "text-green-600"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {beforePreviews[refIndex] ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <Clock className="w-4 h-4" />
-                          )}
-                          <span>Before</span>
-                        </div>
-                        <span className="text-gray-300">•</span>
-                        <div
-                          className={`flex items-center gap-1 ${
-                            afterPreviews[refIndex]
-                              ? "text-green-600"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {afterPreviews[refIndex] ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <Clock className="w-4 h-4" />
-                          )}
-                          <span>After</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Overall Progress */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-green-800">
-                      Progress: {beforePreviews.filter((p) => p).length}/
-                      {referenceImages.length} Before •{" "}
-                      {afterPreviews.filter((p) => p).length}/
-                      {referenceImages.length} After
-                    </span>
-                    {beforePreviews.filter((p) => p).length ===
-                      referenceImages.length &&
-                      afterPreviews.filter((p) => p).length ===
-                        referenceImages.length && (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
         </div>
 
-        {/* ============================================ */}
-        {/* SIDEBAR - Right Column */}
-        {/* ============================================ */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Materials Management Card */}
-          <Card title={t("worker.materialsReceived")}>
-            <div className="space-y-3">
+          {/* Materials Card */}
+          <Card title="Materials Used">
+            <div className="space-y-4">
               {selectedMaterials.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  No materials added yet
-                </div>
+                <p className="text-center text-gray-500 py-6">
+                  No materials added
+                </p>
               ) : (
-                selectedMaterials.map((material, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-900">
-                          {material.name}
-                        </p>
-                        {material.confirmed && (
-                          <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-xs font-medium">
-                              Confirmed
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleUpdateMaterialQuantity(idx, -1)}
-                          className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={
-                            task.status === "completed" || material.confirmed
-                          }
-                        >
-                          <Minus className="w-3 h-3 text-gray-600" />
-                        </button>
-                        <span className="text-sm px-3 py-1 bg-white border border-gray-300 rounded min-w-[60px] text-center">
-                          {material.quantity} {material.unit}
+                selectedMaterials.map((m, idx) => (
+                  <div key={idx} className="bg-gray-50 p-4 rounded-xl border">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="font-semibold">{m.name}</p>
+                      {m.confirmed && (
+                        <span className="text-green-600 font-bold">
+                          ✓ Confirmed
                         </span>
-                        <button
-                          onClick={() => handleUpdateMaterialQuantity(idx, 1)}
-                          className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={
-                            task.status === "completed" || material.confirmed
-                          }
-                        >
-                          <Plus className="w-3 h-3 text-gray-600" />
-                        </button>
-                      </div>
+                      )}
                     </div>
-
-                    {/* ✅ DELETE BUTTON - ALWAYS SHOW IT! */}
-                    {task.status !== "completed" && (
+                    <div className="flex items-center gap-3">
                       <button
-                        onClick={() => {
-                          if (window.confirm(`Remove ${material.name}?`)) {
-                            handleRemoveMaterial(idx);
-                          }
-                        }}
-                        className="p-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shrink-0"
-                        title="Remove material"
+                        disabled={task.status === "completed" || m.confirmed}
+                        onClick={() => handleUpdateMaterialQuantity(idx, -1)}
+                        className="p-2 border rounded disabled:opacity-50"
                       >
-                        <X className="w-5 h-5" />
+                        <Minus className="w-4 h-4" />
                       </button>
-                    )}
+                      <span className="font-bold text-lg">
+                        {m.quantity} {m.unit}
+                      </span>
+                      <button
+                        disabled={task.status === "completed" || m.confirmed}
+                        onClick={() => handleUpdateMaterialQuantity(idx, 1)}
+                        className="p-2 border rounded disabled:opacity-50"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      {task.status !== "completed" && (
+                        <button
+                          onClick={() =>
+                            window.confirm("Remove this material?") &&
+                            handleRemoveMaterial(idx)
+                          }
+                          className="ml-auto text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -874,13 +745,12 @@ const TaskDetail = () => {
                   {!showAddMaterial ? (
                     <button
                       onClick={() => setShowAddMaterial(true)}
-                      className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 text-sm text-gray-600 hover:text-primary-600 flex items-center justify-center gap-2 transition-colors"
+                      className="w-full py-3 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition"
                     >
-                      <Plus className="w-5 h-5" />
-                      <span className="font-medium">Add Material</span>
+                      <Plus className="w-5 h-5" /> Add Material
                     </button>
                   ) : (
-                    <div className="space-y-2">
+                    <div>
                       <select
                         onChange={(e) => {
                           const item = availableInventory.find(
@@ -888,171 +758,88 @@ const TaskDetail = () => {
                           );
                           if (item) handleAddMaterial(item);
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
+                        className="w-full p-3 border rounded mb-2"
                       >
                         <option value="">Select material...</option>
                         {availableInventory.map((item) => (
                           <option key={item._id} value={item._id}>
-                            {item.name} ({item.quantity.current} {item.unit}{" "}
-                            available)
+                            {item.name} ({item.quantity.current} available)
                           </option>
                         ))}
                       </select>
                       <button
                         onClick={() => setShowAddMaterial(false)}
-                        className="text-sm text-gray-500 hover:text-gray-700 underline"
+                        className="text-sm text-gray-500 hover:text-gray-700"
                       >
                         Cancel
                       </button>
                     </div>
                   )}
 
-                  {/* ✅ Confirm Materials Button - Made it MORE VISIBLE */}
                   {selectedMaterials.length > 0 && !materialsConfirmed && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <Button
-                        className="w-full"
-                        variant="success"
-                        size="md"
-                        onClick={handleConfirmMaterials}
-                        icon={CheckCircle}
-                      >
-                        Confirm All Materials ({selectedMaterials.length})
-                      </Button>
-                      <p className="text-xs text-orange-600 text-center mt-2">
-                        You must confirm materials before finishing task
-                      </p>
-                    </div>
+                    <Button
+                      onClick={handleConfirmMaterials}
+                      variant="success"
+                      className="w-full mt-4"
+                    >
+                      Confirm All Materials ({selectedMaterials.length})
+                    </Button>
                   )}
                 </>
               )}
-
-              {materialsConfirmed && (
-                <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                  <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-green-800">
-                    All Materials Confirmed ✅
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">
-                    You can now finish the task
-                  </p>
-                </div>
-              )}
             </div>
           </Card>
 
-          {/* Task Time Card */}
-          {task.startedAt && (
-            <Card title={t("worker.taskTime")}>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span>
-                    Started: {new Date(task.startedAt).toLocaleString()}
-                  </span>
-                </div>
-                {task.completedAt && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span>
-                      Completed: {new Date(task.completedAt).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-              </div>
+          {/* Task Action Buttons */}
+          {task.status === "assigned" && (
+            <Card title="Start Task">
+              <Button
+                variant="primary"
+                className="w-full py-6 text-xl font-bold"
+                onClick={handleStartTask}
+              >
+                <Clock className="w-6 h-6 inline mr-2" />
+                Start Task
+              </Button>
             </Card>
           )}
 
-          {/* ✅ FINISH TASK BUTTON - ALWAYS SHOW IF NOT COMPLETED */}
-          {task.status !== "completed" && (
-            <Card title="🎯 Complete Task">
-              <div className="space-y-3">
-                {/* Debug Info */}
-                <div className="bg-gray-100 p-2 rounded text-xs">
-                  <p>
-                    Current Status: <strong>{task.status}</strong>
-                  </p>
-                  <p>
-                    Materials Confirmed:{" "}
-                    <strong>{materialsConfirmed ? "Yes ✅" : "No ❌"}</strong>
-                  </p>
-                </div>
+          {task.status === "in-progress" && (
+            <Card title="Complete Task">
+              <Button
+                variant="success"
+                className="w-full py-6 text-2xl font-bold"
+                onClick={handleFinishTask}
+                disabled={
+                  hasAnyUploading || !allPhotosComplete || !materialsConfirmed
+                }
+              >
+                {hasAnyUploading ? "Uploading..." : "Finish Task"}
+              </Button>
 
-                <Button
-                  className="w-full py-4 text-lg font-bold"
-                  variant="success"
-                  onClick={handleFinishTask}
-                  disabled={
-                    uploading ||
-                    !materialsConfirmed ||
-                    beforePreviews.filter((p) => p).length <
-                      referenceImages.length ||
-                    afterPreviews.filter((p) => p).length <
-                      referenceImages.length
-                  }
-                >
-                  {uploading ? "⏳ Uploading Images..." : "Finish Task"}
-                </Button>
+              {!allPhotosComplete && (
+                <p className="text-red-600 text-center mt-4 font-bold">
+                  Complete all {totalLocations} locations first
+                </p>
+              )}
 
-                {!materialsConfirmed && (
-                  <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 text-center">
-                    <p className="text-sm text-orange-800 font-bold">
-                      Please confirm materials first!
-                    </p>
-                  </div>
-                )}
+              {!materialsConfirmed && allPhotosComplete && (
+                <p className="text-orange-600 text-center mt-4 font-bold">
+                  Confirm materials before finishing
+                </p>
+              )}
 
-                {materialsConfirmed && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                    <p className="text-sm text-blue-800 font-medium">
-                      Ready to finish! Make sure all photos are uploaded
-                    </p>
-                  </div>
-                )}
-              </div>
+              {hasAnyUploading && (
+                <p className="text-blue-600 text-center mt-4 font-bold flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Please wait for uploads to complete
+                </p>
+              )}
             </Card>
           )}
-
-          {/* ✅ Actions Card */}
-          <Card title="⚡ Quick Actions">
-            <div className="space-y-3">
-              {task.status === "assigned" && (
-                <Button
-                  className="w-full py-3 text-base font-semibold"
-                  onClick={handleStartTask}
-                  icon={Clock}
-                >
-                  🚀 Start Task
-                </Button>
-              )}
-
-              {task.status === "completed" && (
-                <div className="bg-green-50 p-4 rounded-lg text-center border-2 border-green-200">
-                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
-                  <p className="text-green-800 font-semibold text-lg">
-                    Task Completed! ✅
-                  </p>
-                  <p className="text-green-600 text-sm mt-1">Great job!</p>
-                </div>
-              )}
-
-              {task.status === "in-progress" && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                  <Clock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-sm text-blue-800 font-medium">
-                    Task in progress...
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Complete materials and photos to finish
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
         </div>
       </div>
     </div>
   );
 };
-
 export default TaskDetail;
