@@ -1,13 +1,13 @@
 // frontend/src/pages/admin/SiteSectionsPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Layers, Edit, Plus } from "lucide-react";
+import { ArrowLeft, MapPin, Layers, Edit, Plus, AlertCircle } from "lucide-react";
 import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
 import SiteModal from "./SiteModal";
 import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
-import { sitesAPI, clientsAPI } from "../../services/api";
+import { sitesAPI, clientsAPI, tasksAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SiteSectionsPage = () => {
@@ -18,6 +18,7 @@ const SiteSectionsPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [clients, setClients] = useState([]);
+  const [rejectedTasks, setRejectedTasks] = useState([]);
 
   const fetchSite = useCallback(async () => {
     try {
@@ -44,10 +45,39 @@ const SiteSectionsPage = () => {
     }
   }, []);
 
+  // ✅ جلب آخر 2 tasks rejected على الـ site
+  const fetchRejectedTasks = useCallback(async () => {
+    try {
+      const response = await tasksAPI.getTasks({ site: id });
+      const tasks = response.data.data || [];
+      
+      // فلترة الـ tasks اللي عليها rejected أو عندها comments
+      const rejected = tasks
+        .filter(
+          (task) =>
+            task.adminReview?.status === "rejected" &&
+            task.adminReview?.comments
+        )
+        // ترتيب حسب التاريخ (الأحدث أولاً)
+        .sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt);
+          const dateB = new Date(b.updatedAt || b.createdAt);
+          return dateB - dateA;
+        })
+        // أخذ أول 2 فقط
+        .slice(0, 2);
+      
+      setRejectedTasks(rejected);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchSite();
     fetchClients();
-  }, [fetchSite, fetchClients]);
+    fetchRejectedTasks();
+  }, [fetchSite, fetchClients, fetchRejectedTasks]);
 
   const handleEditSite = () => {
     setIsEditModalOpen(true);
@@ -67,11 +97,12 @@ const SiteSectionsPage = () => {
 
   const handleSuccess = () => {
     fetchSite();
+    fetchRejectedTasks();
   };
 
   const handleTaskSuccess = () => {
     fetchSite();
-    // Could also show a success message
+    fetchRejectedTasks();
   };
 
   if (loading) {
@@ -98,7 +129,6 @@ const SiteSectionsPage = () => {
           Back to Sites
         </Button>
 
-        {/* ✅ NEW: Add Task Button */}
         <Button
           variant="primary"
           icon={Plus}
@@ -185,6 +215,58 @@ const SiteSectionsPage = () => {
             </div>
           </div>
 
+          {/* ✅ Admin Review Comments Section - فوق Location */}
+          {rejectedTasks.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-red-900 mb-1">
+                      Latest Rejected Tasks - Admin Review
+                    </h3>
+                    <p className="text-sm text-red-700 mb-3">
+                      Last {rejectedTasks.length} rejected task{rejectedTasks.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {rejectedTasks.map((task) => (
+                    <div
+                      key={task._id}
+                      className="bg-white rounded-md p-3 border border-red-200"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 mb-1">
+                            {task.title}
+                          </p>
+                          <p className="text-sm text-red-600">
+                            {task.adminReview.comments}
+                          </p>
+                          {task.sections && task.sections.length > 0 && (
+                            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                              <Layers className="w-3 h-3" />
+                              {task.sections.length} section
+                              {task.sections.length > 1 ? "s" : ""}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/admin/tasks/${task._id}`)}
+                          className="text-sm text-red-600 hover:text-red-800 font-medium whitespace-nowrap"
+                        >
+                          View Task →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Location Info */}
           {site.location &&
             (site.location.address || site.location.googleMapsLink) && (
@@ -231,7 +313,7 @@ const SiteSectionsPage = () => {
         onSuccess={handleSuccess}
       />
 
-      {/* ✅ NEW: Task Modal (Pre-filled with this site) */}
+      {/* Task Modal */}
       <TaskModal
         isOpen={isTaskModalOpen}
         onClose={handleTaskModalClose}
