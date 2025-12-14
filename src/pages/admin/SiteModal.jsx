@@ -1,17 +1,26 @@
-// frontend/src/pages/admin/SiteModal.jsx
+// frontend/src/pages/admin/SiteModal.jsx - FIXED VERSION
 import { useState, useEffect } from "react";
-import { Upload, X, Plus, Image as ImageIcon, Layers } from "lucide-react";
+import {
+  Upload,
+  X,
+  Plus,
+  Image as ImageIcon,
+  Layers,
+  Trash2,
+} from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import ImageUpload from "../../components/common/ImageUpload";
-import { sitesAPI } from "../../services/api";
+import { sitesAPI, deleteImageAPI } from "../../services/api";
 import ReactSelect from "react-select";
+import { toast } from "sonner";
 
 const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [deletingCover, setDeletingCover] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     client: "",
@@ -78,6 +87,39 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
   const handleRemoveCoverImage = () => {
     setCoverImage(null);
     setCoverImagePreview(null);
+  };
+
+  // 🗑️ DELETE COVER IMAGE
+  const handleDeleteCoverImage = async () => {
+    if (!site?.coverImage?.cloudinaryId) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete the cover image? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    setDeletingCover(true);
+    try {
+      await deleteImageAPI.deleteImage({
+        cloudinaryId: site.coverImage.cloudinaryId,
+        resourceType: "image",
+        entityType: "site",
+        entityId: site._id,
+        imageId: site.coverImage._id || "cover",
+        imageType: "cover",
+      });
+
+      toast.success("Cover image deleted successfully");
+      setCoverImagePreview(null);
+      onSuccess(); // Refresh parent data
+    } catch (error) {
+      console.error("Delete cover image error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete cover image"
+      );
+    } finally {
+      setDeletingCover(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -163,11 +205,39 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Cover Image (Optional)
           </label>
-          <ImageUpload
-            onChange={handleCoverImageChange}
-            preview={coverImagePreview}
-            onRemove={handleRemoveCoverImage}
-          />
+
+          {/* ✅ FIXED: Only show existing cover OR new upload, not both */}
+          {site?.coverImage?.url && !coverImage && coverImagePreview ? (
+            // Show existing cover with delete button
+            <div className="relative group mb-3">
+              <img
+                src={coverImagePreview}
+                alt="Cover"
+                className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
+              />
+              {/* 🗑️ DELETE BUTTON */}
+              <button
+                type="button"
+                onClick={handleDeleteCoverImage}
+                disabled={deletingCover}
+                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                title="Delete cover image"
+              >
+                {deletingCover ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          ) : (
+            // Show upload component only if no existing image
+            <ImageUpload
+              onChange={handleCoverImageChange}
+              preview={coverImagePreview}
+              onRemove={handleRemoveCoverImage}
+            />
+          )}
         </div>
 
         {/* Name */}

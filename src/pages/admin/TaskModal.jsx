@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-// frontend/src/pages/admin/TaskModal.jsx - ✅ UPDATED: Multiple Sections Support + preFillSite Handling
+// frontend/src/pages/admin/TaskModal.jsx -  UPDATED: Multiple Sections Support + preFillSite Handling
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
-import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import { tasksAPI, sitesAPI, usersAPI } from "../../services/api";
 import ReactSelect from "react-select";
@@ -133,7 +132,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
     };
   }, [task, reset, setValue]);
 
-  // ✅ NEW: Handle preFillSite
+  //  NEW: Handle preFillSite
   useEffect(() => {
     if (preFillSite && !task) {
       setValue("site", preFillSite._id);

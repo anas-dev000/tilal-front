@@ -1,12 +1,28 @@
-// src/pages/client/modals/TaskDetailModal.jsx - ✅ WITH VIDEO SUPPORT
-import { X, Calendar, MapPin, CheckCircle, Star, Play, Video, Image as ImageIcon } from "lucide-react";
+// src/pages/client/modals/TaskDetailModal.jsx -  WITH VIDEO SUPPORT
+import {
+  X,
+  Calendar,
+  MapPin,
+  CheckCircle,
+  Star,
+  Play,
+  Video,
+  Image as ImageIcon,
+} from "lucide-react";
 import Modal from "../../../components/common/Modal";
 import Button from "../../../components/common/Button";
 
-const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }) => {
+const TaskDetailModal = ({
+  task,
+  isOpen,
+  onClose,
+  onOpenFeedback,
+  onImageClick,
+}) => {
   if (!task) return null;
 
-  const visibleAfterMedia = task.images?.after?.filter((media) => media.isVisibleToClient) || [];
+  const visibleAfterMedia =
+    task.images?.after?.filter((media) => media.isVisibleToClient) || [];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Task Details" size="lg">
@@ -66,7 +82,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
           )}
         </div>
 
-        {/* ✅ After Media Gallery (Images & Videos) */}
+        {/*  After Media Gallery (Images & Videos) */}
         {visibleAfterMedia.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -76,13 +92,19 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {visibleAfterMedia.map((media, idx) => {
-                const isVideo = media.mediaType === 'video';
-                
+                const isVideo = media.mediaType === "video";
+
                 return (
                   <div
                     key={idx}
                     className="relative group cursor-pointer rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all border-2 border-gray-200 hover:border-primary-400"
-                    onClick={() => onImageClick(media.url, media.mediaType || 'image', `Work Media ${idx + 1}`)}
+                    onClick={() =>
+                      onImageClick(
+                        media.url,
+                        media.mediaType || "image",
+                        `Work Media ${idx + 1}`
+                      )
+                    }
                   >
                     {/* Media Container */}
                     <div className="relative aspect-video bg-gray-100">
@@ -99,13 +121,13 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
                               <Play className="w-8 h-8 text-primary-600 fill-primary-600" />
                             </div>
                           </div>
-                          
+
                           {/* Video Badge */}
                           <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-lg">
                             <Video className="w-3 h-3" />
                             <span>VIDEO</span>
                           </div>
-                          
+
                           {/* Duration Badge */}
                           {media.duration && (
                             <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-semibold">
@@ -120,7 +142,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
                             alt={`After work ${idx + 1}`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          
+
                           {/* Image Badge */}
                           <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-lg">
                             <ImageIcon className="w-3 h-3" />
@@ -128,12 +150,14 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
                           </div>
                         </>
                       )}
-                      
+
                       {/* Click to View Overlay */}
                       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
                         <div className="p-3 text-white w-full">
                           <p className="text-xs font-medium">
-                            {isVideo ? 'Click to play' : 'Click to view full size'}
+                            {isVideo
+                              ? "Click to play"
+                              : "Click to view full size"}
                           </p>
                         </div>
                       </div>
@@ -151,7 +175,8 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
             {/* Info Message */}
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Click on any media to view in full size or play videos.
+                💡 <strong>Tip:</strong> Click on any media to view in full size
+                or play videos.
               </p>
             </div>
           </div>
@@ -190,8 +215,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onOpenFeedback, onImageClick }
           task.status === "completed" && (
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800 mb-3">
-                💬 The work has been completed. Would you like to provide
-                feedback?
+                The work has been completed. Would you like to provide feedback?
               </p>
               <Button
                 variant="primary"

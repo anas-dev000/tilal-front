@@ -1,7 +1,14 @@
 // frontend/src/pages/admin/SiteSectionsPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Layers, Edit, Plus, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Layers,
+  Edit,
+  Plus,
+  AlertCircle,
+} from "lucide-react";
 import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
 import SiteModal from "./SiteModal";
@@ -45,12 +52,12 @@ const SiteSectionsPage = () => {
     }
   }, []);
 
-  // ✅ جلب آخر 2 tasks rejected على الـ site
+  //  جلب آخر 2 tasks rejected على الـ site
   const fetchRejectedTasks = useCallback(async () => {
     try {
       const response = await tasksAPI.getTasks({ site: id });
       const tasks = response.data.data || [];
-      
+
       // فلترة الـ tasks اللي عليها rejected أو عندها comments
       const rejected = tasks
         .filter(
@@ -66,7 +73,7 @@ const SiteSectionsPage = () => {
         })
         // أخذ أول 2 فقط
         .slice(0, 2);
-      
+
       setRejectedTasks(rejected);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -215,7 +222,7 @@ const SiteSectionsPage = () => {
             </div>
           </div>
 
-          {/* ✅ Admin Review Comments Section - فوق Location */}
+          {/*  Admin Review Comments Section - فوق Location */}
           {rejectedTasks.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -226,7 +233,8 @@ const SiteSectionsPage = () => {
                       Latest Rejected Tasks - Admin Review
                     </h3>
                     <p className="text-sm text-red-700 mb-3">
-                      Last {rejectedTasks.length} rejected task{rejectedTasks.length > 1 ? "s" : ""}
+                      Last {rejectedTasks.length} rejected task
+                      {rejectedTasks.length > 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>

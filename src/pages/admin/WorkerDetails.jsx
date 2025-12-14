@@ -75,10 +75,12 @@ const WorkerDetails = () => {
                 <span>{new Date(worker.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
-            {/* ✅ Notes Section */}
+            {/*  Notes Section */}
             {worker.notes && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Notes</h4>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  Notes
+                </h4>
                 <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
                   {worker.notes}
                 </p>

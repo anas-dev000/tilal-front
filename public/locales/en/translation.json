@@ -214,6 +214,7 @@
     "loginError": "Invalid credentials"
   },
   "status": {
+    "all" : "All",
     "pending": "Pending",
     "assigned": "Assigned",
     "in-progress": "In Progress",
@@ -222,7 +223,8 @@
     "active": "Active",
     "inactive": "Inactive",
     "review": "Review",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "approved": "Approved"
   },
   "priority": {
     "low": "Low",

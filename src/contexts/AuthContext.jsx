@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const parsedUser = JSON.parse(userData);
 
-        // ✅ Ensure role is set (for backward compatibility)
+        //  Ensure role is set (for backward compatibility)
         if (!parsedUser.role) {
           // If no role, try to infer from other fields
           if (parsedUser.username && !parsedUser.email?.includes("@")) {
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * ✅ UNIFIED LOGIN: Works for Admin, Worker, AND Client
+   *  UNIFIED LOGIN: Works for Admin, Worker, AND Client
    */
   const login = async (credentials) => {
     try {
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * ✅ NEW: Client Login (uses same token system)
+   *  NEW: Client Login (uses same token system)
    */
   const clientLogin = async (credentials) => {
     try {
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         const { token, user, client, isPasswordTemporary } = response.data.data;
 
-        // ✅ Use 'user' object if provided, otherwise construct from 'client'
+        //  Use 'user' object if provided, otherwise construct from 'client'
         const userData = user || { ...client, role: "client" };
 
         localStorage.setItem("token", token);

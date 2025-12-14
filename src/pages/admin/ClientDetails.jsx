@@ -1,6 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Mail, Phone, MapPin, Home, CreditCard, Edit } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Home,
+  CreditCard,
+  Edit,
+} from "lucide-react";
 import { format } from "date-fns";
 import Loading from "../../components/common/Loading";
 import { clientsAPI, sitesAPI, tasksAPI } from "../../services/api";
@@ -43,7 +51,10 @@ const ClientDetails = () => {
   const currentYear = new Date().getFullYear();
   const tasksThisMonth = tasks.filter((task) => {
     const taskDate = new Date(task.createdAt);
-    return taskDate.getMonth() === currentMonth && taskDate.getFullYear() === currentYear;
+    return (
+      taskDate.getMonth() === currentMonth &&
+      taskDate.getFullYear() === currentYear
+    );
   }).length;
 
   // Recent tasks (last 5)
@@ -64,7 +75,10 @@ const ClientDetails = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/admin/clients" className="text-gray-600 hover:text-gray-900">
+          <Link
+            to="/admin/clients"
+            className="text-gray-600 hover:text-gray-900"
+          >
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div>
@@ -87,7 +101,7 @@ const ClientDetails = () => {
             {client.status === "inactive" && "⏸ Inactive"}
             {client.status === "suspended" && " Suspended"}
           </span>
-{/* 
+          {/* 
           <Link
             to={`/admin/clients?edit=${client._id}`}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
@@ -179,7 +193,9 @@ const ClientDetails = () => {
                   <span className="text-sm">Property Type</span>
                 </div>
                 <span className="font-medium capitalize">
-                  {client.propertyType === "residential" ? "🏠 House" : "🏢 Building"}
+                  {client.propertyType === "residential"
+                    ? " House"
+                    : " Building"}
                 </span>
               </div>
 
@@ -202,7 +218,9 @@ const ClientDetails = () => {
                       : "bg-blue-100 text-blue-800"
                   }`}
                 >
-                  {(client.paymentType || "online") === "cash" ? "💵 Cash" : "💳 Online"}
+                  {(client.paymentType || "online") === "cash"
+                    ? " Cash"
+                    : " Online"}
                 </span>
               </div>
 
@@ -259,18 +277,24 @@ const ClientDetails = () => {
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{task.title}</h4>
+                        <h4 className="font-medium text-gray-900">
+                          {task.title}
+                        </h4>
                         <p className="text-sm text-gray-600 mt-1 line-clamp-1">
                           {task.description}
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                          {task.site?.name && (
-                            <span>📍 {task.site.name}</span>
-                          )}
+                          {task.site?.name && <span>📍 {task.site.name}</span>}
                           {task.worker?.name && (
                             <span>👷 {task.worker.name}</span>
                           )}
-                          <span>📅 {format(new Date(task.scheduledDate), "dd MMM yyyy")}</span>
+                          <span>
+                            📅{" "}
+                            {format(
+                              new Date(task.scheduledDate),
+                              "dd MMM yyyy"
+                            )}
+                          </span>
                         </div>
                       </div>
                       <span

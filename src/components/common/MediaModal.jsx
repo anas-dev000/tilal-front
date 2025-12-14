@@ -1,10 +1,10 @@
-// src/components/common/MediaModal.jsx - ✅ NEW: Modal for Images & Videos
+// src/components/common/MediaModal.jsx -  NEW: Modal for Images & Videos
 import { X, Play, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
 
 /**
  * MediaModal - عرض الصور والفيديوهات في Modal
- * 
+ *
  * Usage:
  * <MediaModal
  *   isOpen={showModal}
@@ -14,7 +14,13 @@ import { useState } from "react";
  *   title="صورة قبل العمل"
  * />
  */
-const MediaModal = ({ isOpen, onClose, mediaUrl, mediaType = 'image', title }) => {
+const MediaModal = ({
+  isOpen,
+  onClose,
+  mediaUrl,
+  mediaType = "image",
+  title,
+}) => {
   const [zoom, setZoom] = useState(1);
 
   if (!isOpen) return null;
@@ -26,11 +32,11 @@ const MediaModal = ({ isOpen, onClose, mediaUrl, mediaType = 'image', title }) =
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.25, 3));
+    setZoom((prev) => Math.min(prev + 0.25, 3));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.25, 0.5));
+    setZoom((prev) => Math.max(prev - 0.25, 0.5));
   };
 
   const handleReset = () => {
@@ -59,7 +65,7 @@ const MediaModal = ({ isOpen, onClose, mediaUrl, mediaType = 'image', title }) =
       )}
 
       {/* Zoom Controls - Images Only */}
-      {mediaType === 'image' && (
+      {mediaType === "image" && (
         <div className="absolute bottom-4 right-4 flex gap-2 z-10">
           <button
             onClick={handleZoomOut}
@@ -87,7 +93,7 @@ const MediaModal = ({ isOpen, onClose, mediaUrl, mediaType = 'image', title }) =
 
       {/* Media Container */}
       <div className="relative max-w-[95vw] max-h-[90vh] overflow-auto custom-scrollbar">
-        {mediaType === 'video' ? (
+        {mediaType === "video" ? (
           <video
             src={mediaUrl}
             controls
@@ -112,7 +118,7 @@ const MediaModal = ({ isOpen, onClose, mediaUrl, mediaType = 'image', title }) =
 
       {/* Media Type Indicator */}
       <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full backdrop-blur-md text-xs font-medium z-10">
-        {mediaType === 'video' ? (
+        {mediaType === "video" ? (
           <div className="flex items-center gap-1">
             <Play className="w-3 h-3" />
             <span>فيديو</span>

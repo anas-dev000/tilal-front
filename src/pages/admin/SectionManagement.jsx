@@ -1,4 +1,4 @@
-// src/pages/admin/SectionManagement.jsx - ✅ FIXED VIDEO DISPLAY
+// src/pages/admin/SectionManagement.jsx -  FIXED VIDEO DISPLAY
 import { useState } from "react";
 import {
   Plus,
@@ -46,8 +46,8 @@ const SectionManagement = ({ site, onUpdate }) => {
       } catch (error) {
         console.error("Error deleting section:", error);
         toast.error("Failed to delete section", {
-        duration: 5000,
-      });
+          duration: 5000,
+        });
       }
     }
   };
@@ -112,9 +112,7 @@ const SectionManagement = ({ site, onUpdate }) => {
         <div className="flex items-center gap-3">
           <Layers className="w-7 h-7 text-primary-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Site Sections
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900">Site Sections</h2>
             <p className="text-sm text-gray-600">
               {site.sections?.length || 0} sections
             </p>
@@ -134,21 +132,18 @@ const SectionManagement = ({ site, onUpdate }) => {
           <p className="text-gray-400 text-sm mt-2">
             Add sections to organize this site's work areas
           </p>
-          <Button
-            onClick={handleAddSection}
-            icon={Plus}
-            className="mt-4"
-          >
+          <Button onClick={handleAddSection} icon={Plus} className="mt-4">
             Create First Section
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {site.sections.map((section) => {
-            const totalQuantity = section.referenceImages?.reduce(
-              (sum, img) => sum + (img.qtn || 1),
-              0
-            ) || 0;
+            const totalQuantity =
+              section.referenceImages?.reduce(
+                (sum, img) => sum + (img.qtn || 1),
+                0
+              ) || 0;
 
             return (
               <div
@@ -158,10 +153,11 @@ const SectionManagement = ({ site, onUpdate }) => {
               >
                 {/* Section Preview */}
                 <div className="relative h-48 bg-gray-200 overflow-hidden">
-                  {section.referenceImages && section.referenceImages.length > 0 ? (
+                  {section.referenceImages &&
+                  section.referenceImages.length > 0 ? (
                     <div className="relative w-full h-full">
-                      {/* ✅ FIX: Check media type and render accordingly */}
-                      {section.referenceImages[0].mediaType === 'video' ? (
+                      {/*  FIX: Check media type and render accordingly */}
+                      {section.referenceImages[0].mediaType === "video" ? (
                         <>
                           <video
                             src={section.referenceImages[0].url}
@@ -174,7 +170,7 @@ const SectionManagement = ({ site, onUpdate }) => {
                               <Play className="w-8 h-8 text-primary-600 fill-primary-600" />
                             </div>
                           </div>
-                          
+
                           {/* Video Badge */}
                           <div className="absolute top-3 left-3 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
                             <Video className="w-3 h-3" />
@@ -188,8 +184,9 @@ const SectionManagement = ({ site, onUpdate }) => {
                             alt={section.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+                              e.target.style.display = "none";
+                              e.target.parentElement.innerHTML =
+                                '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
                             }}
                           />
                           {/* Image Badge */}
@@ -199,7 +196,7 @@ const SectionManagement = ({ site, onUpdate }) => {
                           </div>
                         </>
                       )}
-                      
+
                       {/* Media Count Badge */}
                       {section.referenceImages.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-bold">
@@ -208,7 +205,7 @@ const SectionManagement = ({ site, onUpdate }) => {
                       )}
                     </div>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <div className="w-full h-full flex items-center justify-center bg-linear-to-r from-gray-100 to-gray-200">
                       <Layers className="w-16 h-16 text-gray-400" />
                     </div>
                   )}

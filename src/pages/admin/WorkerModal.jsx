@@ -130,7 +130,7 @@ const WorkerModal = ({ isOpen, onClose, worker, onSuccess }) => {
           />
         </div>
 
-        {/* ✅ Status Selector (Only in Edit Mode) */}
+        {/*  Status Selector (Only in Edit Mode) */}
         {worker && (
           <Select
             label="Status"
@@ -141,7 +141,7 @@ const WorkerModal = ({ isOpen, onClose, worker, onSuccess }) => {
             ]}
           />
         )}
-        {/* ✅ Notes Field */}
+        {/*  Notes Field */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t("admin.workers.notes")}
@@ -157,7 +157,7 @@ const WorkerModal = ({ isOpen, onClose, worker, onSuccess }) => {
             Max 1000 characters • {WATCH("notes")?.length || 0}/1000
           </p>
         </div>
-        {/* ❌ Specialization REMOVED */}
+        {/*  Specialization REMOVED */}
 
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button

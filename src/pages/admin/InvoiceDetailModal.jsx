@@ -1,20 +1,20 @@
 // frontend/src/pages/admin/InvoiceDetailModal.jsx - NEW FILE
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Download, X } from 'lucide-react';
-import Modal from '../../components/common/Modal';
-import Button from '../../components/common/Button';
-import Select from '../../components/common/Select';
-import Input from '../../components/common/Input';
-import { invoicesAPI } from '../../services/api';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Download, X } from "lucide-react";
+import Modal from "../../components/common/Modal";
+import Button from "../../components/common/Button";
+import Select from "../../components/common/Select";
+import Input from "../../components/common/Input";
+import { invoicesAPI } from "../../services/api";
+import { toast } from "sonner";
 
 const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
 
-  // ✅ Payment Status Management
+  //  Payment Status Management
   const [paymentStatus, setPaymentStatus] = useState("pending");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paidAmount, setPaidAmount] = useState(0);
@@ -48,16 +48,19 @@ const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
         paidAmount: parseFloat(paidAmount),
         paymentDate: paymentStatus === "paid" ? new Date() : null,
       });
-        toast.success('Payment status updated successfully', {
+      toast.success("Payment status updated successfully", {
         duration: 5000,
       });
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error updating payment:', error);
-      toast.error(error.response?.data?.message || 'Failed to update payment status', {
-        duration: 5000,
-      });
+      console.error("Error updating payment:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update payment status",
+        {
+          duration: 5000,
+        }
+      );
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,7 @@ const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
 
   const handleDownload = () => {
     if (!invoiceData?.pdfUrl) {
-      toast.error('PDF not available', {
+      toast.error("PDF not available", {
         duration: 5000,
       });
       return;
@@ -231,7 +234,7 @@ const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
         {/* Notes */}
         {invoiceData.notes && (
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">📝 Notes</h3>
+            <h3 className="font-semibold text-gray-900 mb-2"> Notes</h3>
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
               {invoiceData.notes}
             </p>

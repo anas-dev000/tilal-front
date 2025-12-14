@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/AdminTaskDetail.jsx - ✅ WITH QTN SUPPORT
+// frontend/src/pages/admin/AdminTaskDetail.jsx -  WITH QTN SUPPORT
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -34,7 +34,7 @@ const AdminTaskDetail = () => {
 
   const [referenceImages, setReferenceImages] = useState([]);
 
-  // ✅ QTN-Based Previews Structure
+  //  QTN-Based Previews Structure
   const [previewsByRef, setPreviewsByRef] = useState({});
 
   // Media Modal State
@@ -55,7 +55,7 @@ const AdminTaskDetail = () => {
       if (data.referenceImages?.length > 0) {
         setReferenceImages(data.referenceImages);
 
-        // ✅ Initialize QTN-based preview structure
+        //  Initialize QTN-based preview structure
         const initialPreviews = {};
 
         data.referenceImages.forEach((refImg, refIndex) => {
@@ -67,7 +67,7 @@ const AdminTaskDetail = () => {
           }
         });
 
-        // ✅ Load existing uploaded images
+        //  Load existing uploaded images
         if (data.images?.before) {
           let globalIndex = 0;
           data.referenceImages.forEach((refImg, refIndex) => {
@@ -112,7 +112,7 @@ const AdminTaskDetail = () => {
       }
     } catch (error) {
       console.error("Error fetching task:", error);
-      toast.error('Failed to load task details', {
+      toast.error("Failed to load task details", {
         duration: 5000,
       });
     } finally {
@@ -127,9 +127,9 @@ const AdminTaskDetail = () => {
   const handleSaveReview = async (status) => {
     try {
       if (!reviewComments && status === "rejected") {
-      toast.error('Please add comments for rejection', {
-        duration: 5000,
-      });
+        toast.error("Please add comments for rejection", {
+          duration: 5000,
+        });
         return;
       }
 
@@ -144,13 +144,13 @@ const AdminTaskDetail = () => {
       });
 
       setReviewStatus(status);
-      toast.success('Task ${status} successfully ✅', {
+      toast.success("Task ${status} successfully ", {
         duration: 5000,
       });
       fetchTask();
     } catch (error) {
       console.error("Error saving review:", error);
-        toast.error('Failed to save review', {
+      toast.error("Failed to save review", {
         duration: 5000,
       });
     } finally {
@@ -171,7 +171,7 @@ const AdminTaskDetail = () => {
       fetchTask();
     } catch (error) {
       console.error("Error toggling image visibility:", error);
-        toast.error('Failed to update image visibility', {
+      toast.error("Failed to update image visibility", {
         duration: 5000,
       });
     }
@@ -243,7 +243,7 @@ const AdminTaskDetail = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Client Feedback Section */}
           {task.feedback && (
-            <Card title="💬 Client Feedback">
+            <Card title=" Client Feedback">
               <div
                 className={`rounded-xl p-5 border-2 ${
                   task.feedback.isSatisfiedOnly
@@ -328,7 +328,7 @@ const AdminTaskDetail = () => {
 
           {/* Site Info */}
           {task.site && (
-            <Card title="🏢 Site Information">
+            <Card title=" Site Information">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   {task.site.coverImage?.url ? (
@@ -411,7 +411,7 @@ const AdminTaskDetail = () => {
             </Card>
           )}
 
-          {/* ✅ QTN-Based Work Documentation */}
+          {/*  QTN-Based Work Documentation */}
           {referenceImages.length > 0 && (
             <Card title="📸 Work Documentation">
               <div className="space-y-6">
@@ -450,7 +450,7 @@ const AdminTaskDetail = () => {
                       {/* Reference Media */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          📋 Reference {isRefVideo ? "Video" : "Image"}
+                          Reference {isRefVideo ? "Video" : "Image"}
                         </label>
                         <div
                           className="relative h-48 bg-gray-100 rounded-lg border-2 border-primary-300 overflow-hidden cursor-pointer hover:opacity-90"
@@ -482,7 +482,7 @@ const AdminTaskDetail = () => {
                         </div>
                       </div>
 
-                      {/* ✅ QTN-Based Upload Grid */}
+                      {/*  QTN-Based Upload Grid */}
                       <div className="space-y-4">
                         {Array.from({ length: qtn }).map((_, qtnIdx) => {
                           const beforeMedia =
@@ -509,7 +509,7 @@ const AdminTaskDetail = () => {
                                 {/* Before */}
                                 <div>
                                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                                    📷 Before Work
+                                    Before Work
                                   </label>
                                   {beforeMedia ? (
                                     <div
@@ -540,7 +540,7 @@ const AdminTaskDetail = () => {
                                         />
                                       )}
                                       <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                        ✅ Uploaded
+                                        Uploaded
                                       </div>
                                     </div>
                                   ) : (
@@ -555,7 +555,7 @@ const AdminTaskDetail = () => {
                                 {/* After */}
                                 <div>
                                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                                    ✅ After Work
+                                    After Work
                                   </label>
                                   {afterMedia ? (
                                     <div className="relative group">
@@ -589,7 +589,7 @@ const AdminTaskDetail = () => {
                                           />
                                         )}
                                         <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                          ✅ Uploaded
+                                          Uploaded
                                         </div>
                                       </div>
 
@@ -662,7 +662,7 @@ const AdminTaskDetail = () => {
           )}
 
           {/* Admin Review */}
-          <Card title="🛡️ Admin Review & Approval">
+          <Card title="️ Admin Review & Approval">
             <div className="space-y-4">
               <div
                 className={`p-4 rounded-lg border-2 ${
@@ -691,7 +691,7 @@ const AdminTaskDetail = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📝 Review Comments
+                  Review Comments
                 </label>
                 <textarea
                   value={reviewComments}
@@ -710,7 +710,7 @@ const AdminTaskDetail = () => {
                   icon={CheckCircle}
                   className="w-full"
                 >
-                  {saving ? "..." : "✅ Approve"}
+                  {saving ? "..." : " Approve"}
                 </Button>
 
                 <Button
@@ -719,7 +719,7 @@ const AdminTaskDetail = () => {
                   variant="secondary"
                   className="w-full"
                 >
-                  {saving ? "..." : "⏳ Pending"}
+                  {saving ? "..." : " Pending"}
                 </Button>
 
                 <Button
@@ -729,7 +729,7 @@ const AdminTaskDetail = () => {
                   icon={XCircle}
                   className="w-full"
                 >
-                  {saving ? "..." : "❌ Reject"}
+                  {saving ? "..." : " Reject"}
                 </Button>
               </div>
             </div>
@@ -778,7 +778,7 @@ const AdminTaskDetail = () => {
 
           {/* Review History */}
           {task.adminReview?.reviewedAt && (
-            <Card title="📋 Review History">
+            <Card title=" Review History">
               <div className="space-y-2 text-sm">
                 <div>
                   <p className="text-gray-500">Reviewed At</p>

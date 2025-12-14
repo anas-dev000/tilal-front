@@ -5,11 +5,13 @@ const ClientStatusBadge = ({ status }) => {
   const colors = {
     active: "bg-green-100 text-green-800",
     inactive: "bg-gray-100 text-gray-800",
-    suspended: "bg-red-100 text-red-800"
+    suspended: "bg-red-100 text-red-800",
   };
-  
+
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${colors[status]}`}>
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${colors[status]}`}
+    >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
@@ -62,14 +64,18 @@ const ClientsTable = ({
               <td className="py-4 px-6">
                 <div className="font-medium text-gray-900">{client.name}</div>
                 {client.address?.city && (
-                  <div className="text-sm text-gray-500">{client.address.city}</div>
+                  <div className="text-sm text-gray-500">
+                    {client.address.city}
+                  </div>
                 )}
               </td>
               <td className="py-4 px-6 text-gray-600">{client.email}</td>
               <td className="py-4 px-6 text-gray-600">{client.phone}</td>
               <td className="py-4 px-6">
                 <span className="capitalize text-sm">
-                  {client.propertyType === "residential" ? "🏠 House" : "🏢 Building"}
+                  {client.propertyType === "residential"
+                    ? " House"
+                    : " Building"}
                 </span>
               </td>
               <td className="py-4 px-6">
@@ -80,7 +86,9 @@ const ClientsTable = ({
                       : "bg-blue-100 text-blue-800"
                   }`}
                 >
-                  {(client.paymentType || "online") === "cash" ? "💵 Cash" : "💳 Online"}
+                  {(client.paymentType || "online") === "cash"
+                    ? " Cash"
+                    : " Online"}
                 </span>
               </td>
               <td className="py-4 px-6">
@@ -99,7 +107,10 @@ const ClientsTable = ({
                     <Eye className="w-5 h-5" />
                   </Link>
                   <button
-                    onClick={(e) => {e.stopPropagation();onEdit(client);}}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(client);
+                    }}
                     className="text-indigo-600 hover:text-indigo-800 transition"
                     title="Edit"
                   >
@@ -107,15 +118,17 @@ const ClientsTable = ({
                   </button>
                   <button
                     onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleStatus(client);
-                  }}
+                      e.stopPropagation();
+                      onToggleStatus(client);
+                    }}
                     className={`transition ${
                       client.status === "active"
                         ? "text-red-600 hover:text-red-800"
                         : "text-green-600 hover:text-green-800"
                     }`}
-                    title={client.status === "active" ? "Deactivate" : "Activate"}
+                    title={
+                      client.status === "active" ? "Deactivate" : "Activate"
+                    }
                   >
                     <Power className="w-5 h-5" />
                   </button>

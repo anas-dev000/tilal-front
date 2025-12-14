@@ -26,7 +26,7 @@ const Login = () => {
       let result;
 
       if (loginType === "staff") {
-        // ✅ Staff Login (Admin/Worker)
+        //  Staff Login (Admin/Worker)
         result = await login(credentials);
 
         if (result.success) {
@@ -44,7 +44,7 @@ const Login = () => {
           setError(result.error);
         }
       } else {
-        // ✅ Client Login
+        //  Client Login
         result = await clientLogin(credentials);
 
         if (result.success) {
@@ -83,7 +83,7 @@ const Login = () => {
           <p className="text-gray-600">{t("common.login")}</p>
         </div>
 
-        {/* ✅ Login Type Selector */}
+        {/*  Login Type Selector */}
         <div className="flex gap-2 mb-6">
           <button
             type="button"

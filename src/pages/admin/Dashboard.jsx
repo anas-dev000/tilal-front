@@ -52,7 +52,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">{t("admin.title")}</h1>
 
-      {/* ✅ Stats Grid - Real Data */}
+      {/*  Stats Grid - Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title={t("admin.stats.totalClients")}
@@ -80,12 +80,12 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* ✅ Low Stock Alert - NEW */}
+      {/*  Low Stock Alert - NEW */}
       <Card title="Low Stock Alerts">
         {lowStockItems.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-green-600 font-medium">
-              ✅ All items are well stocked!
+              All items are well stocked!
             </p>
           </div>
         ) : (
@@ -116,7 +116,7 @@ const Dashboard = () => {
         )}
       </Card>
 
-      {/* ✅ Task Completion Overview */}
+      {/*  Task Completion Overview */}
       {stats && (
         <Card title="📊 Task Completion Overview">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

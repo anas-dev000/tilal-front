@@ -195,16 +195,16 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ Auth API
+//  Auth API
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
   logout: () => api.post("/auth/logout"),
   getCurrentUser: () => api.get("/auth/me"),
 };
 
-// ✅ Client Auth & API (UNIFIED)
+//  Client Auth & API (UNIFIED)
 export const clientsAPI = {
-  // ✅ Client login - now returns standard JWT token
+  //  Client login - now returns standard JWT token
   clientLogin: (credentials) => api.post("/clients/login", credentials),
 
   // Client CRUD
@@ -217,7 +217,7 @@ export const clientsAPI = {
   toggleClientStatus: (id) => api.put(`/clients/${id}/toggle-status`),
 };
 
-// ✅ Users API
+//  Users API
 export const usersAPI = {
   getUsers: (params) => api.get("/users", { params }),
   getUser: (id) => api.get(`/users/${id}`),
@@ -227,7 +227,23 @@ export const usersAPI = {
   deleteUser: (id) => api.delete(`/users/${id}`),
 };
 
-// ✅ Sites API
+// 🗑️ Universal Image Deletion API
+export const deleteImageAPI = {
+  /**
+   * Delete any image/video from the system
+   * @param {Object} params - Delete parameters
+   * @param {string} params.cloudinaryId - Cloudinary public ID
+   * @param {string} params.resourceType - 'image' or 'video'
+   * @param {string} params.entityType - 'site' | 'section' | 'task' | 'feedback'
+   * @param {string} params.entityId - Entity ID (site/task ID)
+   * @param {string} params.sectionId - Section ID (required if entityType='section')
+   * @param {string} params.imageId - Image document ID
+   * @param {string} params.imageType - 'before' | 'after' | 'reference' | 'cover' | 'feedback'
+   */
+  deleteImage: (params) => api.delete("/delete-image", { data: params }),
+};
+
+//  Sites API
 export const sitesAPI = {
   getAllSites: (params) => api.get("/sites", { params }),
   getSite: (id) => api.get(`/sites/${id}`),
@@ -260,7 +276,7 @@ export const sitesAPI = {
     api.delete(`/sites/${siteId}/sections/${sectionId}/images/${imageId}`),
 };
 
-// ✅ Tasks API
+//  Tasks API
 export const tasksAPI = {
   getTasks: (params) => api.get("/tasks", { params }),
   getTask: (id) => api.get(`/tasks/${id}`),
@@ -287,7 +303,7 @@ export const tasksAPI = {
       isVisible,
     }),
 
-  // ✅ Client Feedback
+  //  Client Feedback
   submitFeedback: (id, formData) => {
     return api.post(`/tasks/${id}/feedback`, formData, {
       headers: {
@@ -296,11 +312,11 @@ export const tasksAPI = {
     });
   },
 
-  // ✅ NEW: Mark task as satisfied (simple button)
+  //  NEW: Mark task as satisfied (simple button)
   markSatisfied: (id) => api.post(`/tasks/${id}/satisfied`),
 };
 
-// ✅ Plants API
+//  Plants API
 export const plantsAPI = {
   getPlants: (params) => api.get("/plants", { params }),
   getPlant: (id) => api.get(`/plants/${id}`),
@@ -316,7 +332,7 @@ export const plantsAPI = {
   deletePlant: (id) => api.delete(`/plants/${id}`),
 };
 
-// ✅ Inventory API
+//  Inventory API
 export const inventoryAPI = {
   getInventory: (params) => api.get("/inventory", { params }),
   getInventoryItem: (id) => api.get(`/inventory/${id}`),
@@ -328,7 +344,7 @@ export const inventoryAPI = {
   restockInventory: (id, data) => api.post(`/inventory/${id}/restock`, data),
 };
 
-// ✅ Invoices API
+//  Invoices API
 export const invoicesAPI = {
   getInvoices: (params) => api.get("/invoices", { params }),
   getInvoice: (id) => api.get(`/invoices/${id}`),
@@ -341,7 +357,7 @@ export const invoicesAPI = {
     api.get(`/invoices/${id}/download`, { responseType: "blob" }),
 };
 
-// ✅ Reports API
+//  Reports API
 export const reportsAPI = {
   getDashboardStats: (params) => api.get("/reports/dashboard", { params }),
   getWeeklyReport: () => api.get("/reports/weekly"),
@@ -349,7 +365,7 @@ export const reportsAPI = {
   getWorkerPerformance: (params) => api.get("/reports/workers", { params }),
 };
 
-// ✅ Notifications API
+//  Notifications API
 export const notificationsAPI = {
   getNotifications: (params) => api.get("/notifications", { params }),
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
@@ -357,7 +373,7 @@ export const notificationsAPI = {
   deleteNotification: (id) => api.delete(`/notifications/${id}`),
 };
 
-// ✅ Helper function for localized text
+//  Helper function for localized text
 export const getLocalizedText = (multiLangObj, language = "en") => {
   if (!multiLangObj) return "";
   if (typeof multiLangObj === "string") return multiLangObj;

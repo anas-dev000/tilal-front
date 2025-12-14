@@ -129,7 +129,7 @@
       "afterPhoto": "صورة بعد",
       "aiScore": "درجة الذكاء الاصطناعي",
       "adminComments": "تعليقات المدير",
-      "worker":"عامل",
+      "worker": "عامل",
       "adminReview": {
         "status": "حالة التقييم"
       }
@@ -214,6 +214,7 @@
     "loginError": "بيانات الدخول غير صحيحة"
   },
   "status": {
+    "all": "الكل",
     "pending": "قيد الانتظار",
     "assigned": "معين",
     "in-progress": "قيد التنفيذ",
@@ -222,7 +223,8 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "review": "قيد المراجعة",
-    "rejected": "مرفوض"
+    "rejected": "مرفوض",
+    "approved": "مبقول"
   },
   "priority": {
     "low": "منخفض",

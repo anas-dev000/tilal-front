@@ -1,12 +1,19 @@
-// src/pages/admin/SectionModal.jsx - ✅ WITH VIDEO UPLOAD SUPPORT
+// src/pages/admin/SectionModal.jsx - WITH DELETE MEDIA SUPPORT
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Image as ImageIcon, X, Upload, Play, Video } from "lucide-react";
+import {
+  Image as ImageIcon,
+  X,
+  Upload,
+  Play,
+  Video,
+  Trash2,
+} from "lucide-react";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import MediaUpload from "../../components/common/MediaUpload";
-import { sitesAPI } from "../../services/api";
+import { sitesAPI, deleteImageAPI } from "../../services/api";
+import { toast } from "sonner";
 
 const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -14,6 +21,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
   const [newMedia, setNewMedia] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [previewTypes, setPreviewTypes] = useState([]);
+  const [deletingMedia, setDeletingMedia] = useState({});
 
   const {
     register,
@@ -43,6 +51,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
     setNewMedia([]);
     setPreviewUrls([]);
     setPreviewTypes([]);
+    setDeletingMedia({});
   }, [section, reset]);
 
   const handleMediaChange = (e) => {
@@ -53,10 +62,10 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
       // Create preview URLs and detect types
       files.forEach((file) => {
         const url = URL.createObjectURL(file);
-        const isVideo = file.type.startsWith('video/');
-        
+        const isVideo = file.type.startsWith("video/");
+
         setPreviewUrls((prev) => [...prev, url]);
-        setPreviewTypes((prev) => [...prev, isVideo ? 'video' : 'image']);
+        setPreviewTypes((prev) => [...prev, isVideo ? "video" : "image"]);
       });
     }
   };
@@ -66,6 +75,47 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
     setNewMedia((prev) => prev.filter((_, i) => i !== index));
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
     setPreviewTypes((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // 🗑️ DELETE EXISTING MEDIA
+  const handleDeleteExistingMedia = async (media, mediaIndex) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this ${
+        media.mediaType === "video" ? "video" : "image"
+      }? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    const key = `existing-${mediaIndex}`;
+    setDeletingMedia((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      await deleteImageAPI.deleteImage({
+        cloudinaryId: media.cloudinaryId,
+        resourceType: media.mediaType === "video" ? "video" : "image",
+        entityType: "section",
+        entityId: site._id,
+        sectionId: section._id,
+        imageId: media._id,
+        imageType: "reference",
+      });
+
+      toast.success(
+        `${
+          media.mediaType === "video" ? "Video" : "Image"
+        } deleted successfully`
+      );
+      onSuccess(); // Refresh parent data
+    } catch (error) {
+      console.error("Delete media error:", error);
+      toast.error(error.response?.data?.message || "Failed to delete media");
+    } finally {
+      setDeletingMedia((prev) => {
+        const newState = { ...prev };
+        delete newState[key];
+        return newState;
+      });
+    }
   };
 
   const onSubmit = async (data) => {
@@ -190,8 +240,9 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {section.referenceImages.map((media, idx) => {
-                  const isVideo = media.mediaType === 'video';
-                  
+                  const isVideo = media.mediaType === "video";
+                  const isDeletingThis = deletingMedia[`existing-${idx}`];
+
                   return (
                     <div key={idx} className="relative group">
                       {isVideo ? (
@@ -213,19 +264,40 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
                           onClick={() => window.open(media.url, "_blank")}
                         />
                       )}
-                      
+
                       {/* Media Type Badge */}
-                      <div className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-xs font-bold text-white ${
-                        isVideo ? 'bg-purple-600' : 'bg-blue-600'
-                      }`}>
-                        {isVideo ? <Video className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
+                      <div
+                        className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-xs font-bold text-white ${
+                          isVideo ? "bg-purple-600" : "bg-blue-600"
+                        }`}
+                      >
+                        {isVideo ? (
+                          <Video className="w-3 h-3" />
+                        ) : (
+                          <ImageIcon className="w-3 h-3" />
+                        )}
                       </div>
+
+                      {/* 🗑️ DELETE BUTTON */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExistingMedia(media, idx)}
+                        disabled={isDeletingThis}
+                        className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={`Delete ${isVideo ? "video" : "image"}`}
+                      >
+                        {isDeletingThis ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </button>
                     </div>
                   );
                 })}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Click to view full size
+                Click to view full size • Hover to delete
               </p>
             </div>
           )}
@@ -267,8 +339,8 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
           {previewUrls.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mt-3">
               {previewUrls.map((url, idx) => {
-                const isVideo = previewTypes[idx] === 'video';
-                
+                const isVideo = previewTypes[idx] === "video";
+
                 return (
                   <div key={idx} className="relative group">
                     {isVideo ? (
@@ -297,11 +369,11 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
                         </div>
                       </>
                     )}
-                    
+
                     <button
                       type="button"
                       onClick={() => removeNewMedia(idx)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -315,7 +387,8 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
         {/* Info Message */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800">
-            💡 <strong>Tip:</strong> Upload both images and videos to help workers identify the work areas more clearly.
+            💡 <strong>Tip:</strong> Upload both images and videos to help
+            workers identify the work areas more clearly.
           </p>
         </div>
 

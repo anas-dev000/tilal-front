@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import DeleteImageButton from "../../components/common/DeleteImageButton";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Camera,
@@ -65,6 +67,17 @@ const TaskDetail = () => {
 
     fetchData();
   }, [id]);
+
+  const refreshTaskData = async () => {
+    try {
+      const res = await tasksAPI.getTask(id);
+      setTask(res.data.data);
+      initializeQTNStructure(res.data.data);
+    } catch (error) {
+      console.error("Error refreshing task:", error);
+      toast.error("Failed to refresh task data");
+    }
+  };
 
   const initializeQTNStructure = (taskData) => {
     if (!taskData.referenceImages || taskData.referenceImages.length === 0) {
@@ -526,13 +539,13 @@ const TaskDetail = () => {
                                   {/* Before */}
                                   <div>
                                     <label className="block text-center text-md font-semibold text-gray-700 mb-3">
-                                      📷 Before Work
+                                      Before Work
                                     </label>
                                     {isBeforeUploading ? (
                                       <SkeletonLoader />
                                     ) : previewsByRef[refIdx]?.[locIdx]
                                         ?.before ? (
-                                      <div className="relative">
+                                      <div className="relative group">
                                         <img
                                           src={
                                             previewsByRef[refIdx][locIdx].before
@@ -547,6 +560,45 @@ const TaskDetail = () => {
                                             Uploaded
                                           </div>
                                         )}
+                                        {/* Delete Button - Only show if task is not completed */}
+                                        {task.status !== "completed" &&
+                                          previewsByRef[refIdx][locIdx].before
+                                            .existing && (
+                                            <DeleteImageButton
+                                              imageData={{
+                                                cloudinaryId:
+                                                  task.images.before.find(
+                                                    (img) =>
+                                                      img.url ===
+                                                      previewsByRef[refIdx][
+                                                        locIdx
+                                                      ].before.url
+                                                  )?.cloudinaryId,
+                                                mediaType:
+                                                  task.images.before.find(
+                                                    (img) =>
+                                                      img.url ===
+                                                      previewsByRef[refIdx][
+                                                        locIdx
+                                                      ].before.url
+                                                  )?.mediaType || "image",
+                                                _id: task.images.before.find(
+                                                  (img) =>
+                                                    img.url ===
+                                                    previewsByRef[refIdx][
+                                                      locIdx
+                                                    ].before.url
+                                                )?._id,
+                                              }}
+                                              entityType="task"
+                                              entityId={task._id}
+                                              imageType="before"
+                                              onSuccess={refreshTaskData}
+                                              position="top-right"
+                                              size="md"
+                                              showOnHover={true}
+                                            />
+                                          )}
                                       </div>
                                     ) : (
                                       <label className="block cursor-pointer">
@@ -577,13 +629,13 @@ const TaskDetail = () => {
                                   {/* After */}
                                   <div>
                                     <label className="block text-center text-md font-semibold text-gray-700 mb-3">
-                                      ✅ After Work
+                                      After Work
                                     </label>
                                     {isAfterUploading ? (
                                       <SkeletonLoader />
                                     ) : previewsByRef[refIdx]?.[locIdx]
                                         ?.after ? (
-                                      <div className="relative">
+                                      <div className="relative group">
                                         <img
                                           src={
                                             previewsByRef[refIdx][locIdx].after
@@ -598,6 +650,45 @@ const TaskDetail = () => {
                                             Uploaded
                                           </div>
                                         )}
+                                        {/* Delete Button */}
+                                        {task.status !== "completed" &&
+                                          previewsByRef[refIdx][locIdx].after
+                                            .existing && (
+                                            <DeleteImageButton
+                                              imageData={{
+                                                cloudinaryId:
+                                                  task.images.after.find(
+                                                    (img) =>
+                                                      img.url ===
+                                                      previewsByRef[refIdx][
+                                                        locIdx
+                                                      ].after.url
+                                                  )?.cloudinaryId,
+                                                mediaType:
+                                                  task.images.after.find(
+                                                    (img) =>
+                                                      img.url ===
+                                                      previewsByRef[refIdx][
+                                                        locIdx
+                                                      ].after.url
+                                                  )?.mediaType || "image",
+                                                _id: task.images.after.find(
+                                                  (img) =>
+                                                    img.url ===
+                                                    previewsByRef[refIdx][
+                                                      locIdx
+                                                    ].after.url
+                                                )?._id,
+                                              }}
+                                              entityType="task"
+                                              entityId={task._id}
+                                              imageType="after"
+                                              onSuccess={refreshTaskData}
+                                              position="top-right"
+                                              size="md"
+                                              showOnHover={true}
+                                            />
+                                          )}
                                       </div>
                                     ) : (
                                       <label className="block cursor-pointer">

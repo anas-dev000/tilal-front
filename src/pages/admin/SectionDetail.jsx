@@ -1,6 +1,6 @@
-// src/pages/admin/SectionDetail.jsx - ✅ ALL ISSUES FIXED
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+// src/pages/admin/SectionDetail.jsx -  ALL ISSUES FIXED
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   MapPin,
@@ -14,133 +14,133 @@ import {
   Edit,
   Play,
   Video,
-} from 'lucide-react';
-import { sitesAPI, tasksAPI } from '../../services/api';
-import Loading from '../../components/common/Loading';
-import Button from '../../components/common/Button';
-import EditImageModal from '../../components/admin/EditImageModal';
-import MediaModal from '../../components/common/MediaModal';
+} from "lucide-react";
+import { sitesAPI, tasksAPI } from "../../services/api";
+import Loading from "../../components/common/Loading";
+import Button from "../../components/common/Button";
+import EditImageModal from "../../components/admin/EditImageModal";
+import MediaModal from "../../components/common/MediaModal";
 
 const SectionDetail = () => {
   const { siteId, sectionId } = useParams();
   const navigate = useNavigate();
-  
+
   const [section, setSection] = useState(null);
   const [site, setSite] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // ✅ Media Modal States
+
+  //  Media Modal States
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [selectedMediaType, setSelectedMediaType] = useState('image');
-  const [selectedMediaTitle, setSelectedMediaTitle] = useState('');
-  
+  const [selectedMediaType, setSelectedMediaType] = useState("image");
+  const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
+
   const [editingImage, setEditingImage] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    fetchSectionDetails();
-  }, [siteId, sectionId]);
-
-  const fetchSectionDetails = async () => {
+  const fetchSectionDetails = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const siteResponse = await sitesAPI.getSite(siteId);
-      
+
       if (siteResponse.data.success) {
         setSite(siteResponse.data.data);
-        
+
         const foundSection = siteResponse.data.data.sections.find(
-          s => s._id === sectionId
+          (s) => s._id === sectionId
         );
         setSection(foundSection);
       }
 
-      const tasksResponse = await tasksAPI.getTasks({ 
-        site: siteId, 
-        section: sectionId 
+      const tasksResponse = await tasksAPI.getTasks({
+        site: siteId,
+        section: sectionId,
       });
-      
+
       if (tasksResponse.data.success) {
         setTasks(tasksResponse.data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching section details:', error);
+      console.error("Error fetching section details:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [siteId, sectionId]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    fetchSectionDetails();
+  }, [fetchSectionDetails]);
 
   const handleEditImage = (e, image) => {
     e.stopPropagation();
-    console.log('📝 Opening edit modal for:', image);
+    console.log(" Opening edit modal for:", image);
     setEditingImage(image);
     setIsEditModalOpen(true);
   };
 
   const handleSaveImage = async (formData) => {
     try {
-      console.log('💾 Saving image updates:', formData);
+      console.log("💾 Saving image updates:", formData);
       await sitesAPI.updateReferenceImage(
         siteId,
         sectionId,
         editingImage._id,
         formData
       );
-      
+
       await fetchSectionDetails();
       setIsEditModalOpen(false);
       setEditingImage(null);
-      console.log('✅ Image updated successfully');
+      console.log(" Image updated successfully");
     } catch (error) {
-      console.error('❌ Error updating image:', error);
+      console.error(" Error updating image:", error);
       throw error;
     }
   };
 
-  // ✅ Handle media click - FIXED
+  //  Handle media click - FIXED
   const handleMediaClick = (media, idx) => {
-    console.log('🎬 Media clicked:', media);
-    
+    console.log("🎬 Media clicked:", media);
+
     // Make sure we have the URL
     if (!media.url) {
-      console.error('❌ Media URL is missing!');
+      console.error(" Media URL is missing!");
       return;
     }
 
     setSelectedMedia(media.url);
-    setSelectedMediaType(media.mediaType || 'image');
+    setSelectedMediaType(media.mediaType || "image");
     setSelectedMediaTitle(media.caption || `Reference ${idx + 1}`);
-    
-    console.log('✅ Media modal opened:', {
+
+    console.log(" Media modal opened:", {
       url: media.url,
       type: media.mediaType,
-      title: media.caption || `Reference ${idx + 1}`
+      title: media.caption || `Reference ${idx + 1}`,
     });
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'in-progress': 'bg-blue-100 text-blue-800 border-blue-300',
-      completed: 'bg-green-100 text-green-800 border-green-300',
-      maintenance: 'bg-orange-100 text-orange-800 border-orange-300'
+      pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+      "in-progress": "bg-blue-100 text-blue-800 border-blue-300",
+      completed: "bg-green-100 text-green-800 border-green-300",
+      maintenance: "bg-orange-100 text-orange-800 border-orange-300",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+    return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
   };
 
   const getTaskStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      assigned: 'bg-blue-100 text-blue-800',
-      'in-progress': 'bg-purple-100 text-purple-800',
-      completed: 'bg-green-100 text-green-800',
-      review: 'bg-orange-100 text-orange-800',
-      rejected: 'bg-red-100 text-red-800'
+      pending: "bg-yellow-100 text-yellow-800",
+      assigned: "bg-blue-100 text-blue-800",
+      "in-progress": "bg-purple-100 text-purple-800",
+      completed: "bg-green-100 text-green-800",
+      review: "bg-orange-100 text-orange-800",
+      rejected: "bg-red-100 text-red-800",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   const getLastTaskStatusBadge = () => {
@@ -148,40 +148,43 @@ const SectionDetail = () => {
 
     const statusConfig = {
       completed: {
-        bg: 'bg-green-100',
-        text: 'text-green-800',
-        border: 'border-green-300',
+        bg: "bg-green-100",
+        text: "text-green-800",
+        border: "border-green-300",
         icon: CheckCircle,
-        label: 'Last: Completed'
+        label: "Last: Completed",
       },
       rejected: {
-        bg: 'bg-red-100',
-        text: 'text-red-800',
-        border: 'border-red-300',
+        bg: "bg-red-100",
+        text: "text-red-800",
+        border: "border-red-300",
         icon: AlertCircle,
-        label: 'Last: Rejected'
+        label: "Last: Rejected",
       },
-      'in-progress': {
-        bg: 'bg-blue-100',
-        text: 'text-blue-800',
-        border: 'border-blue-300',
+      "in-progress": {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        border: "border-blue-300",
         icon: Clock,
-        label: 'Last: In Progress'
+        label: "Last: In Progress",
       },
       pending: {
-        bg: 'bg-yellow-100',
-        text: 'text-yellow-800',
-        border: 'border-yellow-300',
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        border: "border-yellow-300",
         icon: Clock,
-        label: 'Last: Pending'
-      }
+        label: "Last: Pending",
+      },
     };
 
-    const config = statusConfig[section.lastTaskStatus] || statusConfig['pending'];
+    const config =
+      statusConfig[section.lastTaskStatus] || statusConfig["pending"];
     const Icon = config.icon;
 
     return (
-      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${config.bg} ${config.text} ${config.border}`}>
+      <div
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${config.bg} ${config.text} ${config.border}`}
+      >
         <Icon className="w-5 h-5" />
         <div className="flex flex-col">
           <span className="text-sm font-semibold">{config.label}</span>
@@ -216,10 +219,8 @@ const SectionDetail = () => {
     );
   }
 
-  const totalQuantity = section.referenceImages?.reduce(
-    (sum, img) => sum + (img.qtn || 1), 
-    0
-  ) || 0;
+  const totalQuantity =
+    section.referenceImages?.reduce((sum, img) => sum + (img.qtn || 1), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -237,7 +238,9 @@ const SectionDetail = () => {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <Layers className="w-8 h-8 text-primary-600" />
-              <h1 className="text-3xl font-bold text-gray-900">{section.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {section.name}
+              </h1>
             </div>
             {section.description && (
               <p className="text-gray-600 mt-2">{section.description}</p>
@@ -245,7 +248,11 @@ const SectionDetail = () => {
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(section.status)}`}>
+            <span
+              className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(
+                section.status
+              )}`}
+            >
               {section.status}
             </span>
             {getLastTaskStatusBadge()}
@@ -284,7 +291,7 @@ const SectionDetail = () => {
           <div className="bg-green-50 rounded-lg p-4 text-center border border-green-200">
             <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-900">
-              {tasks.filter(t => t.status === 'completed').length}
+              {tasks.filter((t) => t.status === "completed").length}
             </p>
             <p className="text-xs text-green-600 uppercase font-medium">
               Completed Tasks
@@ -293,9 +300,7 @@ const SectionDetail = () => {
 
           <div className="bg-orange-50 rounded-lg p-4 text-center border border-orange-200">
             <FileText className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-orange-900">
-              {tasks.length}
-            </p>
+            <p className="text-2xl font-bold text-orange-900">{tasks.length}</p>
             <p className="text-xs text-orange-600 uppercase font-medium">
               Total Tasks
             </p>
@@ -338,7 +343,12 @@ const SectionDetail = () => {
                     📸 How to Read Reference Media
                   </h3>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    The <strong className="text-blue-900">badge number (QTN)</strong> on each item represents <strong>how many times</strong> this plant/location appears in this section.
+                    The{" "}
+                    <strong className="text-blue-900">
+                      badge number (QTN)
+                    </strong>{" "}
+                    on each item represents <strong>how many times</strong> this
+                    plant/location appears in this section.
                   </p>
                 </div>
               </div>
@@ -346,8 +356,8 @@ const SectionDetail = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {section.referenceImages.map((media, idx) => {
-                const isVideo = media.mediaType === 'video';
-                
+                const isVideo = media.mediaType === "video";
+
                 return (
                   <div
                     key={idx}
@@ -355,9 +365,9 @@ const SectionDetail = () => {
                   >
                     {/* Media Container */}
                     <div className="relative h-64 bg-gray-100 overflow-hidden">
-                      {/* ✅ Video or Image */}
+                      {/*  Video or Image */}
                       {isVideo ? (
-                        <div 
+                        <div
                           className="relative w-full h-full cursor-pointer"
                           onClick={() => handleMediaClick(media, idx)}
                         >
@@ -366,8 +376,11 @@ const SectionDetail = () => {
                             className="w-full h-full object-cover"
                             preload="metadata"
                             onError={(e) => {
-                              console.error('❌ Video failed to load:', media.url);
-                              e.target.style.display = 'none';
+                              console.error(
+                                " Video failed to load:",
+                                media.url
+                              );
+                              e.target.style.display = "none";
                             }}
                           />
                           {/* Play Overlay */}
@@ -384,25 +397,28 @@ const SectionDetail = () => {
                           className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-500"
                           onClick={() => handleMediaClick(media, idx)}
                           onError={(e) => {
-                            console.error('❌ Image failed to load:', media.url);
+                            console.error(" Image failed to load:", media.url);
                             e.target.onerror = null;
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
+                            e.target.src =
+                              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
                           }}
                         />
                       )}
-                      
+
                       {/* Overlay on Hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end pointer-events-none">
+                      <div className="absolute inset-0 bg-linear-to-r from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end pointer-events-none">
                         <div className="p-4 text-white w-full">
                           <p className="text-sm font-medium">
-                            {isVideo ? 'Click to play video' : 'Click to view full size'}
+                            {isVideo
+                              ? "Click to play video"
+                              : "Click to view full size"}
                           </p>
                         </div>
                       </div>
 
                       {/* QTN Badge */}
                       <div className="absolute top-3 right-3 z-10">
-                        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white transform group-hover:scale-110 transition-transform duration-300">
+                        <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white transform group-hover:scale-110 transition-transform duration-300">
                           <div className="flex items-center gap-2">
                             <Layers className="w-5 h-5" />
                             <span className="text-2xl font-black">
@@ -414,9 +430,11 @@ const SectionDetail = () => {
 
                       {/* Media Type Badge */}
                       <div className="absolute top-3 left-3 z-10">
-                        <div className={`text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center gap-1 ${
-                          isVideo ? 'bg-purple-600' : 'bg-blue-600'
-                        }`}>
+                        <div
+                          className={`text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center gap-1 ${
+                            isVideo ? "bg-purple-600" : "bg-blue-600"
+                          }`}
+                        >
                           {isVideo ? (
                             <>
                               <Video className="w-3 h-3" />
@@ -450,7 +468,7 @@ const SectionDetail = () => {
                           {media.caption}
                         </h3>
                       )}
-                      
+
                       {media.description && (
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                           {media.description}
@@ -464,7 +482,7 @@ const SectionDetail = () => {
                             {new Date(media.uploadedAt).toLocaleDateString()}
                           </span>
                         </div>
-                        
+
                         <div className="bg-red-50 text-red-700 px-3 py-1 rounded-full border border-red-200">
                           <span className="text-xs font-bold">
                             QTY: {media.qtn || 1}
@@ -472,7 +490,7 @@ const SectionDetail = () => {
                         </div>
                       </div>
 
-                      {/* ✅ Duration Badge for Videos */}
+                      {/*  Duration Badge for Videos */}
                       {isVideo && media.duration && (
                         <div className="mt-2 bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-200 text-center">
                           <span className="text-xs font-bold">
@@ -487,7 +505,7 @@ const SectionDetail = () => {
             </div>
 
             {/* Summary */}
-            <div className="mt-6 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-5">
+            <div className="mt-6 bg-linear-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="bg-purple-100 p-3 rounded-full">
@@ -502,7 +520,7 @@ const SectionDetail = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <p className="text-sm text-purple-600 font-medium">
                     {section.referenceImages.length} unique types
@@ -569,7 +587,7 @@ const SectionDetail = () => {
                         {task.description}
                       </p>
                     )}
-                    
+
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                       {task.worker && (
                         <div className="flex items-center gap-1">
@@ -587,14 +605,19 @@ const SectionDetail = () => {
                         <div className="flex items-center gap-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
                           <span>
-                            Completed {new Date(task.completedAt).toLocaleDateString()}
+                            Completed{" "}
+                            {new Date(task.completedAt).toLocaleDateString()}
                           </span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ml-4 shrink-0 ${getTaskStatusColor(task.status)}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ml-4 shrink-0 ${getTaskStatusColor(
+                      task.status
+                    )}`}
+                  >
                     {task.status}
                   </span>
                 </div>
@@ -617,15 +640,15 @@ const SectionDetail = () => {
         </div>
       )}
 
-      {/* ✅ Media Modal - FIXED */}
+      {/*  Media Modal - FIXED */}
       {selectedMedia && (
         <MediaModal
           isOpen={true}
           onClose={() => {
-            console.log('🔴 Closing media modal');
+            console.log("🔴 Closing media modal");
             setSelectedMedia(null);
-            setSelectedMediaType('image');
-            setSelectedMediaTitle('');
+            setSelectedMediaType("image");
+            setSelectedMediaTitle("");
           }}
           mediaUrl={selectedMedia}
           mediaType={selectedMediaType}
@@ -638,7 +661,7 @@ const SectionDetail = () => {
         <EditImageModal
           isOpen={isEditModalOpen}
           onClose={() => {
-            console.log('🔴 Closing edit modal');
+            console.log("🔴 Closing edit modal");
             setIsEditModalOpen(false);
             setEditingImage(null);
           }}

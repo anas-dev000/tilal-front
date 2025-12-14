@@ -20,7 +20,7 @@ import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
 import Sites from "./pages/admin/Sites";
 import SiteSectionsPage from "./pages/admin/SiteSectionsPage";
 import SectionTasksView from "./pages/admin/SectionTasksView";
-import SectionDetail from "./pages/admin/SectionDetail"; // ✅ NEW
+import SectionDetail from "./pages/admin/SectionDetail"; //  NEW
 
 // Worker Pages
 import WorkerLogin from "./pages/worker/Login";
@@ -169,7 +169,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* ✅ NEW: Section Detail Route */}
+      {/*  NEW: Section Detail Route */}
       <Route
         path="/admin/sites/:siteId/sections/:sectionId"
         element={

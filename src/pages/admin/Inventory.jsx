@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, Package, AlertTriangle, PackageCheck, PackageX } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Package,
+  AlertTriangle,
+  PackageCheck,
+  PackageX,
+} from "lucide-react";
 import { inventoryAPI } from "../../services/api";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -10,22 +17,21 @@ import InventoryModal from "./InventoryModal";
 import InventoryTable from "../../components/admin/InventoryTable";
 import { toast } from "sonner";
 
-
 const PAGE_SIZE = 10;
 
 const Inventory = () => {
   const { t } = useTranslation();
-  
+
   // Data
   const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all"); // all, low-stock, out-of-stock, in-stock
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -54,15 +60,15 @@ const Inventory = () => {
 
     // Filter by tab
     if (activeTab === "low-stock") {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const current = item.quantity?.current || 0;
         const minimum = item.quantity?.minimum || 0;
         return current > 0 && current <= minimum;
       });
     } else if (activeTab === "out-of-stock") {
-      filtered = filtered.filter(item => (item.quantity?.current || 0) === 0);
+      filtered = filtered.filter((item) => (item.quantity?.current || 0) === 0);
     } else if (activeTab === "in-stock") {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const current = item.quantity?.current || 0;
         const minimum = item.quantity?.minimum || 0;
         return current > minimum;
@@ -72,9 +78,10 @@ const Inventory = () => {
     // Filter by search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(term) ||
-        (item.description && item.description.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          (item.description && item.description.toLowerCase().includes(term))
       );
     }
 
@@ -103,8 +110,8 @@ const Inventory = () => {
       } catch (error) {
         console.error("Error deleting item:", error);
         toast.error(error.response?.data?.message || "Failed to delete item", {
-        duration: 5000,
-      });
+          duration: 5000,
+        });
       }
     }
   };
@@ -126,21 +133,23 @@ const Inventory = () => {
   // Calculate stats
   const stats = {
     total: allItems.length,
-    lowStock: allItems.filter(item => {
+    lowStock: allItems.filter((item) => {
       const current = item.quantity?.current || 0;
       const minimum = item.quantity?.minimum || 0;
       return current > 0 && current <= minimum;
     }).length,
-    outOfStock: allItems.filter(item => (item.quantity?.current || 0) === 0).length,
-    inStock: allItems.filter(item => {
+    outOfStock: allItems.filter((item) => (item.quantity?.current || 0) === 0)
+      .length,
+    inStock: allItems.filter((item) => {
       const current = item.quantity?.current || 0;
       const minimum = item.quantity?.minimum || 0;
       return current > minimum;
-    }).length
+    }).length,
   };
 
   if (loading) return <Loading fullScreen />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+  if (error)
+    return <div className="text-center py-12 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-6">
@@ -151,7 +160,8 @@ const Inventory = () => {
             {t("admin.inventory.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredItems.length} items displayed • {stats.lowStock} low stock • {stats.outOfStock} out of stock
+            {filteredItems.length} items displayed • {stats.lowStock} low stock
+            • {stats.outOfStock} out of stock
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -159,7 +169,7 @@ const Inventory = () => {
         </Button>
       </div>
 
-      {/* ✅ IMPROVED Alert Banner */}
+      {/*  IMPROVED Alert Banner */}
       {(stats.lowStock > 0 || stats.outOfStock > 0) && (
         <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
           <div className="flex items-start gap-4">
@@ -179,13 +189,17 @@ const Inventory = () => {
                 {stats.outOfStock > 0 && (
                   <p className="text-red-800 font-semibold flex items-center gap-2">
                     <PackageX className="w-4 h-4" />
-                    {stats.outOfStock} {stats.outOfStock === 1 ? "item is" : "items are"} completely out of stock
+                    {stats.outOfStock}{" "}
+                    {stats.outOfStock === 1 ? "item is" : "items are"}{" "}
+                    completely out of stock
                   </p>
                 )}
                 {stats.lowStock > 0 && (
                   <p className="text-orange-800 font-semibold flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
-                    {stats.lowStock} {stats.lowStock === 1 ? "item has" : "items have"} low stock levels
+                    {stats.lowStock}{" "}
+                    {stats.lowStock === 1 ? "item has" : "items have"} low stock
+                    levels
                   </p>
                 )}
               </div>
@@ -258,7 +272,7 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/* ✅ NEW TABLE */}
+        {/*  NEW TABLE */}
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -273,7 +287,7 @@ const Inventory = () => {
               page: currentPage,
               totalPages,
               total: filteredItems.length,
-              limit: PAGE_SIZE
+              limit: PAGE_SIZE,
             }}
             onPageChange={setCurrentPage}
           />

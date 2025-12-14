@@ -15,7 +15,7 @@ const Invoices = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  // ✅ NEW: Modal State
+  //  NEW: Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -55,7 +55,7 @@ const Invoices = () => {
     }
   };
 
-  // ✅ NEW: Open Modal
+  //  NEW: Open Modal
   const handleView = (invoice) => {
     setSelectedInvoice(invoice);
     setIsModalOpen(true);
@@ -202,7 +202,7 @@ const Invoices = () => {
         )}
       </Card>
 
-      {/* ✅ NEW: Invoice Detail Modal */}
+      {/*  NEW: Invoice Detail Modal */}
       <InvoiceDetailModal
         isOpen={isModalOpen}
         onClose={handleModalClose}

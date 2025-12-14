@@ -1,4 +1,4 @@
-// src/components/admin/EditImageModal.jsx - ✅ WITH FULL VIDEO SUPPORT
+// src/components/admin/EditImageModal.jsx -  WITH FULL VIDEO SUPPORT
 import { useState, useEffect } from "react";
 import { X, Save, Image as ImageIcon, Play, Video } from "lucide-react";
 import Modal from "../common/Modal";

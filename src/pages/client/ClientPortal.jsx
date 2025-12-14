@@ -1,4 +1,4 @@
-// frontend/src/pages/client/ClientPortal.jsx - ✅ WITH MEDIA MODAL
+// frontend/src/pages/client/ClientPortal.jsx -  WITH MEDIA MODAL
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,7 +34,7 @@ const ClientPortal = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
-  // ✅ Media Modal States
+  //  Media Modal States
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
   const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
@@ -49,19 +49,19 @@ const ClientPortal = () => {
       const clientId = user._id || user.id;
 
       if (!clientId) {
-        console.error("❌ No client ID found in user object:", user);
+        console.error(" No client ID found in user object:", user);
         return;
       }
 
-      console.log("✅ Fetching tasks for client:", clientId);
+      console.log(" Fetching tasks for client:", clientId);
       const response = await clientsAPI.getClientTasks(clientId);
       setTasks(response.data.data || []);
-      console.log("✅ Tasks loaded:", response.data.data?.length || 0);
+      console.log(" Tasks loaded:", response.data.data?.length || 0);
     } catch (error) {
-      console.error("❌ Error fetching tasks:", error);
+      console.error(" Error fetching tasks:", error);
 
       if (error.response?.status === 401) {
-        console.log("❌ Unauthorized - Session expired");
+        console.log(" Unauthorized - Session expired");
         logout();
         navigate("/login");
       }
@@ -73,7 +73,7 @@ const ClientPortal = () => {
   useEffect(() => {
     if (user === undefined) return;
     if (!user || user.role !== "client") {
-      console.log("❌ Not authenticated as client, redirecting to login");
+      console.log(" Not authenticated as client, redirecting to login");
       navigate("/login");
       return;
     }
@@ -140,7 +140,7 @@ const ClientPortal = () => {
     }
   };
 
-  // ✅ Handle media click
+  //  Handle media click
   const handleMediaClick = (
     mediaUrl,
     mediaType = "image",
@@ -445,7 +445,7 @@ const ClientPortal = () => {
         onSubmit={handleSubmitFeedback}
       />
 
-      {/* ✅ Media Modal */}
+      {/*  Media Modal */}
       <MediaModal
         isOpen={!!selectedMedia}
         onClose={() => {

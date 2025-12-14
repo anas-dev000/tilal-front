@@ -24,7 +24,7 @@ const ClientLogin = () => {
     setLoading(true);
 
     try {
-      // ✅ استخدام API الصحيح
+      //  استخدام API الصحيح
       const response = await clientsAPI.clientLogin({
         email: credentials.email,
         password: credentials.password,
