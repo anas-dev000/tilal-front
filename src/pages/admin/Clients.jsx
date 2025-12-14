@@ -10,6 +10,7 @@ import ClientModal from "./ClientModal";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import ClientsTable from "../../components/client/ClientsTable";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -111,7 +112,9 @@ const handleRowClick = (client) => {
       await fetchAllClients();
       setConfirmModal({ isOpen: false, client: null, action: "" });
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to toggle status");
+        toast.error(err.response?.data?.message || "Failed to toggle status", {
+        duration: 5000,
+      });
     }
   };
 
@@ -129,7 +132,9 @@ const handleRowClick = (client) => {
       await fetchAllClients();
       setConfirmModal({ isOpen: false, client: null, action: "" });
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete client");
+      toast.error(err.response?.data?.message || "Failed to delete client", {
+        duration: 5000,
+      });
     }
   };
 

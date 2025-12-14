@@ -7,6 +7,7 @@ import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import { invoicesAPI } from '../../services/api';
+import { toast } from 'sonner';
 
 const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
   const { t } = useTranslation();
@@ -47,13 +48,16 @@ const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
         paidAmount: parseFloat(paidAmount),
         paymentDate: paymentStatus === 'paid' ? new Date() : null
       });
-
-      alert('Payment status updated successfully');
+        toast.success('Payment status updated successfully', {
+        duration: 5000,
+      });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error updating payment:', error);
-      alert(error.response?.data?.message || 'Failed to update payment status');
+      toast.error(error.response?.data?.message || 'Failed to update payment status', {
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -61,7 +65,9 @@ const InvoiceDetailModal = ({ isOpen, onClose, invoice, onSuccess }) => {
 
   const handleDownload = () => {
     if (!invoiceData?.pdfUrl) {
-      alert('PDF not available');
+      toast.error('PDF not available', {
+        duration: 5000,
+      });
       return;
     }
 

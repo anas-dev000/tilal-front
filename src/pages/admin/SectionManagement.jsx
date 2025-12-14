@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
 import SectionModal from "./SectionModal";
 import { sitesAPI } from "../../services/api";
+import { toast } from "sonner";
 
 const SectionManagement = ({ site, onUpdate }) => {
   const navigate = useNavigate();
@@ -44,7 +45,9 @@ const SectionManagement = ({ site, onUpdate }) => {
         onUpdate();
       } catch (error) {
         console.error("Error deleting section:", error);
-        alert("Failed to delete section");
+        toast.error("Failed to delete section", {
+        duration: 5000,
+      });
       }
     }
   };

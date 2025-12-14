@@ -1,7 +1,7 @@
     // src/components/common/MediaUpload.jsx
 import { Upload, X, Play, Camera, Video } from "lucide-react";
 import { useState } from "react";
-
+ import { toast } from "sonner";
 /**
  * MediaUpload Component - يدعم الصور والفيديوهات
  * 
@@ -37,7 +37,9 @@ const MediaUpload = ({
     // Check file size
     const fileSizeMB = file.size / (1024 * 1024);
     if (fileSizeMB > maxSize) {
-      alert(`File size must be less than ${maxSize}MB`);
+            toast.error(`File size must be less than ${maxSize}MB`, {
+        duration: 5000,
+      });
       e.target.value = '';
       return;
     }
@@ -47,13 +49,17 @@ const MediaUpload = ({
     const isVideo = file.type.startsWith('video/');
 
     if (!isImage && !isVideo) {
-      alert('Please select an image or video file');
+       toast.error('Please select an image or video file', {
+        duration: 5000,
+      });
       e.target.value = '';
       return;
     }
 
     if (isVideo && !acceptVideo) {
-      alert('Video upload is not enabled');
+        toast.error('Video upload is not enabled', {
+        duration: 5000,
+      });
       e.target.value = '';
       return;
     }
@@ -66,7 +72,9 @@ const MediaUpload = ({
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload media');
+        toast.error('Failed to upload media', {
+        duration: 5000,
+      });
     } finally {
       setUploading(false);
     }

@@ -19,6 +19,7 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import MediaModal from "../../components/common/MediaModal";
+import { toast } from "sonner";
 
 const AdminTaskDetail = () => {
   const { t } = useTranslation();
@@ -111,7 +112,9 @@ const AdminTaskDetail = () => {
       }
     } catch (error) {
       console.error("Error fetching task:", error);
-      alert("Failed to load task details");
+      toast.error('Failed to load task details', {
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -124,7 +127,9 @@ const AdminTaskDetail = () => {
   const handleSaveReview = async (status) => {
     try {
       if (!reviewComments && status === "rejected") {
-        alert("Please add comments for rejection");
+      toast.error('Please add comments for rejection', {
+        duration: 5000,
+      });
         return;
       }
 
@@ -139,11 +144,15 @@ const AdminTaskDetail = () => {
       });
 
       setReviewStatus(status);
-      alert(`Task ${status} successfully ✅`);
+      toast.success('Task ${status} successfully ✅', {
+        duration: 5000,
+      });
       fetchTask();
     } catch (error) {
       console.error("Error saving review:", error);
-      alert("Failed to save review");
+        toast.error('Failed to save review', {
+        duration: 5000,
+      });
     } finally {
       setSaving(false);
     }
@@ -162,7 +171,9 @@ const AdminTaskDetail = () => {
       fetchTask();
     } catch (error) {
       console.error("Error toggling image visibility:", error);
-      alert("Failed to update image visibility");
+        toast.error('Failed to update image visibility', {
+        duration: 5000,
+      });
     }
   };
 

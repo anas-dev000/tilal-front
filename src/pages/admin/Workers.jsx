@@ -12,6 +12,7 @@ import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import { usersAPI } from "../../services/api";
 import useWorkers from "../../hooks/useWorkers";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 const PAGE_SIZE = 10;
 
 const Workers = () => {
@@ -80,7 +81,9 @@ const handleRowClick = (worker) => {
       refetch();
       setConfirmModal({ isOpen: false, worker: null, action: "" });
     } catch (err) {
-      alert(t("common.errorOccurred", err));
+      toast.error(t("common.errorOccurred", err), {
+        duration: 5000,
+      });
     }
   };
 
@@ -98,7 +101,9 @@ const handleRowClick = (worker) => {
       refetch();
       setConfirmModal({ isOpen: false, worker: null, action: "" });
     } catch (err) {
-      alert(t("common.errorOccurred", err));
+      toast.error(t("common.errorOccurred", err), {
+        duration: 5000,
+      });
     }
   };
 

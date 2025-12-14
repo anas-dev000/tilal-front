@@ -21,6 +21,7 @@ import SuccessToast from "../../components/common/SuccessToast";
 import TaskDetailModal from "./modals/TaskDetailModal";
 import FeedbackModal from "./modals/FeedbackModal";
 import MediaModal from "../../components/common/MediaModal";
+import { toast } from "sonner";
 
 const ClientPortal = () => {
   const navigate = useNavigate();
@@ -109,7 +110,9 @@ const ClientPortal = () => {
       await fetchTasks();
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback");
+      toast.error("Failed to submit feedback", {
+        duration: 5000,
+      });
     }
   };
 
@@ -131,7 +134,9 @@ const ClientPortal = () => {
       await fetchTasks();
     } catch (error) {
       console.error("Error marking satisfied:", error);
-      alert("Failed to mark task as satisfied");
+      toast.error("Failed to mark task as satisfied", {
+        duration: 5000,
+      });
     }
   };
 

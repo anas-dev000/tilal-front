@@ -8,6 +8,7 @@ import SiteModal from "./SiteModal";
 import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
 import { sitesAPI, clientsAPI } from "../../services/api";
+import { toast } from "sonner";
 
 const SiteSectionsPage = () => {
   const { id } = useParams();
@@ -25,7 +26,9 @@ const SiteSectionsPage = () => {
       setSite(response.data.data);
     } catch (error) {
       console.error("Error fetching site:", error);
-      alert("Failed to load site details");
+      toast.error("Failed to load site details", {
+        duration: 5000,
+      });
       navigate("/admin/sites");
     } finally {
       setLoading(false);

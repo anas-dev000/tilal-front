@@ -3,6 +3,7 @@ import { Star, Send } from "lucide-react";
 import Modal from "../../../components/common/Modal";
 import Button from "../../../components/common/Button";
 import ImageUpload from "../../../components/common/ImageUpload";
+import { toast } from "sonner";
 
 const FeedbackModal = ({ task, isOpen, onClose, onSubmit }) => {
   const [rating, setRating] = useState(task?.feedback?.rating || 0);
@@ -34,7 +35,9 @@ const FeedbackModal = ({ task, isOpen, onClose, onSubmit }) => {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      alert("Please select a rating");
+      toast.error("Please select a rating", {
+        duration: 5000,
+      });
       return;
     }
 

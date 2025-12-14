@@ -82,11 +82,15 @@ const MyTasks = () => {
         );
         if (confirm) {
           await tasksAPI.startTask(taskId, {});
-          alert("Task started (location not saved)!");
+          toast.error("Task started (location not saved)!", {
+        duration: 5000,
+      });
           fetchTasks();
         }
       } else {
-        alert("Location error. Please try again.");
+        toast.error("Location error. Please try again.", {
+        duration: 5000,
+      });
       }
     } finally {
       setStartingTaskId(null);

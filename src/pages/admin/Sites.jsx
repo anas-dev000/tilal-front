@@ -15,6 +15,7 @@ import { sitesAPI, clientsAPI } from "../../services/api";
 import Button from "../../components/common/Button";
 import SiteModal from "./SiteModal";
 import Loading from "../../components/common/Loading";
+import { toast } from "sonner";
 
 const Sites = () => {
   const navigate = useNavigate();
@@ -42,7 +43,9 @@ const Sites = () => {
         setAllClients(clientsRes.data.data || []);
       } catch (error) {
         console.error("Error loading initial data:", error);
-        alert("Failed to load sites or clients");
+        toast.error("Failed to load sites or clients", {
+        duration: 5000,
+      });
       } finally {
         setLoading(false);
       }
@@ -105,7 +108,9 @@ const Sites = () => {
         refetchSites();
       } catch (error) {
         console.error("Error deleting site:", error);
-        alert("Failed to delete site");
+        toast.error("Failed to delete site", {
+        duration: 5000,
+      });
       }
     }
   };

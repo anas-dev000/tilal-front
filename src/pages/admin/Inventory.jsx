@@ -8,6 +8,7 @@ import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import InventoryModal from "./InventoryModal";
 import InventoryTable from "../../components/admin/InventoryTable";
+import { toast } from "sonner";
 
 
 const PAGE_SIZE = 10;
@@ -101,7 +102,9 @@ const Inventory = () => {
         fetchInventory();
       } catch (error) {
         console.error("Error deleting item:", error);
-        alert(error.response?.data?.message || "Failed to delete item");
+        toast.error(error.response?.data?.message || "Failed to delete item", {
+        duration: 5000,
+      });
       }
     }
   };
@@ -167,7 +170,7 @@ const Inventory = () => {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-red-900 text-lg mb-2 flex items-center gap-2">
-                <span>⚠️ Inventory Alert</span>
+                <span> Inventory Alert</span>
                 <span className="bg-red-600 text-white text-xs px-3 py-1 rounded-full">
                   {stats.lowStock + stats.outOfStock} items need attention
                 </span>
