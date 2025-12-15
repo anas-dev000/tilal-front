@@ -1,6 +1,7 @@
 // frontend/src/pages/admin/SiteSectionsPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   MapPin,
@@ -18,6 +19,7 @@ import { sitesAPI, clientsAPI, tasksAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SiteSectionsPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [site, setSite] = useState(null);
@@ -119,7 +121,7 @@ const SiteSectionsPage = () => {
   if (!site) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Site not found</p>
+        <p className="text-gray-500">{t("admin.siteSections.siteNotFound")}</p>
       </div>
     );
   }
@@ -133,7 +135,7 @@ const SiteSectionsPage = () => {
           icon={ArrowLeft}
           onClick={() => navigate("/admin/sites")}
         >
-          Back to Sites
+          {t("admin.siteSections.backToSites")}
         </Button>
 
         <Button
@@ -142,7 +144,7 @@ const SiteSectionsPage = () => {
           onClick={handleAddTask}
           className="bg-green-600 hover:bg-green-700"
         >
-          Add Task
+          {t("admin.siteSections.addTask")}
         </Button>
       </div>
 
@@ -196,26 +198,34 @@ const SiteSectionsPage = () => {
           {/* Site Stats */}
           <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-200">
             <div>
-              <p className="text-sm text-gray-500">Total Area</p>
+              <p className="text-sm text-gray-500">
+                {t("admin.siteSections.totalArea")}
+              </p>
               <p className="text-xl font-bold text-gray-900">
                 {site.totalArea || 0}m²
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Sections</p>
+              <p className="text-sm text-gray-500">
+                {t("admin.siteSections.sections")}
+              </p>
               <p className="text-xl font-bold text-primary-600 flex items-center gap-1">
                 <Layers className="w-5 h-5" />
                 {site.sections?.length || 0}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Tasks</p>
+              <p className="text-sm text-gray-500">
+                {t("admin.siteSections.totalTasks")}
+              </p>
               <p className="text-xl font-bold text-gray-900">
                 {site.totalTasks || 0}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Completed</p>
+              <p className="text-sm text-gray-500">
+                {t("admin.siteSections.completedStatus")}
+              </p>
               <p className="text-xl font-bold text-green-600">
                 {site.completedTasks || 0}
               </p>
@@ -230,11 +240,12 @@ const SiteSectionsPage = () => {
                   <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="text-base font-semibold text-red-900 mb-1">
-                      Latest Rejected Tasks - Admin Review
+                      {t("admin.siteSections.rejectedTasks")}
                     </h3>
                     <p className="text-sm text-red-700 mb-3">
-                      Last {rejectedTasks.length} rejected task
-                      {rejectedTasks.length > 1 ? "s" : ""}
+                      {t("admin.siteSections.lastRejected", {
+                        count: rejectedTasks.length,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -265,7 +276,7 @@ const SiteSectionsPage = () => {
                           onClick={() => navigate(`/admin/tasks/${task._id}`)}
                           className="text-sm text-red-600 hover:text-red-800 font-medium whitespace-nowrap"
                         >
-                          View Task →
+                          {t("admin.siteSections.viewTask")}
                         </button>
                       </div>
                     </div>

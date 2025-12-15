@@ -22,6 +22,7 @@
     "loading": "Loading...",
     "noData": "No data available",
     "error": "An error occurred",
+    "errorOccurred": "An error occurred",
     "success": "Operation successful",
     "language": "Language",
     "settings": "Settings",
@@ -43,7 +44,32 @@
     "of": "of",
     "searchByNameEmailPhone": "Search by name, email or phone",
     "areYouSure": "Are you sure you want to",
-    "thisWorker": "this worker"
+    "thisWorker": "this worker",
+    "thisClient": "this client",
+    "displaying": "displaying",
+    "active": "Active",
+    "total": "Total",
+    "showing": "Showing",
+    "to": "to",
+    "results": "results",
+    "previous": "Previous",
+    "next": "Next",
+    "view": "View",
+    "activate": "activate",
+    "deactivate": "deactivate",
+    "actionIrreversible": "This action cannot be undone",
+    "noNotifications": "No notifications",
+    "markAllAsRead": "Mark all as read",
+    "allItemsWellStocked": "All items are well stocked!",
+    "current": "Current",
+    "lowStock": "Low Stock!",
+    "notes": "Notes",
+    "optional": "Optional",
+    "required": "is required",
+    "description": "Description",
+    "status": "Status",
+    "video": "video",
+    "image": "image"
   },
   "units": {
     "piece": "Piece",
@@ -78,6 +104,92 @@
       "totalRevenue": "Total Revenue",
       "pendingInvoices": "Pending Invoices"
     },
+    "clientDetails": {
+      "title": "Client Details",
+      "contactInformation": "Contact Information",
+      "email": "Email",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "address": "Address",
+      "propertyDetails": "Property Details",
+      "propertyType": "Property Type",
+      "propertySize": "Property Size",
+      "paymentType": "Payment Type",
+      "memberSince": "Member Since",
+      "notes": "Notes",
+      "recentTasks": "Recent Tasks",
+      "viewAllTasks": "View all {{count}} tasks →",
+      "noTasksAssigned": "No tasks assigned yet",
+      "house": "House",
+      "building": "Building",
+      "cash": "Cash",
+      "online": "Online"
+    },
+    "workerDetails": {
+      "title": "Worker Details",
+      "notFound": "Worker not found",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "joinDate": "Join Date",
+      "notes": "Notes"
+    },
+    "sectionDetails": {
+      "title": "Section Details",
+      "backToSections": "Back to Site Sections",
+      "site": "Site",
+      "referenceMedia": "Reference Media",
+      "lastCompleted": "Last: Completed",
+      "lastRejected": "Last: Rejected",
+      "lastInProgress": "Last: In Progress",
+      "lastPending": "Last: Pending",
+      "notFound": "Section not found",
+      "howToReadMedia": "How to Read Reference Media",
+      "badgeNumberQtn": "badge number (QTN)",
+      "timesPlantAppears": "how many times this plant/location appears in this section",
+      "clickPlayVideo": "Click to play video",
+      "clickViewFullSize": "Click to view full size",
+      "totalQuantity": "Total Quantity in Section",
+      "plantsLocations": "plants/locations",
+      "uniqueTypes": "unique types",
+      "acrossSection": "Across this section",
+      "noMediaUploaded": "No reference media uploaded yet",
+      "addReferencesHelp": "Add reference images/videos to help workers identify locations",
+      "relatedTasks": "Related Tasks",
+      "tasksCount": "{{count}} tasks",
+      "noTasksCreated": "No tasks created yet",
+      "tasksWillAppear": "Tasks for this section will appear here",
+      "videoType": "VIDEO",
+      "imageType": "IMAGE",
+      "qty": "QTY",
+      "duration": "Duration",
+      "editDetails": "Edit details"
+    },
+    "siteSections": {
+      "title": "Site Sections",
+      "backToSites": "Back to Sites",
+      "addTask": "Add Task",
+      "siteNotFound": "Site not found",
+      "totalArea": "Total Area",
+      "completedStatus": "Completed",
+      "rejectedTasks": "Latest Rejected Tasks - Admin Review",
+      "lastRejected": "Last {{count}} rejected task",
+      "lastRejectedPlural": "Last {{count}} rejected tasks",
+      "viewTask": "View Task →",
+      "sections": "Sections",
+      "totalTasks": "Total Tasks"
+    },
+    "sectionTasks": {
+      "title": "Tasks in {{section}}",
+      "backToSections": "Back to Sections",
+      "site": "Site",
+      "noTasksFound": "No tasks found for this section yet",
+      "beforePhotos": "before",
+      "afterPhotos": "after photos",
+      "photos": "before • {{after}} after photos",
+      "estimatedDuration": "{{duration}}h estimated",
+      "completedOn": "Completed on {{date}}"
+    },
     "clients": {
       "title": "Client Management",
       "subtitle": "Manage and organize clients",
@@ -94,7 +206,12 @@
       "propertyType": "Property Type",
       "propertySize": "Property Size (sq meters)",
       "status": "Status",
-      "notes": "Notes"
+      "notes": "Notes",
+      "displayed": "Clients displayed",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activateClient": "Activate Client",
+      "deactivateClient": "Deactivate Client"
     },
     "workers": {
       "title": "Worker Management",
@@ -107,10 +224,10 @@
       "assignedTasks": "Assigned Tasks",
       "active": "Active",
       "inactive": "Inactive",
-      "displayed": "Worker displayed",
+      "displayed": "Workers displayed",
       "total": "Total workers",
-      "activateWorker": "Activate worker",
-      "deactivateWorker": "Deactivate worker"
+      "activateWorker": "Activate Worker",
+      "deactivateWorker": "Deactivate Worker"
     },
     "tasks": {
       "title": "Task Management",
@@ -130,6 +247,17 @@
       "aiScore": "AI Score",
       "adminComments": "Admin Comments",
       "worker": "Worker",
+      "found": "tasks found",
+      "searchPlaceholder": "Search tasks...",
+      "filterWorker": "Filter by Worker",
+      "filterSite": "Filter by Site",
+      "filterStatus": "Filter by Status",
+      "noTasks": "No tasks found",
+      "adjustFilters": "Adjust your filters or create a new task",
+      "task": "Task",
+      "siteSections": "Site/Sections",
+      "review": "Review",
+      "unassigned": "Unassigned",
       "adminReview": {
         "status": "Review Status"
       }
@@ -151,7 +279,17 @@
       "unit": "Unit",
       "minStock": "Minimum Stock",
       "supplier": "Supplier",
-      "lastUpdated": "Last Updated"
+      "lastUpdated": "Last Updated",
+      "lowStockAlerts": "Low Stock Alerts",
+      "inventoryAlert": "Inventory Alert",
+      "itemsNeedAttention": "items need attention",
+      "outOfStock": "Out of Stock",
+      "lowStockLevels": "Low stock levels",
+      "pleaseRestock": "Please restock these items as soon as possible",
+      "allTabLabel": "All",
+      "inStockTabLabel": "In Stock",
+      "lowStockTabLabel": "Low Stock",
+      "outOfStockTabLabel": "Out of Stock"
     },
     "plants": {
       "title": "Plants Management",
@@ -171,10 +309,115 @@
     },
     "reports": {
       "title": "Reports & Analytics",
+      "subtitle": "Comprehensive business analytics",
       "taskCompletion": "Task Completion Rate",
       "workerPerformance": "Worker Performance",
       "revenueAnalysis": "Revenue Analysis",
-      "clientSatisfaction": "Client Satisfaction"
+      "clientSatisfaction": "Client Satisfaction",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "pendingInvoices": "Pending Invoices",
+      "completionRate": "Completion Rate"
+    },
+    "sites": {
+      "title": "Sites Management",
+      "manageSections": "Manage Sections",
+      "sitesDisplayed": "sites displayed",
+      "total": "total",
+      "addNewSite": "Add New Site",
+      "searchPlaceholder": "Search by site name or address...",
+      "allClients": "All Clients",
+      "noSitesFound": "No sites found matching your filters",
+      "deleteConfirmation": "Are you sure you want to delete this site? All sections and images will be deleted.",
+      "failedToDelete": "Failed to delete site",
+      "area": "Area",
+      "sections": "Sections",
+      "tasks": "Tasks",
+      "editInfo": "Edit Info",
+      "noClient": "No Client",
+      "siteModal": {
+        "title": "Site Management",
+        "addNewSite": "Add New Site",
+        "editSite": "Edit Site",
+        "siteName": "Site Name",
+        "client": "Client",
+        "selectClient": "Select Client",
+        "siteType": "Site Type",
+        "totalArea": "Total Area",
+        "areaUnit": "m²",
+        "description": "Description",
+        "coverImage": "Cover Image",
+        "uploadCoverImage": "Upload Cover Image",
+        "removeCover": "Remove Cover",
+        "deleteCover": "Delete Cover",
+        "deleteCoverConfirm": "Are you sure you want to delete the cover image? This action cannot be undone.",
+        "location": "Location",
+        "address": "Address",
+        "googleMapsLink": "Google Maps Link",
+        "notes": "Notes",
+        "pleaseSelectClient": "Please select a client",
+        "creating": "Creating site...",
+        "updating": "Updating site...",
+        "deleteCoverSuccess": "Cover image deleted successfully",
+        "deleteCoversError": "Failed to delete cover image",
+        "created": "Site created successfully",
+        "updated": "Site updated successfully",
+        "createError": "Failed to create site",
+        "updateError": "Failed to update site"
+      }
+    },
+    "sections": {
+      "title": "Site Sections",
+      "sections": "sections",
+      "addSection": "Add Section",
+      "noSectionsCreated": "No sections created yet",
+      "addSectionsDescription": "Add sections to organize this site's work areas",
+      "createFirstSection": "Create First Section",
+      "deleteConfirmation": "Are you sure? This will delete all reference images/videos in this section.",
+      "failedToDelete": "Failed to delete section",
+      "media": "Media",
+      "quantity": "Quantity",
+      "area": "Area",
+      "edit": "Edit",
+      "delete": "Delete",
+      "lastCompleted": "Last: Completed",
+      "lastRejected": "Last: Rejected",
+      "lastInProgress": "Last: In Progress",
+      "sectionModal": {
+        "title": "Section Management",
+        "addSection": "Add Section",
+        "editSection": "Edit Section",
+        "sectionName": "Section Name",
+        "description": "Description",
+        "area": "Area",
+        "areaUnit": "m²",
+        "status": "Status",
+        "referenceImages": "Reference Images/Videos",
+        "uploadMedia": "Upload Media",
+        "addMoreMedia": "Add More Media",
+        "clickToPlay": "Click to play",
+        "deleteImage": "Delete Image",
+        "deleteImageConfirm": "Are you sure you want to delete this {{type}}? This action cannot be undone.",
+        "notes": "Notes",
+        "creating": "Creating section...",
+        "updating": "Updating section...",
+        "created": "Section created successfully",
+        "updated": "Section updated successfully",
+        "createError": "Failed to create section",
+        "updateError": "Failed to update section"
+      },
+      "sectionDetail": {
+        "totalQuantity": "Total Quantity",
+        "completedTasks": "Completed Tasks",
+        "sections": "Sections"
+      }
+    },
+    "dashboard": {
+      "lowStockAlerts": "Low Stock Alerts",
+      "taskCompletionOverview": "Task Completion Overview",
+      "pendingTasks": "Pending Tasks",
+      "inProgress": "In Progress",
+      "completionRate": "Completion Rate"
     }
   },
   "worker": {
@@ -190,7 +433,12 @@
     "confirmMaterials": "Confirm Materials",
     "taskTime": "Task Time",
     "comments": "Comments",
-    "aiScore": "AI Quality Score"
+    "aiScore": "AI Quality Score",
+    "taskOpened": "Task opened",
+    "locationDenied": "Location access denied. Please enable location in your browser settings.",
+    "unableToGetLocation": "Unable to get location. Start task without location?",
+    "taskStartedNoLocation": "Task started (location not saved)!",
+    "locationError": "Location error. Please try again."
   },
   "client": {
     "title": "Client Portal",
@@ -203,7 +451,42 @@
     "feedback": "Feedback",
     "submitFeedback": "Submit Feedback",
     "rating": "Rating",
-    "comments": "Comments"
+    "comments": "Comments",
+    "gardenMS": "Garden MS",
+    "welcomePrefix": "Welcome",
+    "logout": "Logout",
+    "satisfied": "Are you satisfied with this work? This will mark the task as completed with 5 stars.",
+    "satisfiedSuccess": "Thank you! Task marked as satisfied",
+    "submitFeedbackFailed": "Failed to submit feedback",
+    "satisfiedFailed": "Failed to mark task as satisfied",
+    "statistics": "Statistics",
+    "totalTasks": "Total Tasks",
+    "completed": "Completed",
+    "sites": "Sites",
+    "thisMonth": "This Month",
+    "taskDetailsModal": {
+      "title": "Task Details",
+      "siteLocation": "Site Location",
+      "scheduledDate": "Scheduled Date",
+      "completedOn": "Completed On",
+      "workCompletionMedia": "Work Completion Media",
+      "clickToPlay": "Click to play",
+      "clickToViewFullSize": "Click to view full size",
+      "tip": "Tip:",
+      "mediaClickTip": "Click on any media to view in full size or play videos.",
+      "yourFeedback": "Your Feedback"
+    },
+    "feedbackModal": {
+      "title": "Submit Feedback",
+      "rating": "Rating",
+      "pleaseSelectRating": "Please select a rating",
+      "commentsOptional": "Comments (Optional)",
+      "shareExperience": "Share your experience...",
+      "imageNumber": "Image Number (if there's an issue)",
+      "uploadImage": "Upload Image (Optional)",
+      "submitting": "Submitting...",
+      "submit": "Submit Feedback"
+    }
   },
   "auth": {
     "email": "Email",
@@ -214,7 +497,7 @@
     "loginError": "Invalid credentials"
   },
   "status": {
-    "all" : "All",
+    "all": "All",
     "pending": "Pending",
     "assigned": "Assigned",
     "in-progress": "In Progress",
@@ -256,5 +539,89 @@
   },
   "app": {
     "name": "Garden MS"
+  },
+  "components": {
+    "tables": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "actions": "Actions",
+      "propertyType": "Property Type",
+      "paymentType": "Payment Type"
+    },
+    "statsGrid": {
+      "totalTasks": "Total Tasks",
+      "completed": "Completed",
+      "sites": "Sites",
+      "thisMonth": "This Month",
+      "rating": "Rating",
+      "joinDate": "Join Date"
+    },
+    "sitesList": {
+      "noSitesRegistered": "No sites registered yet",
+      "clientSites": "Client Sites",
+      "totalArea": "Total Area",
+      "sections": "Sections"
+    },
+    "taskList": {
+      "noTasksAssigned": "No tasks assigned yet",
+      "recentTasks": "Recent Tasks",
+      "site": "Site",
+      "client": "Client"
+    },
+    "deleteImageButton": {
+      "areYouSure": "Are you sure you want to delete this {{type}}?",
+      "video": "video",
+      "image": "image",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "success": "Image deleted successfully",
+      "error": "Failed to delete image"
+    },
+    "mediaModal": {
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "close": "Close"
+    }
+  },
+  "pages": {
+    "taskDetailModal": {
+      "title": "Task Details",
+      "beforeImages": "Before Images",
+      "afterImages": "After Images",
+      "siteLoc": "Site Location",
+      "scheduledDate": "Scheduled Date",
+      "feedback": "Feedback",
+      "noFeedback": "No feedback submitted yet"
+    },
+    "invoiceDetail": {
+      "title": "Invoice Details",
+      "invoiceNumber": "Invoice Number",
+      "client": "Client",
+      "total": "Total",
+      "status": "Status",
+      "paymentStatus": "Payment Status",
+      "paymentMethod": "Payment Method",
+      "paidAmount": "Paid Amount",
+      "downloadPDF": "Download PDF",
+      "pending": "Pending",
+      "paid": "Paid",
+      "save": "Save",
+      "saving": "Saving...",
+      "updated": "Invoice updated successfully",
+      "error": "Failed to update invoice"
+    }
+  },
+  "navbar": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "markAllAsRead": "Mark all as read",
+    "viewAllNotifications": "View all notifications",
+    "justNow": "Just now",
+    "minutesAgo": "m ago",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago"
   }
 }

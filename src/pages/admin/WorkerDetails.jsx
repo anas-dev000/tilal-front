@@ -1,6 +1,7 @@
 // src/pages/admin/WorkerDetails.jsx
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Edit, Power } from "lucide-react";
 import Loading from "../../components/common/Loading";
 import WorkerStatsGrid from "../../components/workers/WorkerStatsGrid";
@@ -8,6 +9,7 @@ import WorkerTaskList from "../../components/workers/WorkerTaskList";
 import { usersAPI, tasksAPI } from "../../services/api";
 
 const WorkerDetails = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [worker, setWorker] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -32,7 +34,7 @@ const WorkerDetails = () => {
   }, [id]);
 
   if (loading) return <Loading fullScreen />;
-  if (!worker) return <div>Worker not found</div>;
+  if (!worker) return <div>{t("admin.workerDetails.notFound")}</div>;
 
   return (
     <div className="space-y-6">
@@ -61,17 +63,23 @@ const WorkerDetails = () => {
 
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Status</span>
+                <span className="text-gray-600">
+                  {t("admin.workerDetails.status")}
+                </span>
                 <span
                   className={`font-medium ${
                     worker.isActive ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {worker.isActive ? "Active" : "Inactive"}
+                  {worker.isActive
+                    ? t("admin.workerDetails.active")
+                    : t("admin.workerDetails.inactive")}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Join Date</span>
+                <span className="text-gray-600">
+                  {t("admin.workerDetails.joinDate")}
+                </span>
                 <span>{new Date(worker.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -79,7 +87,7 @@ const WorkerDetails = () => {
             {worker.notes && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Notes
+                  {t("admin.workerDetails.notes")}
                 </h4>
                 <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
                   {worker.notes}

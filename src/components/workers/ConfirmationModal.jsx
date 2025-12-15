@@ -1,5 +1,6 @@
 import Modal from "../common/Modal";
 import Button from "../common/Button";
+import { useTranslation } from "react-i18next";
 
 const ConfirmationModal = ({
   isOpen,
@@ -10,6 +11,8 @@ const ConfirmationModal = ({
   confirmText,
   confirmVariant = "danger",
 }) => {
+  const { t } = useTranslation();
+
   const variantClasses = {
     danger: "bg-red-600 hover:bg-red-700 text-white",
     warning: "bg-yellow-600 hover:bg-yellow-700 text-white",
@@ -22,7 +25,7 @@ const ConfirmationModal = ({
         <p className="text-gray-700">{message}</p>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={onConfirm}

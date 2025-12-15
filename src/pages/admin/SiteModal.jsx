@@ -1,5 +1,6 @@
 // frontend/src/pages/admin/SiteModal.jsx - FIXED VERSION
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Upload,
   X,
@@ -18,6 +19,7 @@ import ReactSelect from "react-select";
 import { toast } from "sonner";
 
 const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [deletingCover, setDeletingCover] = useState(false);
@@ -94,7 +96,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
     if (!site?.coverImage?.cloudinaryId) return;
 
     const confirmed = window.confirm(
-      "Are you sure you want to delete the cover image? This action cannot be undone."
+      t("admin.sites.siteModal.deleteCoverConfirm")
     );
     if (!confirmed) return;
 
@@ -109,13 +111,14 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         imageType: "cover",
       });
 
-      toast.success("Cover image deleted successfully");
+      toast.success(t("admin.sites.siteModal.deleteCoverSuccess"));
       setCoverImagePreview(null);
       onSuccess(); // Refresh parent data
     } catch (error) {
       console.error("Delete cover image error:", error);
       toast.error(
-        error.response?.data?.message || "Failed to delete cover image"
+        error.response?.data?.message ||
+          t("admin.sites.siteModal.deleteCoversError")
       );
     } finally {
       setDeletingCover(false);
@@ -135,7 +138,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
       // Client is REQUIRED - validate before sending
       if (!formData.client || formData.client === "") {
-        setError("Please select a client");
+        setError(t("admin.sites.siteModal.pleaseSelectClient"));
         setLoading(false);
         return;
       }
@@ -164,15 +167,22 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
       if (site) {
         await sitesAPI.updateSite(site._id, formDataToSend);
+        toast.success(t("admin.sites.siteModal.updated"));
       } else {
         await sitesAPI.createSite(formDataToSend);
+        toast.success(t("admin.sites.siteModal.created"));
       }
 
       onSuccess();
       onClose();
     } catch (err) {
       console.error("Error saving site:", err);
-      setError(err.response?.data?.message || "Failed to save site");
+      setError(
+        err.response?.data?.message ||
+          (site
+            ? t("admin.sites.siteModal.updateError")
+            : t("admin.sites.siteModal.createError"))
+      );
     } finally {
       setLoading(false);
     }
@@ -190,7 +200,11 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={site ? "Edit Site" : "Add New Site"}
+      title={
+        site
+          ? t("admin.sites.siteModal.editSite")
+          : t("admin.sites.siteModal.addNewSite")
+      }
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -203,7 +217,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         {/* Cover Image */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Cover Image (Optional)
+            {t("admin.sites.siteModal.coverImage")} ({{ optional: true }})
           </label>
 
           {/* ✅ FIXED: Only show existing cover OR new upload, not both */}
@@ -242,7 +256,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
         {/* Name */}
         <Input
-          label="Site Name *"
+          label={`${t("admin.sites.siteModal.siteName")} *`}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="e.g., Villa Garden"
@@ -251,11 +265,12 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Client <span className="text-red-500">*</span>
+            {t("admin.sites.siteModal.client")}{" "}
+            <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-2">
             <ReactSelect
-              placeholder="Select client..."
+              placeholder={t("admin.sites.siteModal.selectClient")}
               value={
                 clients.find((c) => c._id === formData.client)
                   ? {
@@ -281,7 +296,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         {/* Site Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Site Type
+            {t("admin.sites.siteModal.siteType")}
           </label>
           <Select
             value={siteTypes.find((opt) => opt.value === formData.siteType)}
@@ -294,7 +309,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
         {/* Total Area */}
         <Input
-          label="Total Area (m²)"
+          label={`${t("admin.sites.siteModal.totalArea")} (m²)`}
           type="number"
           value={formData.totalArea}
           onChange={(e) =>
@@ -307,11 +322,11 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         {/* Location */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Location
+            {t("admin.sites.siteModal.location")}
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              placeholder="Address"
+              placeholder={t("admin.sites.siteModal.address")}
               value={formData.location.address}
               onChange={(e) =>
                 setFormData({
@@ -321,7 +336,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
               }
             />
             <Input
-              placeholder="City"
+              placeholder={t("common.city")}
               value={formData.location.city}
               onChange={(e) =>
                 setFormData({
@@ -332,7 +347,9 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
             />
           </div>
           <Input
-            placeholder="Google Maps Link (optional)"
+            placeholder={`${t(
+              "admin.sites.siteModal.googleMapsLink"
+            )} (optional)`}
             value={formData.location.googleMapsLink || ""}
             onChange={(e) =>
               setFormData({
@@ -352,7 +369,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
+            {t("common.description")}
           </label>
           <textarea
             value={formData.description}
@@ -369,7 +386,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         {/* Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notes
+            {t("common.notes", "Notes")}
           </label>
           <textarea
             value={formData.notes}
@@ -404,10 +421,16 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : site ? "Update Site" : "Create Site"}
+            {loading
+              ? site
+                ? t("admin.sites.siteModal.updating")
+                : t("admin.sites.siteModal.creating")
+              : site
+              ? t("common.update")
+              : t("common.create")}
           </Button>
         </div>
       </form>

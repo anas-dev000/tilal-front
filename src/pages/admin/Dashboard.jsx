@@ -81,11 +81,11 @@ const Dashboard = () => {
       </div>
 
       {/*  Low Stock Alert - NEW */}
-      <Card title="Low Stock Alerts">
+      <Card title={t("admin.dashboard.lowStockAlerts")}>
         {lowStockItems.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-green-600 font-medium">
-              All items are well stocked!
+              {t("common.allItemsWellStocked")}
             </p>
           </div>
         ) : (
@@ -100,7 +100,7 @@ const Dashboard = () => {
                   <div>
                     <p className="font-semibold text-gray-900">{item.name}</p>
                     <p className="text-sm text-gray-600">
-                      Current:{" "}
+                      {t("common.current")}:{" "}
                       <strong>
                         {item.quantity.current} {item.unit}
                       </strong>
@@ -108,7 +108,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <span className="text-red-600 font-bold text-lg">
-                  Low Stock!
+                  {t("common.lowStock")}
                 </span>
               </div>
             ))}
@@ -118,22 +118,28 @@ const Dashboard = () => {
 
       {/*  Task Completion Overview */}
       {stats && (
-        <Card title="📊 Task Completion Overview">
+        <Card title={t("admin.dashboard.taskCompletionOverview")}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-yellow-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Pending Tasks</p>
+              <p className="text-sm text-gray-600">
+                {t("admin.dashboard.pendingTasks")}
+              </p>
               <p className="text-2xl font-bold text-yellow-600">
                 {stats.tasks?.pending || 0}
               </p>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">In Progress</p>
+              <p className="text-sm text-gray-600">
+                {t("admin.dashboard.inProgress")}
+              </p>
               <p className="text-2xl font-bold text-blue-600">
                 {stats.tasks?.inProgress || 0}
               </p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Completion Rate</p>
+              <p className="text-sm text-gray-600">
+                {t("admin.dashboard.completionRate")}
+              </p>
               <p className="text-2xl font-bold text-green-600">
                 {stats.tasks?.completionRate || 0}%
               </p>

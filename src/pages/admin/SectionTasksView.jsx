@@ -1,6 +1,7 @@
 // frontend/src/pages/admin/SectionTasksView.jsx
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Calendar,
@@ -13,6 +14,7 @@ import { tasksAPI } from "../../services/api";
 import Loading from "../../components/common/Loading";
 
 const SectionTasksView = () => {
+  const { t } = useTranslation();
   const { siteId, sectionId } = useParams();
   const location = useLocation();
   const { sectionName = "Section", siteName = "Site" } = location.state || {};
@@ -63,13 +65,14 @@ const SectionTasksView = () => {
             className="inline-flex items-center text-primary-600 hover:text-primary-800 mb-4"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Sections
+            {t("admin.sectionTasks.backToSections")}
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">
-            Tasks in <span className="text-primary-600">{sectionName}</span>
+            {t("admin.sectionTasks.title", { section: sectionName })}
           </h1>
           <p className="text-gray-600 mt-2">
-            Site: <span className="font-medium">{siteName}</span>
+            {t("admin.sectionTasks.site")}:{" "}
+            <span className="font-medium">{siteName}</span>
           </p>
         </div>
 
@@ -77,7 +80,7 @@ const SectionTasksView = () => {
           <div className="text-center py-16 bg-white rounded-lg shadow">
             <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">
-              No tasks found for this section yet.
+              {t("admin.sectionTasks.noTasksFound")}
             </p>
           </div>
         ) : (
@@ -120,14 +123,19 @@ const SectionTasksView = () => {
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle2 className="w-4 h-4" />
                       <span>
-                        Completed on{" "}
-                        {new Date(task.completedAt).toLocaleDateString()}
+                        {t("admin.sectionTasks.completedOn", {
+                          date: new Date(task.completedAt).toLocaleDateString(),
+                        })}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    <span>{task.estimatedDuration}h estimated</span>
+                    <span>
+                      {t("admin.sectionTasks.estimatedDuration", {
+                        duration: task.estimatedDuration,
+                      })}
+                    </span>
                   </div>
                 </div>
 
@@ -135,8 +143,10 @@ const SectionTasksView = () => {
                   task.images.after.length > 0) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-gray-500">
-                      {task.images.before.length} before •{" "}
-                      {task.images.after.length} after photos
+                      {t("admin.sectionTasks.photos", {
+                        before: task.images.before.length,
+                        after: task.images.after.length,
+                      })}
                     </p>
                   </div>
                 )}

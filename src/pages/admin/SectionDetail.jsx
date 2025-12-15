@@ -1,6 +1,7 @@
 // src/pages/admin/SectionDetail.jsx -  ALL ISSUES FIXED
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   MapPin,
@@ -22,6 +23,7 @@ import EditImageModal from "../../components/admin/EditImageModal";
 import MediaModal from "../../components/common/MediaModal";
 
 const SectionDetail = () => {
+  const { t } = useTranslation();
   const { siteId, sectionId } = useParams();
   const navigate = useNavigate();
 
@@ -152,28 +154,28 @@ const SectionDetail = () => {
         text: "text-green-800",
         border: "border-green-300",
         icon: CheckCircle,
-        label: "Last: Completed",
+        label: t("admin.sectionDetails.lastCompleted"),
       },
       rejected: {
         bg: "bg-red-100",
         text: "text-red-800",
         border: "border-red-300",
         icon: AlertCircle,
-        label: "Last: Rejected",
+        label: t("admin.sectionDetails.lastRejected"),
       },
       "in-progress": {
         bg: "bg-blue-100",
         text: "text-blue-800",
         border: "border-blue-300",
         icon: Clock,
-        label: "Last: In Progress",
+        label: t("admin.sectionDetails.lastInProgress"),
       },
       pending: {
         bg: "bg-yellow-100",
         text: "text-yellow-800",
         border: "border-yellow-300",
         icon: Clock,
-        label: "Last: Pending",
+        label: t("admin.sectionDetails.lastPending"),
       },
     };
 
@@ -206,14 +208,16 @@ const SectionDetail = () => {
     return (
       <div className="text-center py-12">
         <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 text-lg">Section not found</p>
+        <p className="text-gray-500 text-lg">
+          {t("admin.sectionDetails.notFound")}
+        </p>
         <Button
           variant="secondary"
           icon={ArrowLeft}
           onClick={() => navigate(`/admin/sites/${siteId}/sections`)}
           className="mt-4"
         >
-          Back to Site
+          {t("admin.sectionDetails.backToSections")}
         </Button>
       </div>
     );
@@ -229,7 +233,7 @@ const SectionDetail = () => {
         icon={ArrowLeft}
         onClick={() => navigate(`/admin/sites/${siteId}/sections`)}
       >
-        Back to Site Sections
+        {t("admin.sectionDetails.backToSections")}
       </Button>
 
       {/* Section Header Card */}
@@ -262,7 +266,9 @@ const SectionDetail = () => {
         <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
           <MapPin className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-500">Site</p>
+            <p className="text-sm text-gray-500">
+              {t("admin.sectionDetails.site")}
+            </p>
             <p className="font-semibold text-gray-900">{site.name}</p>
           </div>
         </div>
@@ -274,7 +280,7 @@ const SectionDetail = () => {
               {section.referenceImages?.length || 0}
             </p>
             <p className="text-xs text-blue-600 uppercase font-medium">
-              Reference Media
+              {t("admin.sectionDetails.referenceMedia")}
             </p>
           </div>
 
@@ -340,15 +346,13 @@ const SectionDetail = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-blue-900 mb-1">
-                    📸 How to Read Reference Media
+                    📸 {t("admin.sectionDetails.howToReadMedia")}
                   </h3>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    The{" "}
-                    <strong className="text-blue-900">
-                      badge number (QTN)
-                    </strong>{" "}
-                    on each item represents <strong>how many times</strong> this
-                    plant/location appears in this section.
+                    {t("admin.sectionDetails.badgeNumberQtn")} represents{" "}
+                    <strong>
+                      {t("admin.sectionDetails.timesPlantAppears")}
+                    </strong>
                   </p>
                 </div>
               </div>
@@ -410,8 +414,8 @@ const SectionDetail = () => {
                         <div className="p-4 text-white w-full">
                           <p className="text-sm font-medium">
                             {isVideo
-                              ? "Click to play video"
-                              : "Click to view full size"}
+                              ? t("admin.sectionDetails.clickPlayVideo")
+                              : t("admin.sectionDetails.clickViewFullSize")}
                           </p>
                         </div>
                       </div>
@@ -536,10 +540,10 @@ const SectionDetail = () => {
           <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <ImageIcon className="w-20 h-20 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg font-medium">
-              No reference media uploaded yet
+              {t("admin.sectionDetails.noMediaUploaded")}
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              Add reference images/videos to help workers identify locations
+              {t("admin.sectionDetails.addReferencesHelp")}
             </p>
           </div>
         )}
@@ -550,10 +554,10 @@ const SectionDetail = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <FileText className="w-7 h-7 text-primary-600" />
-            Related Tasks
+            {t("admin.sectionDetails.relatedTasks")}
             {tasks.length > 0 && (
               <span className="bg-primary-100 text-primary-700 text-sm font-bold px-3 py-1 rounded-full">
-                {tasks.length} tasks
+                {t("admin.sectionDetails.tasksCount", { count: tasks.length })}
               </span>
             )}
           </h2>
@@ -563,10 +567,10 @@ const SectionDetail = () => {
           <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <FileText className="w-20 h-20 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg font-medium">
-              No tasks created yet
+              {t("admin.sectionDetails.noTasksCreated")}
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              Tasks for this section will appear here
+              {t("admin.sectionDetails.tasksWillAppear")}
             </p>
           </div>
         ) : (

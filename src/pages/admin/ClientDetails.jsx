@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Mail,
@@ -16,6 +17,7 @@ import ClientStatsGrid from "../../components/client/ClientStatsGrid";
 import ClientSitesList from "../../components/client/ClientSitesList";
 
 const ClientDetails = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [client, setClient] = useState(null);
   const [sites, setSites] = useState([]);
@@ -44,7 +46,12 @@ const ClientDetails = () => {
   }, [id]);
 
   if (loading) return <Loading fullScreen />;
-  if (!client) return <div className="text-center py-12">Client not found</div>;
+  if (!client)
+    return (
+      <div className="text-center py-12">
+        {t("admin.clientDetails.notFound")}
+      </div>
+    );
 
   // Calculate tasks this month
   const currentMonth = new Date().getMonth();
@@ -83,7 +90,9 @@ const ClientDetails = () => {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
-            <p className="text-gray-600 mt-1">Client Details</p>
+            <p className="text-gray-600 mt-1">
+              {t("admin.clientDetails.title")}
+            </p>
           </div>
         </div>
 
@@ -126,12 +135,16 @@ const ClientDetails = () => {
         <div className="lg:col-span-1 space-y-6">
           {/* Contact Info */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t("admin.clientDetails.contactInformation")}
+            </h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-sm text-gray-500">
+                    {t("admin.clientDetails.email")}
+                  </p>
                   <a
                     href={`mailto:${client.email}`}
                     className="text-blue-600 hover:underline"
@@ -144,7 +157,9 @@ const ClientDetails = () => {
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="text-sm text-gray-500">
+                    {t("admin.clientDetails.phone")}
+                  </p>
                   <a href={`tel:${client.phone}`} className="text-gray-900">
                     {client.phone}
                   </a>
@@ -155,7 +170,9 @@ const ClientDetails = () => {
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-green-500 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500">WhatsApp</p>
+                    <p className="text-sm text-gray-500">
+                      {t("admin.clientDetails.whatsapp")}
+                    </p>
                     <a
                       href={`https://wa.me/${client.whatsapp}`}
                       target="_blank"
@@ -172,7 +189,9 @@ const ClientDetails = () => {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="text-sm text-gray-500">
+                      {t("admin.clientDetails.address")}
+                    </p>
                     <p className="text-gray-900">
                       {client.address.street}
                       {client.address.city && `, ${client.address.city}`}
@@ -185,23 +204,29 @@ const ClientDetails = () => {
 
           {/* Property Info */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">Property Details</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t("admin.clientDetails.propertyDetails")}
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Home className="w-4 h-4" />
-                  <span className="text-sm">Property Type</span>
+                  <span className="text-sm">
+                    {t("admin.clientDetails.propertyType")}
+                  </span>
                 </div>
                 <span className="font-medium capitalize">
                   {client.propertyType === "residential"
-                    ? " House"
-                    : " Building"}
+                    ? t("admin.clientDetails.house")
+                    : t("admin.clientDetails.building")}
                 </span>
               </div>
 
               {client.propertySize > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Property Size</span>
+                  <span className="text-sm text-gray-600">
+                    {t("admin.clientDetails.propertySize")}
+                  </span>
                   <span className="font-medium">{client.propertySize}m²</span>
                 </div>
               )}
@@ -209,7 +234,9 @@ const ClientDetails = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-gray-600">
                   <CreditCard className="w-4 h-4" />
-                  <span className="text-sm">Payment Type</span>
+                  <span className="text-sm">
+                    {t("admin.clientDetails.paymentType")}
+                  </span>
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -219,13 +246,15 @@ const ClientDetails = () => {
                   }`}
                 >
                   {(client.paymentType || "online") === "cash"
-                    ? " Cash"
-                    : " Online"}
+                    ? t("admin.clientDetails.cash")
+                    : t("admin.clientDetails.online")}
                 </span>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t">
-                <span className="text-sm text-gray-600">Member Since</span>
+                <span className="text-sm text-gray-600">
+                  {t("admin.clientDetails.memberSince")}
+                </span>
                 <span className="text-sm font-medium">
                   {format(new Date(client.createdAt), "dd MMM yyyy")}
                 </span>
@@ -236,7 +265,9 @@ const ClientDetails = () => {
           {/* Notes */}
           {client.notes && (
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold mb-3">Notes</h3>
+              <h3 className="text-lg font-semibold mb-3">
+                {t("admin.clientDetails.notes")}
+              </h3>
               <p className="text-gray-700 bg-gray-50 p-4 rounded-lg text-sm whitespace-pre-wrap">
                 {client.notes}
               </p>
@@ -252,20 +283,24 @@ const ClientDetails = () => {
           {/* Recent Tasks */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Recent Tasks</h3>
+              <h3 className="text-lg font-semibold">
+                {t("admin.clientDetails.recentTasks")}
+              </h3>
               {tasks.length > 5 && (
                 <Link
                   to={`/admin/tasks?client=${client._id}`}
                   className="text-sm text-blue-600 hover:underline"
                 >
-                  View all {tasks.length} tasks →
+                  {t("admin.clientDetails.viewAllTasks", {
+                    count: tasks.length,
+                  })}
                 </Link>
               )}
             </div>
 
             {recentTasks.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                No tasks assigned yet
+                {t("admin.clientDetails.noTasksAssigned")}
               </div>
             ) : (
               <div className="divide-y divide-gray-200">

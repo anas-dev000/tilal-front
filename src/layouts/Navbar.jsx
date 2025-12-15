@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Menu, Bell, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationsAPI } from "../services/api";
@@ -8,6 +9,7 @@ import LanguageSwitcher from "../components/common/LanguageSwitcher";
 let pollInterval = null;
 
 const Navbar = ({ onMenuClick }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -76,10 +78,12 @@ const Navbar = ({ onMenuClick }) => {
 
   const getTimeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    if (seconds < 60) return "Just now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 60) return t("navbar.justNow");
+    if (seconds < 3600)
+      return `${Math.floor(seconds / 60)}${t("navbar.minutesAgo")}`;
+    if (seconds < 86400)
+      return `${Math.floor(seconds / 3600)}${t("navbar.hoursAgo")}`;
+    return `${Math.floor(seconds / 86400)}${t("navbar.daysAgo")}`;
   };
 
   return (
@@ -116,7 +120,7 @@ const Navbar = ({ onMenuClick }) => {
               >
                 <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
                   <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                    Notifications
+                    {t("navbar.notifications")}
                   </h3>
                   <button
                     onClick={() => setShowNotifications(false)}
@@ -130,7 +134,9 @@ const Navbar = ({ onMenuClick }) => {
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
                       <Bell className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-                      <p className="text-xs sm:text-sm">No notifications</p>
+                      <p className="text-xs sm:text-sm">
+                        {t("navbar.noNotifications")}
+                      </p>
                     </div>
                   ) : (
                     <>
@@ -140,7 +146,7 @@ const Navbar = ({ onMenuClick }) => {
                             onClick={markAllAsRead}
                             className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 w-full text-center py-1"
                           >
-                            Mark all as read
+                            {t("navbar.markAllAsRead")}
                           </button>
                         </div>
                       )}
@@ -184,7 +190,7 @@ const Navbar = ({ onMenuClick }) => {
                       onClick={() => setShowNotifications(false)}
                       className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 py-1"
                     >
-                      View all notifications
+                      {t("navbar.viewAllNotifications")}
                     </button>
                   </div>
                 )}

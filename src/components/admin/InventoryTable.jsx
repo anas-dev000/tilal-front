@@ -1,31 +1,46 @@
-import { Edit, Trash2, AlertTriangle, PackageX, PackageCheck } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  AlertTriangle,
+  PackageX,
+  PackageCheck,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) => {
+const InventoryTable = ({
+  items,
+  onEdit,
+  onDelete,
+  pagination,
+  onPageChange,
+}) => {
+  const { t } = useTranslation();
+
   const getStockStatus = (item) => {
     const current = item.quantity?.current || 0;
     const minimum = item.quantity?.minimum || 0;
 
     if (current === 0) {
       return {
-        label: "Out of Stock",
+        label: t("admin.inventory.outOfStock"),
         color: "bg-red-100 text-red-800 border-red-300",
         icon: PackageX,
-        iconColor: "text-red-600"
+        iconColor: "text-red-600",
       };
     }
     if (current <= minimum) {
       return {
-        label: "Low Stock",
+        label: t("status.in-progress"),
         color: "bg-yellow-100 text-yellow-800 border-yellow-300",
         icon: AlertTriangle,
-        iconColor: "text-yellow-600"
+        iconColor: "text-yellow-600",
       };
     }
     return {
-      label: "In Stock",
+      label: t("status.completed"),
       color: "bg-green-100 text-green-800 border-green-300",
       icon: PackageCheck,
-      iconColor: "text-green-600"
+      iconColor: "text-green-600",
     };
   };
 
@@ -33,7 +48,7 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
     const labels = {
       kg: "كيلو",
       piece: "قطعة",
-      liter: "لتر"
+      liter: "لتر",
     };
     return labels[unit] || unit;
   };
@@ -43,19 +58,31 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
       <table className="w-full">
         <thead>
           <tr className="border-b border-gray-200">
-            <th className="text-left py-4 px-6 font-medium text-gray-700">Status</th>
-            <th className="text-left py-4 px-6 font-medium text-gray-700">Item Name</th>
-            <th className="text-left py-4 px-6 font-medium text-gray-700">Current Stock</th>
-            <th className="text-left py-4 px-6 font-medium text-gray-700">Min Stock</th>
-            <th className="text-left py-4 px-6 font-medium text-gray-700">Unit</th>
-            <th className="text-center py-4 px-6 font-medium text-gray-700">Actions</th>
+            <th className="text-left py-4 px-6 font-medium text-gray-700">
+              {t("status.all")}
+            </th>
+            <th className="text-left py-4 px-6 font-medium text-gray-700">
+              {t("admin.inventory.itemName")}
+            </th>
+            <th className="text-left py-4 px-6 font-medium text-gray-700">
+              {t("admin.inventory.quantity")}
+            </th>
+            <th className="text-left py-4 px-6 font-medium text-gray-700">
+              {t("admin.inventory.minStock")}
+            </th>
+            <th className="text-left py-4 px-6 font-medium text-gray-700">
+              {t("admin.inventory.unit")}
+            </th>
+            <th className="text-center py-4 px-6 font-medium text-gray-700">
+              {t("common.actions")}
+            </th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => {
             const status = getStockStatus(item);
             const StatusIcon = status.icon;
-            
+
             return (
               <tr
                 key={item._id}
@@ -65,7 +92,9 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-2">
                     <StatusIcon className={`w-5 h-5 ${status.iconColor}`} />
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${status.color}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${status.color}`}
+                    >
                       {status.label}
                     </span>
                   </div>
@@ -83,11 +112,15 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
 
                 {/* Current Stock */}
                 <td className="py-4 px-6">
-                  <span className={`font-bold text-lg ${
-                    item.quantity.current === 0 ? 'text-red-600' :
-                    item.quantity.current <= item.quantity.minimum ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
+                  <span
+                    className={`font-bold text-lg ${
+                      item.quantity.current === 0
+                        ? "text-red-600"
+                        : item.quantity.current <= item.quantity.minimum
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }`}
+                  >
                     {item.quantity.current}
                   </span>
                 </td>
@@ -110,14 +143,14 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
                     <button
                       onClick={() => onEdit(item)}
                       className="text-indigo-600 hover:text-indigo-800 transition"
-                      title="Edit"
+                      title={t("common.edit")}
                     >
                       <Edit className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => onDelete(item._id)}
                       className="text-red-600 hover:text-red-900 transition"
-                      title="Delete"
+                      title={t("common.delete")}
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -133,9 +166,10 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-between items-center mt-6 px-6">
           <p className="text-sm text-gray-600">
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-            {pagination.total}
+            {t("common.showing")} {(pagination.page - 1) * pagination.limit + 1}{" "}
+            {t("common.to")}{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+            {t("common.of")} {pagination.total}
           </p>
           <div className="flex gap-2">
             <button
@@ -143,14 +177,14 @@ const InventoryTable = ({ items, onEdit, onDelete, pagination, onPageChange }) =
               disabled={pagination.page === 1}
               className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button
               onClick={() => onPageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
               className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              Next
+              {t("common.next")}
             </button>
           </div>
         </div>

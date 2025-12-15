@@ -160,8 +160,8 @@ const Inventory = () => {
             {t("admin.inventory.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredItems.length} items displayed • {stats.lowStock} low stock
-            • {stats.outOfStock} out of stock
+            {filteredItems.length} {t("admin.inventory.lowStockAlerts")} •{" "}
+            {stats.lowStock} low stock • {stats.outOfStock} out of stock
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -180,9 +180,10 @@ const Inventory = () => {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-red-900 text-lg mb-2 flex items-center gap-2">
-                <span> Inventory Alert</span>
+                <span>{t("admin.inventory.inventoryAlert")}</span>
                 <span className="bg-red-600 text-white text-xs px-3 py-1 rounded-full">
-                  {stats.lowStock + stats.outOfStock} items need attention
+                  {stats.lowStock + stats.outOfStock}{" "}
+                  {t("admin.inventory.itemsNeedAttention")}
                 </span>
               </h3>
               <div className="space-y-1 text-sm">
@@ -191,7 +192,7 @@ const Inventory = () => {
                     <PackageX className="w-4 h-4" />
                     {stats.outOfStock}{" "}
                     {stats.outOfStock === 1 ? "item is" : "items are"}{" "}
-                    completely out of stock
+                    {t("admin.inventory.outOfStock")}
                   </p>
                 )}
                 {stats.lowStock > 0 && (
@@ -204,7 +205,7 @@ const Inventory = () => {
                 )}
               </div>
               <p className="text-red-700 text-xs mt-2 font-medium">
-                📢 Please restock these items as soon as possible
+                📢 {t("admin.inventory.pleaseRestock")}
               </p>
             </div>
           </div>
@@ -234,7 +235,7 @@ const Inventory = () => {
               }`}
             >
               <Package className="w-4 h-4" />
-              All ({stats.total})
+              {t("admin.inventory.allTabLabel")} ({stats.total})
             </button>
             <button
               onClick={() => setActiveTab("in-stock")}
@@ -245,7 +246,7 @@ const Inventory = () => {
               }`}
             >
               <PackageCheck className="w-4 h-4" />
-              In Stock ({stats.inStock})
+              {t("admin.inventory.inStockTabLabel")} ({stats.inStock})
             </button>
             <button
               onClick={() => setActiveTab("low-stock")}
@@ -256,7 +257,7 @@ const Inventory = () => {
               }`}
             >
               <AlertTriangle className="w-4 h-4" />
-              Low Stock ({stats.lowStock})
+              {t("admin.inventory.lowStockTabLabel")} ({stats.lowStock})
             </button>
             <button
               onClick={() => setActiveTab("out-of-stock")}
@@ -267,7 +268,7 @@ const Inventory = () => {
               }`}
             >
               <PackageX className="w-4 h-4" />
-              Out of Stock ({stats.outOfStock})
+              {t("admin.inventory.outOfStockTabLabel")} ({stats.outOfStock})
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 // src/pages/admin/Sites.jsx
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Edit,
@@ -18,6 +19,7 @@ import Loading from "../../components/common/Loading";
 import { toast } from "sonner";
 
 const Sites = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // States
@@ -43,9 +45,9 @@ const Sites = () => {
         setAllClients(clientsRes.data.data || []);
       } catch (error) {
         console.error("Error loading initial data:", error);
-        toast.error("Failed to load sites or clients", {
-        duration: 5000,
-      });
+        toast.error(t("common.errorOccurred"), {
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
       }
@@ -98,25 +100,24 @@ const Sites = () => {
 
   const handleDelete = async (e, id) => {
     e.stopPropagation();
-    if (
-      window.confirm(
-        "Are you sure you want to delete this site? All sections and images will be deleted."
-      )
-    ) {
+    if (window.confirm(t("admin.sites.deleteConfirmation"))) {
       try {
         await sitesAPI.deleteSite(id);
         refetchSites();
       } catch (error) {
         console.error("Error deleting site:", error);
-        toast.error("Failed to delete site", {
-        duration: 5000,
-      });
+        toast.error(t("admin.sites.failedToDelete"), {
+          duration: 5000,
+        });
       }
     }
   };
 
   const clientOptions = [
-    { value: "all", label: `All Clients (${allSites.length})` },
+    {
+      value: "all",
+      label: `${t("admin.sites.allClients")} (${allSites.length})`,
+    },
     ...allClients.map((client) => ({
       value: client._id,
       label: client.name,
@@ -150,14 +151,15 @@ const Sites = () => {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
             <MapPin className="w-8 h-8 text-primary-600" />
-            Sites Management
+            {t("admin.sites.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredSites.length} sites displayed • {allSites.length} total
+            {filteredSites.length} {t("admin.sites.sitesDisplayed")} •{" "}
+            {allSites.length} {t("admin.sites.total")}
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
-          Add New Site
+          {t("admin.sites.addNewSite")}
         </Button>
       </div>
 
@@ -168,7 +170,7 @@ const Sites = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by site name or address..."
+              placeholder={t("admin.sites.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
@@ -191,7 +193,7 @@ const Sites = () => {
         <div className="text-center py-16 bg-white rounded-lg shadow-sm">
           <MapPin className="w-20 h-20 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">
-            No sites found matching your filters
+            {t("admin.sites.noSitesFound")}
           </p>
         </div>
       ) : (
@@ -220,7 +222,7 @@ const Sites = () => {
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-4 py-2 flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary-600" />
                     <span className="font-semibold text-gray-900">
-                      Manage Sections
+                      {t("admin.sites.manageSections")}
                     </span>
                     <ArrowRight className="w-4 h-4 text-primary-600" />
                   </div>
@@ -235,7 +237,7 @@ const Sites = () => {
                       {site.name}
                     </h3>
                     <p className="text-sm text-gray-500 truncate">
-                      {site.client?.name || "No Client"}
+                      {site.client?.name || t("admin.sites.noClient")}
                     </p>
                   </div>
                   <span
@@ -255,20 +257,26 @@ const Sites = () => {
 
                 <div className="grid grid-cols-3 gap-2 pt-3 border-t shrink-0">
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">Area</p>
+                    <p className="text-xs text-gray-500">
+                      {t("admin.sites.area")}
+                    </p>
                     <p className="font-semibold text-sm">
                       {site.totalArea || 0}m²
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">Sections</p>
+                    <p className="text-xs text-gray-500">
+                      {t("admin.sites.sections")}
+                    </p>
                     <p className="font-semibold text-sm flex items-center justify-center gap-1 text-primary-600">
                       <Layers className="w-3 h-3" />
                       {site.sections?.length || 0}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">Tasks</p>
+                    <p className="text-xs text-gray-500">
+                      {t("admin.sites.tasks")}
+                    </p>
                     <p className="font-semibold text-sm">
                       {site.totalTasks || 0}
                     </p>
@@ -290,7 +298,7 @@ const Sites = () => {
                     className="flex-1 px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm flex items-center justify-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
-                    Edit Info
+                    {t("admin.sites.editInfo")}
                   </button>
                   <button
                     onClick={(e) => handleDelete(e, site._id)}

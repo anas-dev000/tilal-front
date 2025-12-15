@@ -1,5 +1,6 @@
 // src/pages/admin/SectionManagement.jsx -  FIXED VIDEO DISPLAY
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Edit,
@@ -20,6 +21,7 @@ import { sitesAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SectionManagement = ({ site, onUpdate }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
@@ -35,17 +37,13 @@ const SectionManagement = ({ site, onUpdate }) => {
   };
 
   const handleDeleteSection = async (sectionId) => {
-    if (
-      window.confirm(
-        "Are you sure? This will delete all reference images/videos in this section."
-      )
-    ) {
+    if (window.confirm(t("admin.sections.deleteConfirmation"))) {
       try {
         await sitesAPI.deleteSection(site._id, sectionId);
         onUpdate();
       } catch (error) {
         console.error("Error deleting section:", error);
-        toast.error("Failed to delete section", {
+        toast.error(t("admin.sections.failedToDelete"), {
           duration: 5000,
         });
       }
@@ -75,21 +73,21 @@ const SectionManagement = ({ site, onUpdate }) => {
         text: "text-green-700",
         border: "border-green-200",
         icon: CheckCircle,
-        label: "Last: Completed",
+        label: t("admin.sections.lastCompleted"),
       },
       rejected: {
         bg: "bg-red-50",
         text: "text-red-700",
         border: "border-red-200",
         icon: AlertCircle,
-        label: "Last: Rejected",
+        label: t("admin.sections.lastRejected"),
       },
       "in-progress": {
         bg: "bg-blue-50",
         text: "text-blue-700",
         border: "border-blue-200",
         icon: Clock,
-        label: "Last: In Progress",
+        label: t("admin.sections.lastInProgress"),
       },
     };
 
@@ -112,14 +110,16 @@ const SectionManagement = ({ site, onUpdate }) => {
         <div className="flex items-center gap-3">
           <Layers className="w-7 h-7 text-primary-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Site Sections</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {t("admin.sections.title")}
+            </h2>
             <p className="text-sm text-gray-600">
-              {site.sections?.length || 0} sections
+              {site.sections?.length || 0} {t("admin.sections.sections")}
             </p>
           </div>
         </div>
         <Button onClick={handleAddSection} icon={Plus}>
-          Add Section
+          {t("admin.sections.addSection")}
         </Button>
       </div>
 
@@ -127,13 +127,13 @@ const SectionManagement = ({ site, onUpdate }) => {
         <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <Layers className="w-20 h-20 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg font-medium">
-            No sections created yet
+            {t("admin.sections.noSectionsCreated")}
           </p>
           <p className="text-gray-400 text-sm mt-2">
-            Add sections to organize this site's work areas
+            {t("admin.sections.addSectionsDescription")}
           </p>
           <Button onClick={handleAddSection} icon={Plus} className="mt-4">
-            Create First Section
+            {t("admin.sections.createFirstSection")}
           </Button>
         </div>
       ) : (
@@ -238,20 +238,26 @@ const SectionManagement = ({ site, onUpdate }) => {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200">
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Media</p>
+                      <p className="text-xs text-gray-500">
+                        {t("admin.sections.media")}
+                      </p>
                       <p className="font-semibold text-sm flex items-center justify-center gap-1">
                         <ImageIcon className="w-3 h-3 text-primary-600" />
                         {section.referenceImages?.length || 0}
                       </p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Quantity</p>
+                      <p className="text-xs text-gray-500">
+                        {t("admin.sections.quantity")}
+                      </p>
                       <p className="font-semibold text-sm text-purple-600">
                         {totalQuantity}
                       </p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Area</p>
+                      <p className="text-xs text-gray-500">
+                        {t("admin.sections.area")}
+                      </p>
                       <p className="font-semibold text-sm">
                         {section.area || 0}m²
                       </p>
@@ -271,7 +277,7 @@ const SectionManagement = ({ site, onUpdate }) => {
                       className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      Edit
+                      {t("admin.sections.edit")}
                     </button>
                     <button
                       onClick={(e) => {

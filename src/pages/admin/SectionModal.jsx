@@ -1,5 +1,6 @@
 // src/pages/admin/SectionModal.jsx - WITH DELETE MEDIA SUPPORT
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import {
   Image as ImageIcon,
@@ -16,6 +17,7 @@ import { sitesAPI, deleteImageAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [newMedia, setNewMedia] = useState([]);
@@ -80,9 +82,12 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
   // 🗑️ DELETE EXISTING MEDIA
   const handleDeleteExistingMedia = async (media, mediaIndex) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete this ${
-        media.mediaType === "video" ? "video" : "image"
-      }? This action cannot be undone.`
+      t("admin.sections.sectionModal.deleteImageConfirm", {
+        type:
+          media.mediaType === "video"
+            ? t("common.video", "video")
+            : t("common.image", "image"),
+      })
     );
     if (!confirmed) return;
 
@@ -102,13 +107,17 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
 
       toast.success(
         `${
-          media.mediaType === "video" ? "Video" : "Image"
-        } deleted successfully`
+          media.mediaType === "video"
+            ? t("common.video", "Video")
+            : t("common.image", "Image")
+        } ${t("common.success", "deleted successfully")}`
       );
       onSuccess(); // Refresh parent data
     } catch (error) {
       console.error("Delete media error:", error);
-      toast.error(error.response?.data?.message || "Failed to delete media");
+      toast.error(
+        error.response?.data?.message || t("admin.sections.failedToDelete")
+      );
     } finally {
       setDeletingMedia((prev) => {
         const newState = { ...prev };
@@ -137,8 +146,10 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
 
       if (section) {
         await sitesAPI.updateSection(site._id, section._id, formData);
+        toast.success(t("admin.sections.sectionModal.updated"));
       } else {
         await sitesAPI.addSection(site._id, formData);
+        toast.success(t("admin.sections.sectionModal.created"));
       }
 
       onSuccess();
@@ -151,7 +162,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
       setPreviewUrls([]);
       setPreviewTypes([]);
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred");
+      setError(err.response?.data?.message || t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -161,7 +172,11 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={section ? "Edit Section" : "Add Section"}
+      title={
+        section
+          ? t("admin.sections.sectionModal.editSection")
+          : t("admin.sections.sectionModal.addSection")
+      }
       size="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -173,8 +188,13 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
 
         {/* Section Name */}
         <Input
-          label="Section Name"
-          {...register("name", { required: "Section name is required" })}
+          label={t("admin.sections.sectionModal.sectionName")}
+          {...register("name", {
+            required:
+              t("admin.sections.sectionModal.sectionName") +
+              " " +
+              t("common.required", "is required"),
+          })}
           error={errors.name?.message}
           required
         />
@@ -182,37 +202,40 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
+            {t("common.description")}
           </label>
           <textarea
             {...register("description")}
             rows={3}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            placeholder="Brief description..."
+            placeholder={t(
+              "admin.sections.sectionModal.description",
+              "Brief description..."
+            )}
           />
         </div>
 
         {/* Area */}
         <Input
-          label="Area (m²)"
+          label={`${t("admin.sections.sectionModal.area")} (m²)`}
           type="number"
           {...register("area")}
-          placeholder="Optional"
+          placeholder={t("common.optional", "Optional")}
           min="0"
         />
 
         {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Status
+            {t("common.status", "Status")}
           </label>
           <select
             {...register("status")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
+            <option value="pending">{t("status.pending")}</option>
+            <option value="in-progress">{t("status.in-progress")}</option>
+            <option value="completed">{t("status.completed")}</option>
             <option value="maintenance">Maintenance</option>
           </select>
         </div>
@@ -220,13 +243,16 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
         {/* Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notes
+            {t("common.notes", "Notes")}
           </label>
           <textarea
             {...register("notes")}
             rows={2}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            placeholder="Any additional notes..."
+            placeholder={t(
+              "admin.sections.sectionModal.notes",
+              "Any additional notes..."
+            )}
           />
         </div>
 
@@ -236,7 +262,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
           section.referenceImages.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Existing Reference Media
+                {t("admin.sections.sectionModal.referenceImages")}
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {section.referenceImages.map((media, idx) => {
@@ -297,7 +323,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
                 })}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Click to view full size • Hover to delete
+                {t("admin.sections.sectionModal.clickToPlay")} • Hover to delete
               </p>
             </div>
           )}
@@ -306,7 +332,7 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <ImageIcon className="w-4 h-4 inline mr-1" />
-            Add Reference Media (Images or Videos)
+            {t("admin.sections.sectionModal.uploadMedia")}
           </label>
 
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition-colors">
@@ -400,10 +426,16 @@ const SectionModal = ({ isOpen, onClose, site, section, onSuccess }) => {
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : section ? "Update Section" : "Add Section"}
+            {loading
+              ? section
+                ? t("admin.sections.sectionModal.updating")
+                : t("admin.sections.sectionModal.creating")
+              : section
+              ? t("common.update")
+              : t("admin.sections.addSection")}
           </Button>
         </div>
       </form>
