@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/pages/admin/Dashboard.jsx - REFACTORED WITH REACT QUERY
+import { useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Users,
@@ -7,44 +8,29 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
+
+// React Query hooks (you need to create these in hooks/queries)
+import { useDashboardStats } from "../../hooks/queries/useReports"; // new - see below
+import { useLowStockItems } from "../../hooks/queries/useInventory";
+
 import StatCard from "../../components/common/StatCard";
 import Card from "../../components/common/Card";
-import { reportsAPI, inventoryAPI } from "../../services/api";
 import Loading from "../../components/common/Loading";
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(null);
-  const [lowStockItems, setLowStockItems] = useState([]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // Data fetching with React Query
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: lowStockItems = [], isLoading: inventoryLoading } =
+    useLowStockItems();
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
+  const isLoading = statsLoading || inventoryLoading;
 
-      const statsResponse = await reportsAPI.getDashboardStats();
-      setStats(statsResponse.data);
+  // Memoized values (optional but follows Workers pattern)
+  const hasLowStock = useMemo(() => lowStockItems.length > 0, [lowStockItems]);
 
-      const inventoryResponse = await inventoryAPI.getInventory();
-      const items = inventoryResponse.data?.data;
-      const allItems = Array.isArray(items) ? items : [];
-      const lowStock = allItems.filter(
-        (item) => item.quantity?.current < item.quantity?.minimum
-      );
-      setLowStockItems(lowStock);
-      console.log("Inventory Response:", inventoryResponse);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
@@ -52,7 +38,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">{t("admin.title")}</h1>
 
-      {/*  Stats Grid - Real Data */}
+      {/* Stats Grid - Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title={t("admin.stats.totalClients")}
@@ -80,9 +66,9 @@ const Dashboard = () => {
         />
       </div>
 
-      {/*  Low Stock Alert - NEW */}
+      {/* Low Stock Alert */}
       <Card title={t("admin.dashboard.lowStockAlerts")}>
-        {lowStockItems.length === 0 ? (
+        {!hasLowStock ? (
           <div className="text-center py-8">
             <p className="text-green-600 font-medium">
               {t("common.allItemsWellStocked")}
@@ -116,7 +102,7 @@ const Dashboard = () => {
         )}
       </Card>
 
-      {/*  Task Completion Overview */}
+      {/* Task Completion Overview */}
       {stats && (
         <Card title={t("admin.dashboard.taskCompletionOverview")}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -151,4 +137,5 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+// Optional: memoize the whole component (like Workers)
+export default memo(Dashboard);

@@ -1,5 +1,5 @@
-// src/pages/admin/SectionDetail.jsx -  ALL ISSUES FIXED
-import { useState, useEffect, useCallback } from "react";
+// src/pages/admin/SectionDetail.jsx - REFACTORED WITH REACT QUERY
+import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,7 +16,12 @@ import {
   Play,
   Video,
 } from "lucide-react";
-import { sitesAPI, tasksAPI } from "../../services/api";
+
+// React Query hooks
+import { useSite } from "../../hooks/queries/useSites";
+import { useTasks } from "../../hooks/queries/useTasks";
+import { useUpdateReferenceImage } from "../../hooks/queries/useSites"; // Assuming you have this or create it
+
 import Loading from "../../components/common/Loading";
 import Button from "../../components/common/Button";
 import EditImageModal from "../../components/admin/EditImageModal";
@@ -27,12 +32,24 @@ const SectionDetail = () => {
   const { siteId, sectionId } = useParams();
   const navigate = useNavigate();
 
-  const [section, setSection] = useState(null);
-  const [site, setSite] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Data fetching with React Query
+  const { data: site, isLoading: siteLoading } = useSite(siteId);
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks({
+    site: siteId,
+    section: sectionId,
+  });
 
-  //  Media Modal States
+  const updateReferenceImageMutation = useUpdateReferenceImage();
+
+  const isLoading = siteLoading || tasksLoading;
+
+  // Derived section from site data
+  const section = useMemo(() => {
+    if (!site?.sections) return null;
+    return site.sections.find((s) => s._id === sectionId);
+  }, [site, sectionId]);
+
+  // Media Modal States
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
   const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
@@ -40,90 +57,44 @@ const SectionDetail = () => {
   const [editingImage, setEditingImage] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const fetchSectionDetails = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const siteResponse = await sitesAPI.getSite(siteId);
-
-      if (siteResponse.data.success) {
-        setSite(siteResponse.data.data);
-
-        const foundSection = siteResponse.data.data.sections.find(
-          (s) => s._id === sectionId
-        );
-        setSection(foundSection);
-      }
-
-      const tasksResponse = await tasksAPI.getTasks({
-        site: siteId,
-        section: sectionId,
-      });
-
-      if (tasksResponse.data.success) {
-        setTasks(tasksResponse.data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching section details:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [siteId, sectionId]);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    fetchSectionDetails();
-  }, [fetchSectionDetails]);
-
-  const handleEditImage = (e, image) => {
+  const handleEditImage = useCallback((e, image) => {
     e.stopPropagation();
-    console.log(" Opening edit modal for:", image);
     setEditingImage(image);
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleSaveImage = async (formData) => {
-    try {
-      console.log("💾 Saving image updates:", formData);
-      await sitesAPI.updateReferenceImage(
-        siteId,
-        sectionId,
-        editingImage._id,
-        formData
-      );
+  const handleSaveImage = useCallback(
+    async (formData) => {
+      if (!editingImage?._id) return;
 
-      await fetchSectionDetails();
-      setIsEditModalOpen(false);
-      setEditingImage(null);
-      console.log(" Image updated successfully");
-    } catch (error) {
-      console.error(" Error updating image:", error);
-      throw error;
-    }
-  };
+      try {
+        await updateReferenceImageMutation.mutateAsync({
+          siteId,
+          sectionId,
+          imageId: editingImage._id,
+          data: formData,
+        });
 
-  //  Handle media click - FIXED
-  const handleMediaClick = (media, idx) => {
-    console.log("🎬 Media clicked:", media);
+        // Success → refetch handled in mutation
+        setIsEditModalOpen(false);
+        setEditingImage(null);
+      } catch (error) {
+        console.error("Error updating image:", error);
+        throw error; // Let EditImageModal handle error display if needed
+      }
+    },
+    [siteId, sectionId, editingImage, updateReferenceImageMutation]
+  );
 
-    // Make sure we have the URL
-    if (!media.url) {
-      console.error(" Media URL is missing!");
-      return;
-    }
+  const handleMediaClick = useCallback((media, idx) => {
+    if (!media?.url) return;
 
     setSelectedMedia(media.url);
     setSelectedMediaType(media.mediaType || "image");
     setSelectedMediaTitle(media.caption || `Reference ${idx + 1}`);
+  }, []);
 
-    console.log(" Media modal opened:", {
-      url: media.url,
-      type: media.mediaType,
-      title: media.caption || `Reference ${idx + 1}`,
-    });
-  };
-
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
       "in-progress": "bg-blue-100 text-blue-800 border-blue-300",
@@ -131,9 +102,9 @@ const SectionDetail = () => {
       maintenance: "bg-orange-100 text-orange-800 border-orange-300",
     };
     return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  };
+  }, []);
 
-  const getTaskStatusColor = (status) => {
+  const getTaskStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
@@ -143,9 +114,9 @@ const SectionDetail = () => {
       rejected: "bg-red-100 text-red-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
 
-  const getLastTaskStatusBadge = () => {
+  const getLastTaskStatusBadge = useCallback(() => {
     if (!section?.lastTaskStatus) return null;
 
     const statusConfig = {
@@ -179,8 +150,7 @@ const SectionDetail = () => {
       },
     };
 
-    const config =
-      statusConfig[section.lastTaskStatus] || statusConfig["pending"];
+    const config = statusConfig[section.lastTaskStatus] || statusConfig["pending"];
     const Icon = config.icon;
 
     return (
@@ -198,9 +168,9 @@ const SectionDetail = () => {
         </div>
       </div>
     );
-  };
+  }, [section, t]);
 
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
@@ -369,7 +339,6 @@ const SectionDetail = () => {
                   >
                     {/* Media Container */}
                     <div className="relative h-64 bg-gray-100 overflow-hidden">
-                      {/*  Video or Image */}
                       {isVideo ? (
                         <div
                           className="relative w-full h-full cursor-pointer"
@@ -380,14 +349,9 @@ const SectionDetail = () => {
                             className="w-full h-full object-cover"
                             preload="metadata"
                             onError={(e) => {
-                              console.error(
-                                " Video failed to load:",
-                                media.url
-                              );
                               e.target.style.display = "none";
                             }}
                           />
-                          {/* Play Overlay */}
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
                             <div className="bg-white rounded-full p-4 group-hover:scale-110 transition-transform">
                               <Play className="w-12 h-12 text-primary-600 fill-primary-600" />
@@ -401,7 +365,6 @@ const SectionDetail = () => {
                           className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-500"
                           onClick={() => handleMediaClick(media, idx)}
                           onError={(e) => {
-                            console.error(" Image failed to load:", media.url);
                             e.target.onerror = null;
                             e.target.src =
                               'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14"%3EImage not available%3C/text%3E%3C/svg%3E';
@@ -409,7 +372,6 @@ const SectionDetail = () => {
                         />
                       )}
 
-                      {/* Overlay on Hover */}
                       <div className="absolute inset-0 bg-linear-to-r from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end pointer-events-none">
                         <div className="p-4 text-white w-full">
                           <p className="text-sm font-medium">
@@ -420,7 +382,6 @@ const SectionDetail = () => {
                         </div>
                       </div>
 
-                      {/* QTN Badge */}
                       <div className="absolute top-3 right-3 z-10">
                         <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white transform group-hover:scale-110 transition-transform duration-300">
                           <div className="flex items-center gap-2">
@@ -432,7 +393,6 @@ const SectionDetail = () => {
                         </div>
                       </div>
 
-                      {/* Media Type Badge */}
                       <div className="absolute top-3 left-3 z-10">
                         <div
                           className={`text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center gap-1 ${
@@ -453,7 +413,6 @@ const SectionDetail = () => {
                         </div>
                       </div>
 
-                      {/* Edit Button */}
                       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                         <button
                           onClick={(e) => handleEditImage(e, media)}
@@ -465,7 +424,6 @@ const SectionDetail = () => {
                       </div>
                     </div>
 
-                    {/* Media Info */}
                     <div className="p-4 bg-white">
                       {media.caption && (
                         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
@@ -494,7 +452,6 @@ const SectionDetail = () => {
                         </div>
                       </div>
 
-                      {/*  Duration Badge for Videos */}
                       {isVideo && media.duration && (
                         <div className="mt-2 bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-200 text-center">
                           <span className="text-xs font-bold">
@@ -508,7 +465,6 @@ const SectionDetail = () => {
               })}
             </div>
 
-            {/* Summary */}
             <div className="mt-6 bg-linear-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -644,12 +600,11 @@ const SectionDetail = () => {
         </div>
       )}
 
-      {/*  Media Modal - FIXED */}
+      {/* Media Modal */}
       {selectedMedia && (
         <MediaModal
           isOpen={true}
           onClose={() => {
-            console.log("🔴 Closing media modal");
             setSelectedMedia(null);
             setSelectedMediaType("image");
             setSelectedMediaTitle("");
@@ -665,7 +620,6 @@ const SectionDetail = () => {
         <EditImageModal
           isOpen={isEditModalOpen}
           onClose={() => {
-            console.log("🔴 Closing edit modal");
             setIsEditModalOpen(false);
             setEditingImage(null);
           }}

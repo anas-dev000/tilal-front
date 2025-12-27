@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+// src/pages/admin/Inventory.jsx - REFACTORED WITH REACT QUERY
+import { useState, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -8,7 +9,13 @@ import {
   PackageCheck,
   PackageX,
 } from "lucide-react";
-import { inventoryAPI } from "../../services/api";
+
+// React Query hooks
+import {
+  useInventory,
+  useDeleteInventoryItem,
+} from "../../hooks/queries/useInventory";
+
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -22,39 +29,18 @@ const PAGE_SIZE = 10;
 const Inventory = () => {
   const { t } = useTranslation();
 
-  // Data
-  const [allItems, setAllItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Filters
+  // Local state
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all"); // all, low-stock, out-of-stock, in-stock
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  // React Query data
+  const { data: allItems = [], isLoading } = useInventory();
+  const deleteItemMutation = useDeleteInventoryItem();
 
-  const fetchInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await inventoryAPI.getInventory();
-      setAllItems(response.data.data || []);
-      setError(null);
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
-      setError("Failed to load inventory");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Client-side filtering
+  // Memoized filtered items
   const filteredItems = useMemo(() => {
     let filtered = allItems;
 
@@ -88,7 +74,7 @@ const Inventory = () => {
     return filtered;
   }, [allItems, activeTab, searchTerm]);
 
-  // Pagination
+  // Memoized paginated items
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     const end = start + PAGE_SIZE;
@@ -97,59 +83,66 @@ const Inventory = () => {
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
+  // Reset page when filters change
+  useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeTab]);
+  }, []);
 
-  const handleDelete = async (id) => {
-    if (window.confirm(t("common.confirmDelete"))) {
+  // Stats calculation (memoized)
+  const stats = useMemo(() => {
+    return {
+      total: allItems.length,
+      lowStock: allItems.filter((item) => {
+        const current = item.quantity?.current || 0;
+        const minimum = item.quantity?.minimum || 0;
+        return current > 0 && current <= minimum;
+      }).length,
+      outOfStock: allItems.filter(
+        (item) => (item.quantity?.current || 0) === 0
+      ).length,
+      inStock: allItems.filter((item) => {
+        const current = item.quantity?.current || 0;
+        const minimum = item.quantity?.minimum || 0;
+        return current > minimum;
+      }).length,
+    };
+  }, [allItems]);
+
+  // Handlers
+  const handleDelete = useCallback(
+    async (id) => {
+      if (!window.confirm(t("common.confirmDelete"))) return;
+
       try {
-        await inventoryAPI.deleteInventoryItem(id);
-        fetchInventory();
+        await deleteItemMutation.mutateAsync(id);
+        // toast + list refresh handled inside mutation hook
       } catch (error) {
-        console.error("Error deleting item:", error);
-        toast.error(error.response?.data?.message || "Failed to delete item", {
-          duration: 5000,
-        });
+        // fallback toast (hook already shows one)
+        toast.error(
+          error.response?.data?.message || t("common.errorOccurred"),
+          { duration: 5000 }
+        );
       }
-    }
-  };
+    },
+    [deleteItemMutation, t]
+  );
 
-  const handleAddNew = () => {
+  const handleAddNew = useCallback(() => {
     setSelectedItem(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (item) => {
+  const handleEdit = useCallback((item) => {
     setSelectedItem(item);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleSuccess = () => {
-    fetchInventory();
-  };
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedItem(null);
+  }, []);
 
-  // Calculate stats
-  const stats = {
-    total: allItems.length,
-    lowStock: allItems.filter((item) => {
-      const current = item.quantity?.current || 0;
-      const minimum = item.quantity?.minimum || 0;
-      return current > 0 && current <= minimum;
-    }).length,
-    outOfStock: allItems.filter((item) => (item.quantity?.current || 0) === 0)
-      .length,
-    inStock: allItems.filter((item) => {
-      const current = item.quantity?.current || 0;
-      const minimum = item.quantity?.minimum || 0;
-      return current > minimum;
-    }).length,
-  };
-
-  if (loading) return <Loading fullScreen />;
-  if (error)
-    return <div className="text-center py-12 text-red-600">{error}</div>;
+  if (isLoading) return <Loading fullScreen />;
 
   return (
     <div className="space-y-6">
@@ -169,9 +162,9 @@ const Inventory = () => {
         </Button>
       </div>
 
-      {/*  IMPROVED Alert Banner */}
+      {/* IMPROVED Alert Banner */}
       {(stats.lowStock > 0 || stats.outOfStock > 0) && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
+        <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
           <div className="flex items-start gap-4">
             <div className="shrink-0">
               <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
@@ -273,7 +266,7 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/*  NEW TABLE */}
+        {/* Table */}
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -295,18 +288,16 @@ const Inventory = () => {
         )}
       </Card>
 
-      {/* Modal */}
+      {/* Modal - onSuccess handled inside create/update mutations */}
       <InventoryModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedItem(null);
-        }}
+        onClose={handleModalClose}
         item={selectedItem}
-        onSuccess={handleSuccess}
+        // onSuccess no longer needed → invalidation is in hooks
       />
     </div>
   );
 };
 
-export default Inventory;
+// Memoize component (same as Workers)
+export default memo(Inventory);

@@ -1,5 +1,5 @@
-// frontend/src/pages/admin/AdminTaskDetail.jsx - WITH QTN SUPPORT
-import { useState, useEffect, useCallback } from "react";
+// frontend/src/pages/admin/AdminTaskDetail.jsx - REFACTORED WITH REACT QUERY
+import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,10 +11,12 @@ import {
   Star,
   MessageSquare,
   ThumbsUp,
-  AlertTriangle,
   Play,
 } from "lucide-react";
-import { tasksAPI } from "../../services/api";
+
+// React Query hooks
+import { useTask, useUpdateTask } from "../../hooks/queries/useTasks";
+
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
@@ -25,175 +27,165 @@ const AdminTaskDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
+  const updateTaskMutation = useUpdateTask();
+
+  const {
+    data: task,
+    isLoading,
+    isError,
+  } = useTask(id);
+
+  // Local form state for review
   const [reviewStatus, setReviewStatus] = useState("pending");
   const [reviewComments, setReviewComments] = useState("");
 
-  const [referenceImages, setReferenceImages] = useState([]);
-
-  // QTN-Based Previews Structure
-  const [previewsByRef, setPreviewsByRef] = useState({});
-
-  // Media Modal State
+  // Media modal state
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
   const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
 
-  const fetchTask = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await tasksAPI.getTask(id);
-      const data = response.data.data;
-
-      setTask(data);
-      setReviewStatus(data.adminReview?.status || "pending");
-      setReviewComments(data.adminReview?.comments || "");
-
-      if (data.referenceImages?.length > 0) {
-        setReferenceImages(data.referenceImages);
-
-        // Initialize QTN-based preview structure
-        const initialPreviews = {};
-
-        data.referenceImages.forEach((refImg, refIndex) => {
-          const qtn = refImg.qtn || 1;
-          initialPreviews[refIndex] = {};
-
-          for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
-            initialPreviews[refIndex][qtnIdx] = { before: null, after: null };
-          }
-        });
-
-        // Load existing uploaded images
-        if (data.images?.before) {
-          let globalIndex = 0;
-          data.referenceImages.forEach((refImg, refIndex) => {
-            const qtn = refImg.qtn || 1;
-            for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
-              if (data.images.before[globalIndex]) {
-                initialPreviews[refIndex][qtnIdx].before = {
-                  url: data.images.before[globalIndex].url,
-                  _id: data.images.before[globalIndex]._id,
-                  mediaType:
-                    data.images.before[globalIndex].mediaType || "image",
-                  duration: data.images.before[globalIndex].duration,
-                };
-              }
-              globalIndex++;
-            }
-          });
-        }
-
-        if (data.images?.after) {
-          let globalIndex = 0;
-          data.referenceImages.forEach((refImg, refIndex) => {
-            const qtn = refImg.qtn || 1;
-            for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
-              if (data.images.after[globalIndex]) {
-                initialPreviews[refIndex][qtnIdx].after = {
-                  url: data.images.after[globalIndex].url,
-                  _id: data.images.after[globalIndex]._id,
-                  mediaType:
-                    data.images.after[globalIndex].mediaType || "image",
-                  duration: data.images.after[globalIndex].duration,
-                  isVisibleToClient:
-                    data.images.after[globalIndex].isVisibleToClient || false,
-                };
-              }
-              globalIndex++;
-            }
-          });
-        }
-
-        setPreviewsByRef(initialPreviews);
-      }
-    } catch (error) {
-      console.error("Error fetching task:", error);
-      toast.error(t("common.errorOccurred"), {
-        duration: 5000,
-      });
-    } finally {
-      setLoading(false);
+  // Sync review state when task loads/changes
+  useMemo(() => {
+    if (task) {
+      setReviewStatus(task.adminReview?.status || "pending");
+      setReviewComments(task.adminReview?.comments || "");
     }
-  }, [id, t]);
+  }, [task]);
 
-  useEffect(() => {
-    fetchTask();
-  }, [fetchTask]);
+  // QTN-based previews (derived from task data)
+  const previewsByRef = useMemo(() => {
+    if (!task?.referenceImages?.length) return {};
 
-  const handleSaveReview = async (status) => {
-    try {
-      if (!reviewComments && status === "rejected") {
+    const initialPreviews = {};
+
+    task.referenceImages.forEach((refImg, refIndex) => {
+      const qtn = refImg.qtn || 1;
+      initialPreviews[refIndex] = {};
+
+      for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+        initialPreviews[refIndex][qtnIdx] = { before: null, after: null };
+      }
+    });
+
+    // Map existing before images
+    if (task.images?.before) {
+      let globalIndex = 0;
+      task.referenceImages.forEach((refImg, refIndex) => {
+        const qtn = refImg.qtn || 1;
+        for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+          if (task.images.before[globalIndex]) {
+            initialPreviews[refIndex][qtnIdx].before = {
+              url: task.images.before[globalIndex].url,
+              _id: task.images.before[globalIndex]._id,
+              mediaType: task.images.before[globalIndex].mediaType || "image",
+              duration: task.images.before[globalIndex].duration,
+            };
+          }
+          globalIndex++;
+        }
+      });
+    }
+
+    // Map existing after images
+    if (task.images?.after) {
+      let globalIndex = 0;
+      task.referenceImages.forEach((refImg, refIndex) => {
+        const qtn = refImg.qtn || 1;
+        for (let qtnIdx = 0; qtnIdx < qtn; qtnIdx++) {
+          if (task.images.after[globalIndex]) {
+            initialPreviews[refIndex][qtnIdx].after = {
+              url: task.images.after[globalIndex].url,
+              _id: task.images.after[globalIndex]._id,
+              mediaType: task.images.after[globalIndex].mediaType || "image",
+              duration: task.images.after[globalIndex].duration,
+              isVisibleToClient:
+                task.images.after[globalIndex].isVisibleToClient || false,
+            };
+          }
+          globalIndex++;
+        }
+      });
+    }
+
+    return initialPreviews;
+  }, [task]);
+
+  const handleSaveReview = useCallback(
+    async (status) => {
+      if (status === "rejected" && !reviewComments.trim()) {
         toast.error(t("admin.tasks.reviewCommentsRequired"), {
           duration: 5000,
         });
         return;
       }
 
-      setSaving(true);
+      try {
+        await updateTaskMutation.mutateAsync({
+          id,
+          data: {
+            adminReview: {
+              status,
+              comments: reviewComments,
+              reviewedAt: new Date(),
+            },
+          },
+        });
 
-      await tasksAPI.updateTask(id, {
-        adminReview: {
-          status: status,
-          comments: reviewComments,
-          reviewedAt: new Date(),
-        },
-      });
+        // toast + refetch handled inside mutation hook
+      } catch (error) {
+        console.error("Review save error:", error);
+        // Error toast handled in hook, but keep fallback
+        toast.error(t("common.errorOccurred"), { duration: 5000 });
+      }
+    },
+    [id, reviewComments, updateTaskMutation, t]
+  );
 
-      setReviewStatus(status);
-      toast.success(t("admin.tasks.reviewSaved", { status }), {
-        duration: 5000,
-      });
-      fetchTask();
-    } catch (error) {
-      console.error("Error saving review:", error);
-      toast.error(t("common.errorOccurred"), {
-        duration: 5000,
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const toggleImageVisibility = useCallback(
+    async (imageId, imageType) => {
+      if (!task?.images?.[imageType]) return;
 
-  const toggleImageVisibility = async (imageId, imageType) => {
-    try {
-      await tasksAPI.updateTask(id, {
-        [`images.${imageType}`]: task.images[imageType].map((img) =>
-          img._id === imageId
-            ? { ...img, isVisibleToClient: !img.isVisibleToClient }
-            : img
-        ),
-      });
+      const updatedImages = task.images[imageType].map((img) =>
+        img._id === imageId
+          ? { ...img, isVisibleToClient: !img.isVisibleToClient }
+          : img
+      );
 
-      fetchTask();
-    } catch (error) {
-      console.error("Error toggling image visibility:", error);
-      toast.error(t("common.errorOccurred"), {
-        duration: 5000,
-      });
-    }
-  };
+      try {
+        await updateTaskMutation.mutateAsync({
+          id,
+          data: {
+            [`images.${imageType}`]: updatedImages,
+          },
+        });
+      } catch (error) {
+        console.error("Toggle image visibility error:", error);
+        toast.error(t("common.errorOccurred"), { duration: 5000 });
+      }
+    },
+    [id, task?.images, updateTaskMutation, t]
+  );
 
-  const handleMediaClick = (media, title) => {
+  const handleMediaClick = useCallback((media, title) => {
     setSelectedMedia(media.url);
     setSelectedMediaType(media.mediaType || "image");
     setSelectedMediaTitle(title);
-  };
+  }, []);
 
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
-  if (!task) {
+  if (isError || !task) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">{t("admin.tasks.taskNotFound")}</p>
       </div>
     );
   }
+
+  const referenceImages = task.referenceImages || [];
 
   return (
     <div className="space-y-6">
@@ -717,31 +709,43 @@ const AdminTaskDetail = () => {
               <div className="grid grid-cols-3 gap-3">
                 <Button
                   onClick={() => handleSaveReview("approved")}
-                  disabled={saving || reviewStatus === "approved"}
+                  disabled={
+                    updateTaskMutation.isPending ||
+                    reviewStatus === "approved"
+                  }
                   variant="success"
                   icon={CheckCircle}
                   className="w-full"
                 >
-                  {saving ? t("common.saving") : t("common.approve")}
+                  {updateTaskMutation.isPending
+                    ? t("common.saving")
+                    : t("common.approve")}
                 </Button>
 
                 <Button
                   onClick={() => handleSaveReview("pending")}
-                  disabled={saving}
+                  disabled={updateTaskMutation.isPending}
                   variant="secondary"
                   className="w-full"
                 >
-                  {saving ? t("common.saving") : t("status.pending")}
+                  {updateTaskMutation.isPending
+                    ? t("common.saving")
+                    : t("status.pending")}
                 </Button>
 
                 <Button
                   onClick={() => handleSaveReview("rejected")}
-                  disabled={saving || reviewStatus === "rejected"}
+                  disabled={
+                    updateTaskMutation.isPending ||
+                    reviewStatus === "rejected"
+                  }
                   variant="danger"
                   icon={XCircle}
                   className="w-full"
                 >
-                  {saving ? t("common.saving") : t("common.reject")}
+                  {updateTaskMutation.isPending
+                    ? t("common.saving")
+                    : t("common.reject")}
                 </Button>
               </div>
             </div>

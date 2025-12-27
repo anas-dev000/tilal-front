@@ -1,10 +1,9 @@
-// frontend/src/pages/worker/TaskDetail.jsx - WITH VIDEO SUPPORT & MEDIA MODAL
-import { useState, useEffect } from "react";
+// frontend/src/pages/worker/TaskDetail.jsx - REFACTORED WITH REACT QUERY (FIXED UPLOAD)
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import DeleteImageButton from "../../components/common/DeleteImageButton";
-import MediaModal from "../../components/common/MediaModal";
 import { toast } from "sonner";
+
 import {
   ArrowLeft,
   Camera,
@@ -21,74 +20,46 @@ import {
   Video,
   Play,
 } from "lucide-react";
-import { tasksAPI, inventoryAPI } from "../../services/api";
+
+// React Query hooks
+import {
+  useTask,
+  useUploadTaskImages,
+  useStartTask,
+  useCompleteTask,
+} from "../../hooks/queries/useTasks";
+import { useInventory } from "../../hooks/queries/useInventory";
+
+import DeleteImageButton from "../../components/common/DeleteImageButton";
+import MediaModal from "../../components/common/MediaModal";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
+import { tasksAPI } from "../../services/api";
 
 const TaskDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: task, isLoading: taskLoading } = useTask(id);
+  const { data: inventory = [] } = useInventory();
 
-  // Track uploading state per image location
+  const uploadImagesMutation = useUploadTaskImages(id);
+  const startTaskMutation = useStartTask();
+  const completeTaskMutation = useCompleteTask(id);
+
   const [uploadingImages, setUploadingImages] = useState({});
-
-  // Materials
-  const [availableInventory, setAvailableInventory] = useState([]);
   const [selectedMaterials, setSelectedMaterials] = useState([]);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
-
-  // QTN-Based Previews
   const [previewsByRef, setPreviewsByRef] = useState({});
   const [referenceImages, setReferenceImages] = useState([]);
-
-  // Media Modal
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [taskRes, invRes] = await Promise.all([
-          tasksAPI.getTask(id),
-          inventoryAPI.getInventory(),
-        ]);
-
-        const taskData = taskRes.data.data;
-        setTask(taskData);
-        setAvailableInventory(invRes.data.data || []);
-
-        initializeQTNStructure(taskData);
-      } catch (error) {
-        console.error("Error loading task:", error);
-        toast.error("Failed to load task details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
-
-  const refreshTaskData = async () => {
-    try {
-      const res = await tasksAPI.getTask(id);
-      setTask(res.data.data);
-      initializeQTNStructure(res.data.data);
-    } catch (error) {
-      console.error("Error refreshing task:", error);
-      toast.error("Failed to refresh task data");
-    }
-  };
-
-  const initializeQTNStructure = (taskData) => {
-    if (!taskData.referenceImages || taskData.referenceImages.length === 0) {
+  const initializeQTNStructure = useCallback((taskData) => {
+    if (!taskData?.referenceImages || taskData.referenceImages.length === 0) {
       setReferenceImages([]);
       setPreviewsByRef({});
       return;
@@ -135,29 +106,32 @@ const TaskDetail = () => {
     });
 
     setPreviewsByRef(previews);
+  }, []);
 
-    if (taskData.materials) {
-      setSelectedMaterials(
-        taskData.materials.map((m) => ({
-          item: m.item?._id || m.item,
-          name: m.name || m.item?.name,
-          quantity: m.quantity,
-          unit: m.unit || m.item?.unit,
-          confirmed: m.confirmed || false,
-        }))
-      );
+  useEffect(() => {
+    if (task) {
+      initializeQTNStructure(task);
+      if (task.materials) {
+        setSelectedMaterials(
+          task.materials.map((m) => ({
+            item: m.item?._id || m.item,
+            name: m.name || m.item?.name,
+            quantity: m.quantity,
+            unit: m.unit || m.item?.unit,
+            confirmed: m.confirmed || false,
+          }))
+        );
+      }
     }
-  };
+  }, [task, initializeQTNStructure]);
 
-  // Generate unique key for each upload location
   const getUploadKey = (type, refIndex, qtnIndex) => {
     return `${type}-${refIndex}-${qtnIndex}`;
   };
 
   const handleImageUpload = async (type, refIndex, qtnIndex, file) => {
-    if (!file) return;
+    if (!file || !id) return;
 
-    // Validate file type
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
 
@@ -166,8 +140,7 @@ const TaskDetail = () => {
       return;
     }
 
-    // Validate file size (100MB)
-    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+    const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error("File size must be less than 100MB");
       return;
@@ -176,7 +149,6 @@ const TaskDetail = () => {
     const uploadKey = getUploadKey(type, refIndex, qtnIndex);
 
     try {
-      // Mark this specific location as uploading
       setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
 
       toast.info(`Uploading ${isVideo ? "video" : "image"}...`);
@@ -186,21 +158,15 @@ const TaskDetail = () => {
       formData.append("imageType", type);
       formData.append("isVisibleToClient", "true");
 
-      await tasksAPI.uploadTaskImages(id, formData);
+      await uploadImagesMutation.mutateAsync(formData);
 
       toast.success(`${isVideo ? "Video" : "Image"} uploaded successfully!`);
-
-      // Refresh task data
-      const res = await tasksAPI.getTask(id);
-      setTask(res.data.data);
-      initializeQTNStructure(res.data.data);
     } catch (error) {
-      console.error("Upload failed:", error);
+      console.error("Upload error:", error);
       toast.error(
         error.response?.data?.message || "Failed to upload. Please try again."
       );
     } finally {
-      // Remove uploading state for this specific location
       setUploadingImages((prev) => {
         const newState = { ...prev };
         delete newState[uploadKey];
@@ -209,7 +175,7 @@ const TaskDetail = () => {
     }
   };
 
-  const calculateProgress = () => {
+  const calculateProgress = useCallback(() => {
     let total = 0;
     let beforeCount = 0;
     let afterCount = 0;
@@ -224,20 +190,23 @@ const TaskDetail = () => {
     });
 
     return { total, beforeCount, afterCount };
-  };
+  }, [referenceImages, previewsByRef]);
 
-  const {
-    total: totalLocations,
-    beforeCount,
-    afterCount,
-  } = calculateProgress();
-  const allPhotosComplete =
-    beforeCount === totalLocations && afterCount === totalLocations;
+  const progress = calculateProgress();
+  const totalLocations = progress.total;
+  const beforeCount = progress.beforeCount;
+  const afterCount = progress.afterCount;
 
-  // Check if any upload is in progress
-  const hasAnyUploading = Object.keys(uploadingImages).length > 0;
+  const allPhotosComplete = useMemo(
+    () => beforeCount === totalLocations && afterCount === totalLocations,
+    [beforeCount, totalLocations, afterCount]
+  );
 
-  // Materials Handlers
+  const hasAnyUploading = useMemo(
+    () => Object.keys(uploadingImages).length > 0,
+    [uploadingImages]
+  );
+
   const handleAddMaterial = (item) => {
     if (selectedMaterials.find((m) => m.item === item._id)) {
       toast.warning("Material already added");
@@ -278,9 +247,6 @@ const TaskDetail = () => {
           confirmedAt: new Date(),
         })),
       });
-      const res = await tasksAPI.getTask(id);
-      setTask(res.data.data);
-      initializeQTNStructure(res.data.data);
       toast.success("Materials confirmed successfully!");
     } catch (error) {
       toast.error(
@@ -291,7 +257,6 @@ const TaskDetail = () => {
 
   const materialsConfirmed = selectedMaterials.every((m) => m.confirmed);
 
-  // Task Actions
   const handleStartTask = async () => {
     try {
       const getLocation = () =>
@@ -307,17 +272,9 @@ const TaskDetail = () => {
           });
         });
 
+      let position;
       try {
-        const position = await getLocation();
-        await tasksAPI.startTask(id, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        toast.success("Task started successfully!");
-        setLoading(true);
-        const response = await tasksAPI.getTask(id);
-        setTask(response.data.data);
-        setLoading(false);
+        position = await getLocation();
       } catch (locationError) {
         if (locationError.code === 1) {
           toast.error(
@@ -329,15 +286,7 @@ const TaskDetail = () => {
           const confirm = window.confirm(
             "Unable to get your location. Do you want to start the task without saving location?"
           );
-          if (confirm) {
-            await tasksAPI.startTask(id, {});
-            toast.success("Task started successfully (location not saved)!");
-            setLoading(true);
-            const response = await tasksAPI.getTask(id);
-            setTask(response.data.data);
-            setLoading(false);
-          }
-          return;
+          if (!confirm) return;
         } else {
           toast.error(
             "An error occurred while getting location. Please try again."
@@ -345,8 +294,19 @@ const TaskDetail = () => {
           return;
         }
       }
+
+      await startTaskMutation.mutateAsync({
+        taskId: id,
+        location: position
+          ? {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }
+          : {},
+      });
+
+      toast.success("Task started successfully!");
     } catch (error) {
-      console.error("Error starting task:", error);
       toast.error(error.response?.data?.message || "Failed to start task");
     }
   };
@@ -381,12 +341,9 @@ const TaskDetail = () => {
           });
         });
 
+      let position;
       try {
-        const pos = await getLocation();
-        await tasksAPI.completeTask(id, {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
+        position = await getLocation();
       } catch (err) {
         if (err.code === 1) {
           toast.error("Location access denied.", { duration: 4000 });
@@ -394,8 +351,16 @@ const TaskDetail = () => {
         }
         const confirm = window.confirm("Complete without location?");
         if (!confirm) return;
-        await tasksAPI.completeTask(id, {});
       }
+
+      await completeTaskMutation.mutateAsync({
+        location: position
+          ? {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }
+          : {},
+      });
 
       toast.success("Task completed successfully! 🎉", { duration: 4000 });
       setTimeout(() => navigate("/worker/tasks"), 1000);
@@ -403,6 +368,30 @@ const TaskDetail = () => {
       toast.error(error.response?.data?.message || "Failed to complete task");
     }
   };
+
+  const openMediaModal = (url, mediaType) => {
+    setSelectedMedia(url);
+    setSelectedMediaType(mediaType || "image");
+    setShowMediaModal(true);
+  };
+
+  const SkeletonLoader = () => (
+    <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
+      <div className="absolute inset-0 bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-2" />
+          <p className="text-gray-500 font-medium">Uploading...</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (taskLoading) return <Loading fullScreen />;
+  if (!task)
+    return (
+      <div className="text-center py-12 text-gray-500">Task not found</div>
+    );
 
   const getStatusColor = (status) => {
     const colors = {
@@ -413,32 +402,6 @@ const TaskDetail = () => {
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
-
-  // Open Media Modal
-  const openMediaModal = (url, mediaType) => {
-    setSelectedMedia(url);
-    setSelectedMediaType(mediaType || "image");
-    setShowMediaModal(true);
-  };
-
-  // Skeleton Loader Component with animated shimmer
-  const SkeletonLoader = () => (
-    <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-2" />
-          <p className="text-gray-500 font-medium">Uploading...</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (loading) return <Loading fullScreen />;
-  if (!task)
-    return (
-      <div className="text-center py-12 text-gray-500">Task not found</div>
-    );
 
   return (
     <div className="space-y-6 pb-10">
@@ -503,7 +466,7 @@ const TaskDetail = () => {
             </div>
           </Card>
 
-          {/* Reference Guide with NEW LAYOUT */}
+          {/* Reference Guide */}
           {referenceImages.length > 0 && (
             <Card title={t("worker.referenceGuideTitle")}>
               {/* Progress Header */}
@@ -556,9 +519,9 @@ const TaskDetail = () => {
                         </span>
                       </div>
 
-                      {/* NEW LAYOUT: Reference Left, QTN Rows Right */}
+                      {/* Reference Media & QTN Locations */}
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 bg-gray-50">
-                        {/* Reference Media - Left Column */}
+                        {/* Reference Media - Left */}
                         <div className="lg:col-span-1 flex flex-col">
                           <h4 className="text-xl font-bold text-center mb-4 text-gray-800">
                             {t("worker.reference")}{" "}
@@ -603,7 +566,7 @@ const TaskDetail = () => {
                           </p>
                         </div>
 
-                        {/* QTN Locations - Right 2 Columns */}
+                        {/* QTN Locations */}
                         <div className="lg:col-span-2 space-y-8">
                           {Array.from({ length: qtn }, (_, locIdx) => {
                             const beforeKey = getUploadKey(
@@ -686,7 +649,6 @@ const TaskDetail = () => {
                                           </div>
                                         )}
 
-                                        {/* Delete Button */}
                                         {task.status !== "completed" &&
                                           beforeData.existing && (
                                             <DeleteImageButton
@@ -705,7 +667,7 @@ const TaskDetail = () => {
                                               entityType="task"
                                               entityId={task._id}
                                               imageType="before"
-                                              onSuccess={refreshTaskData}
+                                              onSuccess={() => {}}
                                               position="top-left"
                                               size="md"
                                               showOnHover={true}
@@ -793,7 +755,6 @@ const TaskDetail = () => {
                                           </div>
                                         )}
 
-                                        {/* Delete Button */}
                                         {task.status !== "completed" &&
                                           afterData.existing && (
                                             <DeleteImageButton
@@ -812,7 +773,7 @@ const TaskDetail = () => {
                                               entityType="task"
                                               entityId={task._id}
                                               imageType="after"
-                                              onSuccess={refreshTaskData}
+                                              onSuccess={() => {}}
                                               position="top-left"
                                               size="md"
                                               showOnHover={true}
@@ -852,7 +813,7 @@ const TaskDetail = () => {
                                   </div>
                                 </div>
 
-                                {/* Mini progress indicators */}
+                                {/* Mini progress */}
                                 <div className="mt-4 flex justify-center gap-6 text-md">
                                   <span
                                     className={
@@ -910,7 +871,7 @@ const TaskDetail = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Materials Card */}
-          <Card title={t("worker.uploadingImages")}>
+          <Card title={t("worker.materials")}>
             <div className="space-y-4">
               {selectedMaterials.length === 0 ? (
                 <p className="text-center text-gray-500 py-6">
@@ -976,7 +937,7 @@ const TaskDetail = () => {
                     <div>
                       <select
                         onChange={(e) => {
-                          const item = availableInventory.find(
+                          const item = inventory.find(
                             (i) => i._id === e.target.value
                           );
                           if (item) handleAddMaterial(item);
@@ -984,7 +945,7 @@ const TaskDetail = () => {
                         className="w-full p-3 border rounded mb-2"
                       >
                         <option value="">{t("worker.selectMaterial")}</option>
-                        {availableInventory.map((item) => (
+                        {inventory.map((item) => (
                           <option key={item._id} value={item._id}>
                             {item.name} ({item.quantity.current}{" "}
                             {t("common.available")})

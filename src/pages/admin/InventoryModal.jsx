@@ -1,16 +1,26 @@
-import { useState, useEffect } from "react";
+// src/pages/admin/InventoryModal.jsx - REFACTORED WITH REACT QUERY
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
+
+// React Query hooks
+import {
+  useCreateInventoryItem,
+  useUpdateInventoryItem,
+} from "../../hooks/queries/useInventory";
+
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
-import { inventoryAPI } from "../../services/api";
 
-const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
+const InventoryModal = ({ isOpen, onClose, item }) => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const createItemMutation = useCreateInventoryItem();
+  const updateItemMutation = useUpdateInventoryItem();
+
+  const isEditMode = !!item;
 
   const {
     register,
@@ -25,14 +35,14 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
     if (item) {
       reset({
         ...item,
-        //  Keep branch if editing
+        // Keep branch if editing
         branch: item.branch?._id || item.branch,
       });
     } else {
       reset({
         name: "",
         unit: "kg",
-        branch: "6910b1c1a3e82a5b6b079a63", //  Default Main Branch ID
+        branch: "6910b1c1a3e82a5b6b079a63", // Default Main Branch ID
         description: "",
         quantity: {
           current: 0,
@@ -44,27 +54,27 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
 
   const onSubmit = async (data) => {
     try {
-      setLoading(true);
-      setError("");
-
-      //  Ensure branch is always set
+      // Ensure branch is always set
       if (!data.branch) {
         data.branch = "6910b1c1a3e82a5b6b079a63";
       }
 
-      if (item) {
-        await inventoryAPI.updateInventoryItem(item._id, data);
+      if (isEditMode) {
+        await updateItemMutation.mutateAsync({
+          id: item._id,
+          data,
+        });
       } else {
-        await inventoryAPI.createInventoryItem(data);
+        await createItemMutation.mutateAsync(data);
       }
 
-      onSuccess();
+      // Success toast + list refresh handled inside mutation hooks
       onClose();
       reset();
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred");
-    } finally {
-      setLoading(false);
+      // Error toast already handled inside mutations
+      // Keep fallback for safety
+      console.error("Inventory save error:", err);
     }
   };
 
@@ -76,12 +86,6 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
       size="md"
     >
       <div className="space-y-4">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
         {/* Item Name */}
         <Input
           label={t("admin.inventory.itemName")}
@@ -103,7 +107,7 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
           required
         />
 
-        {/*  HIDDEN Branch Field - Auto-set to Main Branch */}
+        {/* HIDDEN Branch Field - Auto-set to Main Branch */}
         <input type="hidden" {...register("branch")} />
 
         {/* Quantity Section */}
@@ -168,16 +172,18 @@ const InventoryModal = ({ isOpen, onClose, item, onSuccess }) => {
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={createItemMutation.isPending || updateItemMutation.isPending}
           >
             {t("common.cancel")}
           </Button>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={createItemMutation.isPending || updateItemMutation.isPending}
             onClick={handleSubmit(onSubmit)}
           >
-            {loading ? t("common.saving") : t("common.save")}
+            {createItemMutation.isPending || updateItemMutation.isPending
+              ? t("common.saving")
+              : t("common.save")}
           </Button>
         </div>
       </div>

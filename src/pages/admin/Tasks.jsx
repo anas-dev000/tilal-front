@@ -1,5 +1,5 @@
-// frontend/src/pages/admin/Tasks.jsx - WITH REACT-SELECT FILTERS + PAGINATION
-import { useState, useEffect } from "react";
+// frontend/src/pages/admin/Tasks.jsx - REFACTORED WITH REACT QUERY
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,7 +12,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import ReactSelect from "react-select";
-import { tasksAPI, usersAPI, sitesAPI } from "../../services/api";
+
+// React Query hooks
+import { useTasks } from "../../hooks/queries/useTasks";
+import { useWorkers } from "../../hooks/queries/useUsers";
+import { useSites } from "../../hooks/queries/useSites";
+
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import TaskModal from "./TaskModal";
@@ -22,11 +27,10 @@ const Tasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const [tasks, setTasks] = useState([]);
-  const [allTasks, setAllTasks] = useState([]); // للـ filtering محليًا
-  const [workers, setWorkers] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // React Query data fetching
+  const { data: allTasks = [], isLoading } = useTasks();
+  const { data: workers = [] } = useWorkers();
+  const { data: sites = [] } = useSites();
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,53 +40,23 @@ const Tasks = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const pageSize = 10;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [tasksRes, workersRes, sitesRes] = await Promise.all([
-          tasksAPI.getTasks(),
-          usersAPI.getWorkers(),
-          sitesAPI.getAllSites(),
-        ]);
-
-        setAllTasks(tasksRes.data.data || []);
-        setTasks(tasksRes.data.data || []);
-
-        setWorkers(workersRes.data.data || []);
-        setSites(sitesRes.data.data || []);
-
-        // Calculate pagination
-        setTotalPages(Math.ceil((tasksRes.data.data || []).length / pageSize));
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        alert("Failed to load data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Apply filters locally
-  useEffect(() => {
+  // Filtered tasks (client-side filtering + memoization)
+  const filteredTasks = useMemo(() => {
     let filtered = allTasks;
 
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (task) =>
-          task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.worker?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.site?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+          task.title?.toLowerCase().includes(term) ||
+          task.client?.name?.toLowerCase().includes(term) ||
+          task.worker?.name?.toLowerCase().includes(term) ||
+          task.site?.name?.toLowerCase().includes(term)
       );
     }
 
@@ -104,44 +78,37 @@ const Tasks = () => {
       );
     }
 
-    setTasks(filtered);
-    setTotalPages(Math.ceil(filtered.length / pageSize));
-    setCurrentPage(1); // reset to first page
-  }, [searchTerm, selectedWorker, selectedSite, selectedStatus, allTasks]);
+    return filtered;
+  }, [allTasks, searchTerm, selectedWorker, selectedSite, selectedStatus]);
 
-  // Pagination slice
-  const paginatedTasks = tasks.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // Paginated tasks
+  const paginatedTasks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTasks.slice(start, start + pageSize);
+  }, [filteredTasks, currentPage]);
 
-  const handleAddNew = () => {
+  const totalPages = Math.ceil(filteredTasks.length / pageSize);
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, []);
+
+  const handleAddNew = useCallback(() => {
     setSelectedTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setSelectedTask(null);
-  };
+  }, []);
 
-  const handleSuccess = async () => {
-    try {
-      setLoading(true);
-      const response = await tasksAPI.getTasks();
-      setAllTasks(response.data.data || []);
-    } catch (error) {
-      console.error("Error refreshing tasks:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRowClick = (task) => {
+  const handleRowClick = useCallback((task) => {
     navigate(`/admin/tasks/${task._id}`);
-  };
+  }, [navigate]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
@@ -150,7 +117,7 @@ const Tasks = () => {
       rejected: "bg-red-100 text-red-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
 
   const statusOptions = [
     { value: "pending", label: t("status.pending") },
@@ -159,7 +126,7 @@ const Tasks = () => {
     { value: "completed", label: t("status.completed") },
   ];
 
-  if (loading) return <Loading fullScreen />;
+  if (isLoading) return <Loading fullScreen />;
 
   return (
     <div className="space-y-6">
@@ -170,7 +137,7 @@ const Tasks = () => {
             {t("admin.tasks.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {tasks.length} {t("admin.tasks.found")}
+            {filteredTasks.length} {t("admin.tasks.found")}
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -415,8 +382,8 @@ const Tasks = () => {
                 <div className="text-sm text-gray-700">
                   {t("common.showing")} {(currentPage - 1) * pageSize + 1}{" "}
                   {t("common.to")}{" "}
-                  {Math.min(currentPage * pageSize, tasks.length)}{" "}
-                  {t("common.of")} {tasks.length} {t("common.results")}
+                  {Math.min(currentPage * pageSize, filteredTasks.length)}{" "}
+                  {t("common.of")} {filteredTasks.length} {t("common.results")}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -470,7 +437,6 @@ const Tasks = () => {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         task={selectedTask}
-        onSuccess={handleSuccess}
       />
     </div>
   );

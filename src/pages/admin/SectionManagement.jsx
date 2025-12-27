@@ -1,5 +1,5 @@
-// src/pages/admin/SectionManagement.jsx -  FIXED VIDEO DISPLAY
-import { useState } from "react";
+// src/pages/admin/SectionManagement.jsx - REFACTORED WITH REACT QUERY
+import { useCallback, memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -15,46 +15,62 @@ import {
   Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+// React Query hooks
+import { useDeleteSection } from "../../hooks/queries/useSites"; // ← add this export
+
 import Button from "../../components/common/Button";
 import SectionModal from "./SectionModal";
-import { sitesAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SectionManagement = ({ site, onUpdate }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const deleteSectionMutation = useDeleteSection();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
 
-  const handleAddSection = () => {
+  const handleAddSection = useCallback(() => {
     setSelectedSection(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEditSection = (section) => {
+  const handleEditSection = useCallback((section) => {
     setSelectedSection(section);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteSection = async (sectionId) => {
-    if (window.confirm(t("admin.sections.deleteConfirmation"))) {
+  const handleDeleteSection = useCallback(
+    async (sectionId) => {
+      if (!window.confirm(t("admin.sections.deleteConfirmation"))) return;
+
       try {
-        await sitesAPI.deleteSection(site._id, sectionId);
+        await deleteSectionMutation.mutateAsync({
+          siteId: site._id,
+          sectionId,
+        });
+        // Success toast + parent refresh handled in mutation + onUpdate
         onUpdate();
       } catch (error) {
-        console.error("Error deleting section:", error);
+        console.error("Delete section error:", error);
         toast.error(t("admin.sections.failedToDelete"), {
           duration: 5000,
         });
       }
-    }
-  };
+    },
+    [site._id, deleteSectionMutation, onUpdate, t]
+  );
 
-  const handleSectionClick = (sectionId) => {
-    navigate(`/admin/sites/${site._id}/sections/${sectionId}`);
-  };
+  const handleSectionClick = useCallback(
+    (sectionId) => {
+      navigate(`/admin/sites/${site._id}/sections/${sectionId}`);
+    },
+    [site._id, navigate]
+  );
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
       "in-progress": "bg-blue-100 text-blue-800 border-blue-300",
@@ -62,47 +78,51 @@ const SectionManagement = ({ site, onUpdate }) => {
       maintenance: "bg-orange-100 text-orange-800 border-orange-300",
     };
     return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  };
+  }, []);
 
-  const getLastTaskStatusBadge = (section) => {
-    if (!section.lastTaskStatus) return null;
+  const getLastTaskStatusBadge = useCallback(
+    (section) => {
+      if (!section.lastTaskStatus) return null;
 
-    const statusConfig = {
-      completed: {
-        bg: "bg-green-50",
-        text: "text-green-700",
-        border: "border-green-200",
-        icon: CheckCircle,
-        label: t("admin.sections.lastCompleted"),
-      },
-      rejected: {
-        bg: "bg-red-50",
-        text: "text-red-700",
-        border: "border-red-200",
-        icon: AlertCircle,
-        label: t("admin.sections.lastRejected"),
-      },
-      "in-progress": {
-        bg: "bg-blue-50",
-        text: "text-blue-700",
-        border: "border-blue-200",
-        icon: Clock,
-        label: t("admin.sections.lastInProgress"),
-      },
-    };
+      const statusConfig = {
+        completed: {
+          bg: "bg-green-50",
+          text: "text-green-700",
+          border: "border-green-200",
+          icon: CheckCircle,
+          label: t("admin.sections.lastCompleted"),
+        },
+        rejected: {
+          bg: "bg-red-50",
+          text: "text-red-700",
+          border: "border-red-200",
+          icon: AlertCircle,
+          label: t("admin.sections.lastRejected"),
+        },
+        "in-progress": {
+          bg: "bg-blue-50",
+          text: "text-blue-700",
+          border: "border-blue-200",
+          icon: Clock,
+          label: t("admin.sections.lastInProgress"),
+        },
+      };
 
-    const config = statusConfig[section.lastTaskStatus] || statusConfig.pending;
-    const Icon = config.icon;
+      const config =
+        statusConfig[section.lastTaskStatus] || statusConfig.pending;
+      const Icon = config.icon;
 
-    return (
-      <div
-        className={`flex items-center gap-1 px-2 py-1 rounded border ${config.bg} ${config.text} ${config.border}`}
-      >
-        <Icon className="w-3 h-3" />
-        <span className="text-xs font-semibold">{config.label}</span>
-      </div>
-    );
-  };
+      return (
+        <div
+          className={`flex items-center gap-1 px-2 py-1 rounded border ${config.bg} ${config.text} ${config.border}`}
+        >
+          <Icon className="w-3 h-3" />
+          <span className="text-xs font-semibold">{config.label}</span>
+        </div>
+      );
+    },
+    [t]
+  );
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200">
@@ -156,7 +176,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                   {section.referenceImages &&
                   section.referenceImages.length > 0 ? (
                     <div className="relative w-full h-full">
-                      {/*  FIX: Check media type and render accordingly */}
                       {section.referenceImages[0].mediaType === "video" ? (
                         <>
                           <video
@@ -164,14 +183,12 @@ const SectionManagement = ({ site, onUpdate }) => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             preload="metadata"
                           />
-                          {/* Play Button Overlay */}
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
                             <div className="bg-white rounded-full p-3">
                               <Play className="w-8 h-8 text-primary-600 fill-primary-600" />
                             </div>
                           </div>
 
-                          {/* Video Badge */}
                           <div className="absolute top-3 left-3 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
                             <Video className="w-3 h-3" />
                             <span>VIDEO</span>
@@ -189,7 +206,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                                 '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
                             }}
                           />
-                          {/* Image Badge */}
                           <div className="absolute top-3 left-3 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
                             <ImageIcon className="w-3 h-3" />
                             <span>IMAGE</span>
@@ -197,7 +213,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                         </>
                       )}
 
-                      {/* Media Count Badge */}
                       {section.referenceImages.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-bold">
                           +{section.referenceImages.length - 1} more
@@ -210,7 +225,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                     </div>
                   )}
 
-                  {/* Status Badge */}
                   <div className="absolute top-3 right-3">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold border shadow-lg ${getStatusColor(
@@ -222,7 +236,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                   </div>
                 </div>
 
-                {/* Section Info */}
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-1">
@@ -235,7 +248,6 @@ const SectionManagement = ({ site, onUpdate }) => {
                     )}
                   </div>
 
-                  {/* Stats Grid */}
                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200">
                     <div className="text-center">
                       <p className="text-xs text-gray-500">
@@ -264,10 +276,8 @@ const SectionManagement = ({ site, onUpdate }) => {
                     </div>
                   </div>
 
-                  {/* Last Task Status */}
                   {getLastTaskStatusBadge(section)}
 
-                  {/* Actions */}
                   <div className="flex gap-2 pt-3 border-t border-gray-200">
                     <button
                       onClick={(e) => {
@@ -296,7 +306,6 @@ const SectionManagement = ({ site, onUpdate }) => {
         </div>
       )}
 
-      {/* Modal */}
       <SectionModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -311,4 +320,5 @@ const SectionManagement = ({ site, onUpdate }) => {
   );
 };
 
-export default SectionManagement;
+// Memoize (same as Workers pattern)
+export default memo(SectionManagement);

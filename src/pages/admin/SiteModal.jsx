@@ -1,5 +1,5 @@
-// frontend/src/pages/admin/SiteModal.jsx - FIXED VERSION
-import { useState, useEffect } from "react";
+// frontend/src/pages/admin/SiteModal.jsx - REFACTORED WITH REACT QUERY (CORRECT IMPORTS)
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Upload,
@@ -9,20 +9,31 @@ import {
   Layers,
   Trash2,
 } from "lucide-react";
+
+// React Query hooks
+import {
+  useCreateSite,
+  useUpdateSite,
+} from "../../hooks/queries/useSites";
+import { useDeleteImage } from "../../hooks/queries/useDeleteImage";
+
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import ImageUpload from "../../components/common/ImageUpload";
-import { sitesAPI, deleteImageAPI } from "../../services/api";
 import ReactSelect from "react-select";
 import { toast } from "sonner";
 
-const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
+const SiteModal = ({ isOpen, onClose, site, clients }) => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const createSiteMutation = useCreateSite();
+  const updateSiteMutation = useUpdateSite();
+  const deleteImageMutation = useDeleteImage();
+
   const [deletingCover, setDeletingCover] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     client: "",
@@ -71,8 +82,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
       setCoverImagePreview(null);
     }
     setCoverImage(null);
-    setError("");
-  }, [site, isOpen]);
+  }, [site]);
 
   const handleCoverImageChange = (e) => {
     const file = e.target.files[0];
@@ -91,7 +101,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
     setCoverImagePreview(null);
   };
 
-  // 🗑️ DELETE COVER IMAGE
+  // DELETE COVER IMAGE
   const handleDeleteCoverImage = async () => {
     if (!site?.coverImage?.cloudinaryId) return;
 
@@ -102,7 +112,7 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
     setDeletingCover(true);
     try {
-      await deleteImageAPI.deleteImage({
+      await deleteImageMutation.mutateAsync({
         cloudinaryId: site.coverImage.cloudinaryId,
         resourceType: "image",
         entityType: "site",
@@ -111,15 +121,11 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
         imageType: "cover",
       });
 
-      toast.success(t("admin.sites.siteModal.deleteCoverSuccess"));
+      // Success toast handled in hook
       setCoverImagePreview(null);
-      onSuccess(); // Refresh parent data
     } catch (error) {
+      // Error toast handled in hook
       console.error("Delete cover image error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          t("admin.sites.siteModal.deleteCoversError")
-      );
     } finally {
       setDeletingCover(false);
     }
@@ -127,23 +133,18 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+
+    // Client is REQUIRED
+    if (!formData.client || formData.client === "") {
+      toast.error(t("admin.sites.siteModal.pleaseSelectClient"));
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();
 
-      // Required fields - must be sent even if empty (except client which is required)
       formDataToSend.append("name", formData.name.trim());
-
-      // Client is REQUIRED - validate before sending
-      if (!formData.client || formData.client === "") {
-        setError(t("admin.sites.siteModal.pleaseSelectClient"));
-        setLoading(false);
-        return;
-      }
       formDataToSend.append("client", formData.client);
-
       formDataToSend.append("siteType", formData.siteType || "residential");
       formDataToSend.append("totalArea", formData.totalArea || "0");
       formDataToSend.append("description", formData.description || "");
@@ -166,25 +167,19 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
       }
 
       if (site) {
-        await sitesAPI.updateSite(site._id, formDataToSend);
-        toast.success(t("admin.sites.siteModal.updated"));
+        await updateSiteMutation.mutateAsync({
+          id: site._id,
+          formData: formDataToSend,
+        });
       } else {
-        await sitesAPI.createSite(formDataToSend);
-        toast.success(t("admin.sites.siteModal.created"));
+        await createSiteMutation.mutateAsync(formDataToSend);
       }
 
-      onSuccess();
+      // Success toast handled in mutation hooks
       onClose();
     } catch (err) {
+      // Error toast handled in mutation hooks
       console.error("Error saving site:", err);
-      setError(
-        err.response?.data?.message ||
-          (site
-            ? t("admin.sites.siteModal.updateError")
-            : t("admin.sites.siteModal.createError"))
-      );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -208,19 +203,12 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
         {/* Cover Image */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t("admin.sites.siteModal.coverImageOptional")}
           </label>
 
-          {/* ✅ FIXED: Only show existing cover OR new upload, not both */}
           {site?.coverImage?.url && !coverImage && coverImagePreview ? (
             // Show existing cover with delete button
             <div className="relative group mb-3">
@@ -229,7 +217,6 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
                 alt="Cover"
                 className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
               />
-              {/* 🗑️ DELETE BUTTON */}
               <button
                 type="button"
                 onClick={handleDeleteCoverImage}
@@ -245,7 +232,6 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
               </button>
             </div>
           ) : (
-            // Show upload component only if no existing image
             <ImageUpload
               onChange={handleCoverImageChange}
               preview={coverImagePreview}
@@ -418,12 +404,19 @@ const SiteModal = ({ isOpen, onClose, site, clients, onSuccess }) => {
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={
+              createSiteMutation.isPending || updateSiteMutation.isPending
+            }
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading
+          <Button
+            type="submit"
+            disabled={
+              createSiteMutation.isPending || updateSiteMutation.isPending
+            }
+          >
+            {createSiteMutation.isPending || updateSiteMutation.isPending
               ? site
                 ? t("admin.sites.siteModal.updating")
                 : t("admin.sites.siteModal.creating")

@@ -1,5 +1,5 @@
-// src/pages/admin/Sites.jsx
-import { useState, useEffect, useMemo } from "react";
+// src/pages/admin/Sites.jsx - REFACTORED WITH REACT QUERY
+import { useState, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
-import { sitesAPI, clientsAPI } from "../../services/api";
+
+// React Query hooks
+import { useSites, useDeleteSite } from "../../hooks/queries/useSites";
+import { useClients } from "../../hooks/queries/useClients";
+
 import Button from "../../components/common/Button";
 import SiteModal from "./SiteModal";
 import Loading from "../../components/common/Loading";
@@ -22,51 +26,20 @@ const Sites = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // States
-  const [allSites, setAllSites] = useState([]);
-  const [allClients, setAllClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Local state
   const [searchTerm, setSearchTerm] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
 
-  // Fetch all data ONCE
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true);
-        const [sitesRes, clientsRes] = await Promise.all([
-          sitesAPI.getAllSites(), // No params → get everything
-          clientsAPI.getClients(), // Get all clients
-        ]);
+  // React Query data
+  const { data: allSites = [], isLoading: sitesLoading } = useSites();
+  const { data: allClients = [], isLoading: clientsLoading } = useClients();
+  const deleteSiteMutation = useDeleteSite();
 
-        setAllSites(sitesRes.data.data || []);
-        setAllClients(clientsRes.data.data || []);
-      } catch (error) {
-        console.error("Error loading initial data:", error);
-        toast.error(t("common.errorOccurred"), {
-          duration: 5000,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const isLoading = sitesLoading || clientsLoading;
 
-    fetchInitialData();
-  }, []);
-
-  // Refetch data after create/update/delete
-  const refetchSites = async () => {
-    try {
-      const response = await sitesAPI.getAllSites();
-      setAllSites(response.data.data || []);
-    } catch (error) {
-      console.error("Error refetching sites:", error);
-    }
-  };
-
-  // Client-side filtering
+  // Memoized filtered sites (client + search)
   const filteredSites = useMemo(() => {
     let filtered = allSites;
 
@@ -88,48 +61,63 @@ const Sites = () => {
     return filtered;
   }, [allSites, clientFilter, searchTerm]);
 
-  const handleSiteClick = (site) => {
-    navigate(`/admin/sites/${site._id}/sections`);
-  };
+  // Memoized client options for react-select
+  const clientOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: `${t("admin.sites.allClients")} (${allSites.length})`,
+      },
+      ...allClients.map((client) => ({
+        value: client._id,
+        label: client.name,
+      })),
+    ],
+    [allClients, allSites.length, t]
+  );
 
-  const handleEdit = (e, site) => {
+  // Handlers
+  const handleSiteClick = useCallback(
+    (site) => {
+      navigate(`/admin/sites/${site._id}/sections`);
+    },
+    [navigate]
+  );
+
+  const handleEdit = useCallback((e, site) => {
     e.stopPropagation();
     setSelectedSite(site);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
-    if (window.confirm(t("admin.sites.deleteConfirmation"))) {
-      try {
-        await sitesAPI.deleteSite(id);
-        refetchSites();
-      } catch (error) {
-        console.error("Error deleting site:", error);
-        toast.error(t("admin.sites.failedToDelete"), {
-          duration: 5000,
-        });
-      }
-    }
-  };
-
-  const clientOptions = [
-    {
-      value: "all",
-      label: `${t("admin.sites.allClients")} (${allSites.length})`,
-    },
-    ...allClients.map((client) => ({
-      value: client._id,
-      label: client.name,
-    })),
-  ];
-
-  const handleAddNew = () => {
+  const handleAddNew = useCallback(() => {
     setSelectedSite(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const getSiteTypeColor = (type) => {
+  const handleDelete = useCallback(
+    async (e, id) => {
+      e.stopPropagation();
+      if (!window.confirm(t("admin.sites.deleteConfirmation"))) return;
+
+      try {
+        await deleteSiteMutation.mutateAsync(id);
+        // toast is already handled inside the mutation hook
+      } catch (error) {
+        // Error already handled in mutation → just for extra safety
+        console.error("Site deletion error:", error);
+        toast.error(t("admin.sites.failedToDelete"), { duration: 5000 });
+      }
+    },
+    [deleteSiteMutation, t]
+  );
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedSite(null);
+  }, []);
+
+  const getSiteTypeColor = useCallback((type) => {
     const colors = {
       residential: "bg-blue-100 text-blue-800",
       commercial: "bg-green-100 text-green-800",
@@ -138,9 +126,9 @@ const Sites = () => {
       agricultural: "bg-yellow-100 text-yellow-800",
     };
     return colors[type] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
 
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
@@ -218,7 +206,7 @@ const Sites = () => {
                   </div>
                 )}
 
-                <div className="absolute inset-0 group-hover:bg-opacity-40 hover:bg-black/4 transition-all flex items-center justify-center">
+                <div className="absolute inset-0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-4 py-2 flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary-600" />
                     <span className="font-semibold text-gray-900">
@@ -313,19 +301,17 @@ const Sites = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal - onSuccess handled inside useCreateSite / useUpdateSite */}
       <SiteModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedSite(null);
-        }}
+        onClose={handleModalClose}
         site={selectedSite}
         clients={allClients}
-        onSuccess={refetchSites}
+        // onSuccess no longer needed → invalidation is handled in hooks
       />
     </div>
   );
 };
 
-export default Sites;
+// Optional: Memoize if parent re-renders are frequent
+export default memo(Sites);

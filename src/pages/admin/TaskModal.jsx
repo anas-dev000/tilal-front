@@ -1,6 +1,5 @@
-/* eslint-disable no-unused-vars */
-// frontend/src/pages/admin/TaskModal.jsx -  UPDATED: Multiple Sections Support + preFillSite Handling
-import { useState, useEffect } from "react";
+// frontend/src/pages/admin/TaskModal.jsx - REFACTORED WITH REACT QUERY + COMPLETE VALIDATIONS
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import {
@@ -9,29 +8,29 @@ import {
   Image as ImageIcon,
   AlertCircle,
   X,
-  Search,
 } from "lucide-react";
+
+// React Query hooks
+import { useSites } from "../../hooks/queries/useSites";
+import { useWorkers } from "../../hooks/queries/useUsers";
+import { useCreateTask, useUpdateTask } from "../../hooks/queries/useTasks";
+
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import { tasksAPI, sitesAPI, usersAPI } from "../../services/api";
 import ReactSelect from "react-select";
+import { toast } from "sonner";
 
-const fetchSiteDetails = async (siteId) => {
-  const response = await sitesAPI.getSite(siteId);
-  return response.data.data;
-};
-
-const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
+const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // Data
-  const [sites, setSites] = useState([]);
-  const [filteredSites, setFilteredSites] = useState([]);
-  const [siteSearch, setSiteSearch] = useState("");
-  const [workers, setWorkers] = useState([]);
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+
+  // Data fetching with React Query
+  const { data: sites = [] } = useSites();
+  const { data: workers = [] } = useWorkers();
+
   const [selectedSite, setSelectedSite] = useState(null);
   const [availableSections, setAvailableSections] = useState([]);
   const [selectedSections, setSelectedSections] = useState([]);
@@ -50,223 +49,127 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
 
   const watchSite = watch("site");
 
+  // Reset form and local state when modal opens or task/preFillSite changes
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (task) {
+      reset({
+        ...task,
+        site: task.site?._id || "",
+        sections: task.sections?.map((s) => s._id) || [],
+        worker: task.worker?._id || "",
+        scheduledDate: task.scheduledDate
+          ? new Date(task.scheduledDate).toISOString().split("T")[0]
+          : "",
+      });
 
-  // Filter sites based on search
-  useEffect(() => {
-    if (siteSearch.trim()) {
-      const filtered = sites.filter(
-        (site) =>
-          site.name.toLowerCase().includes(siteSearch.toLowerCase()) ||
-          site.client?.name.toLowerCase().includes(siteSearch.toLowerCase())
-      );
-      setFilteredSites(filtered);
+      setSelectedSections(task.sections?.map((s) => s._id) || []);
+      setSelectedSite(task.site || null);
+      setAvailableSections(task.site?.sections || []);
     } else {
-      setFilteredSites(sites);
-    }
-  }, [siteSearch, sites]);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    if (!task) {
       reset({
         title: "",
         description: "",
-        site: "",
+        site: preFillSite?._id || "",
         sections: [],
-        client: "",
         worker: "",
         scheduledDate: "",
       });
 
+      setSelectedSections([]);
+      setSelectedSite(preFillSite || null);
+      setAvailableSections(preFillSite?.sections || []);
+    }
+
+    setSubmitAttempted(false);
+  }, [task, preFillSite, reset]);
+
+  // Load site details when site ID changes
+  useEffect(() => {
+    if (!watchSite) {
       setSelectedSite(null);
       setAvailableSections([]);
       setSelectedSections([]);
       return;
     }
 
-    reset({
-      ...task,
-      site: task.site?._id || "",
-      sections: task.sections || [],
-      client: task.client?._id || "",
-      worker: task.worker?._id || "",
-    });
-
-    if (!task.site?._id) {
-      setSelectedSite(null);
-      setAvailableSections([]);
-      setSelectedSections(task.sections || []);
-      return;
+    const foundSite = sites.find((s) => s._id === watchSite);
+    if (foundSite) {
+      setSelectedSite(foundSite);
+      setAvailableSections(foundSite.sections || []);
     }
+  }, [watchSite, sites]);
 
-    const load = async () => {
-      try {
-        const siteData = await fetchSiteDetails(task.site._id);
-
-        if (isCancelled) return;
-
-        setSelectedSite(siteData);
-        setAvailableSections(siteData.sections || []);
-        setSelectedSections(task.sections || []);
-
-        if (siteData.client?._id) {
-          setValue("client", siteData.client._id);
-        }
-      } catch (err) {
-        if (isCancelled) return;
-
-        console.error("Error loading site:", err);
-        setSelectedSite(null);
-        setAvailableSections([]);
-      }
-    };
-
-    load();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [task, reset, setValue]);
-
-  //  NEW: Handle preFillSite
-  useEffect(() => {
-    if (preFillSite && !task) {
-      setValue("site", preFillSite._id);
-      const loadPreFillSite = async () => {
-        try {
-          const response = await sitesAPI.getSite(preFillSite._id);
-          const siteData = response.data.data;
-          setSelectedSite(siteData);
-          setAvailableSections(siteData.sections || []);
-          if (siteData.client?._id) {
-            setValue("client", siteData.client._id);
-          }
-        } catch (error) {
-          console.error("Error loading pre-filled site:", error);
-        }
-      };
-      loadPreFillSite();
-    }
-  }, [preFillSite, task, setValue]);
-
-  useEffect(() => {
-    if (watchSite && !preFillSite) {
-      // Avoid reloading if pre-filled
-      const loadSiteDetails = async (siteId) => {
-        try {
-          const response = await sitesAPI.getSite(siteId);
-          const siteData = response.data.data;
-
-          setSelectedSite(siteData);
-          setAvailableSections(siteData.sections || []);
-
-          if (siteData.client?._id) {
-            setValue("client", siteData.client._id);
-          }
-        } catch (error) {
-          console.error("Error loading site:", error);
-          setSelectedSite(null);
-          setAvailableSections([]);
-        }
-      };
-
-      loadSiteDetails(watchSite);
-    } else if (!watchSite) {
-      setSelectedSite(null);
-      setAvailableSections([]);
-      setSelectedSections([]);
-      setValue("client", "");
-      setValue("sections", []);
-    }
-  }, [watchSite, setValue, preFillSite]);
-
-  // Filter sites based on search
-  useEffect(() => {
-    if (siteSearch.trim()) {
-      const filtered = sites.filter(
-        (site) =>
-          site.name.toLowerCase().includes(siteSearch.toLowerCase()) ||
-          site.client?.name.toLowerCase().includes(siteSearch.toLowerCase())
-      );
-      setFilteredSites(filtered);
-    } else {
-      setFilteredSites(sites);
-    }
-  }, [siteSearch, sites]);
-
-  useEffect(() => {
-    if (
-      submitAttempted &&
-      (watch("title") || watch("description") || selectedSections.length > 0)
-    ) {
-      setError(""); // Clear previous error
-    }
-  }, [selectedSections, submitAttempted, watch]);
-
-  const fetchData = async () => {
-    try {
-      const [sitesRes, workersRes] = await Promise.all([
-        sitesAPI.getAllSites(),
-        usersAPI.getWorkers(),
-      ]);
-      setSites(sitesRes.data.data || []);
-      setFilteredSites(sitesRes.data.data || []);
-      setWorkers(workersRes.data.data || []);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  const toggleSection = (sectionId) => {
+  const toggleSection = useCallback((sectionId) => {
     setSelectedSections((prev) =>
       prev.includes(sectionId)
         ? prev.filter((id) => id !== sectionId)
         : [...prev, sectionId]
     );
-  };
+  }, []);
 
-  const onSubmit = async (data) => {
-    setSubmitAttempted(true);
-    if (selectedSections.length === 0) {
-      setError("Please select at least one section");
-      return;
-    }
+  const onSubmit = useCallback(
+    async (data) => {
+      setSubmitAttempted(true);
 
-    if (!data.worker) {
-      setError("Please select a worker");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-
-      const payload = {
-        ...data,
-        sections: selectedSections,
-      };
-
-      let response;
-      if (task) {
-        response = await tasksAPI.updateTask(task._id, payload);
-      } else {
-        response = await tasksAPI.createTask(payload);
+      // Complete client-side validation (prevents 400 Bad Request)
+      if (!data.title?.trim()) {
+        toast.error(t("admin.tasks.titleRequired"));
+        return;
       }
 
-      onSuccess(response.data.data);
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.message || "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (selectedSections.length === 0) {
+        toast.error(t("admin.tasks.selectAtLeastOneSection"));
+        return;
+      }
 
-  const getSectionLastStatusColor = (status) => {
+      if (!data.worker) {
+        toast.error(t("admin.tasks.workerRequired"));
+        return;
+      }
+
+      if (!watchSite) {
+        toast.error(t("admin.tasks.siteRequired"));
+        return;
+      }
+
+      if (!data.scheduledDate) {
+        toast.error(t("admin.tasks.dueDateRequired"));
+        return;
+      }
+
+      try {
+        const payload = {
+          ...data,
+          sections: selectedSections,
+        };
+
+        if (task) {
+          await updateTaskMutation.mutateAsync({
+            id: task._id,
+            data: payload,
+          });
+        } else {
+          await createTaskMutation.mutateAsync(payload);
+        }
+
+        // Success toast + refetch handled in mutation hooks
+        onClose();
+      } catch (err) {
+        toast.error(err.response?.data?.message || t("common.errorOccurred"));
+      }
+    },
+    [
+      task,
+      selectedSections,
+      watchSite,
+      updateTaskMutation,
+      createTaskMutation,
+      onClose,
+      t,
+    ]
+  );
+
+  const getSectionLastStatusColor = useCallback((status) => {
     const colors = {
       completed: "bg-green-100 text-green-800 border-green-300",
       rejected: "bg-red-100 text-red-800 border-red-300",
@@ -274,7 +177,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
     };
     return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  };
+  }, []);
 
   return (
     <Modal
@@ -284,17 +187,10 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
       size="xl"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            {error}
-          </div>
-        )}
-
         {/* Title */}
         <Input
           label={t("admin.tasks.taskTitle")}
-          {...register("title", { required: "Title is required" })}
+          {...register("title", { required: t("admin.tasks.titleRequired") })}
           error={errors.title?.message}
           required
         />
@@ -306,7 +202,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
           </label>
           <textarea
             {...register("description", {
-              required: "Description is required",
+              required: t("admin.tasks.descriptionRequired"),
             })}
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -319,42 +215,41 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
           )}
         </div>
 
-        {/* Site Selection with Search */}
+        {/* Site Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MapPin className="w-4 h-4 inline mr-1" />
             {t("common.site")} <span className="text-red-500">*</span>
           </label>
 
-          {/* Site Select */}
           <ReactSelect
             placeholder="Search and select site..."
             value={
               selectedSite
                 ? {
                     value: selectedSite._id,
-                    label: `${selectedSite.name} - ${selectedSite.client?.name}`,
+                    label: `${selectedSite.name} - ${selectedSite.client?.name || ""}`,
                   }
                 : null
             }
             onChange={(option) => {
-              setSelectedSite(sites.find((s) => s._id === option.value));
-              setValue("site", option.value);
+              const selected = sites.find((s) => s._id === option?.value);
+              setSelectedSite(selected);
+              setValue("site", option?.value || "");
+              setValue("sections", []);
+              setSelectedSections([]);
             }}
-            options={filteredSites.map((site) => ({
+            options={sites.map((site) => ({
               value: site._id,
               label: `${site.name} - ${site.client?.name || ""}`,
             }))}
             isClearable
             className="w-full"
           />
-          {errors.site && (
-            <p className="mt-1 text-sm text-red-500">{errors.site.message}</p>
-          )}
 
-          {filteredSites.length === 0 && siteSearch && (
-            <p className="mt-1 text-sm text-gray-500">
-              No sites found matching "{siteSearch}"
+          {submitAttempted && !watchSite && (
+            <p className="text-sm text-red-500 mt-1">
+              {t("admin.tasks.siteRequired")}
             </p>
           )}
         </div>
@@ -421,7 +316,7 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
             </div>
             {submitAttempted && selectedSections.length === 0 && (
               <p className="text-sm text-red-500 mt-2">
-                Please select at least one section
+                {t("admin.tasks.selectAtLeastOneSection")}
               </p>
             )}
           </div>
@@ -494,7 +389,9 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
               className="w-full"
             />
             {submitAttempted && !watch("worker") && (
-              <p className="text-sm text-red-500 mt-1">Worker is required</p>
+              <p className="text-sm text-red-500 mt-1">
+                {t("admin.tasks.workerRequired")}
+              </p>
             )}
           </div>
 
@@ -503,7 +400,13 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t("admin.tasks.dueDate")} *
             </label>
-            <Input type="date" />
+            <Input
+              type="date"
+              {...register("scheduledDate", {
+                required: t("admin.tasks.dueDateRequired"),
+              })}
+              error={errors.scheduledDate?.message}
+            />
           </div>
         </div>
 
@@ -524,12 +427,21 @@ const TaskModal = ({ isOpen, onClose, task, onSuccess, preFillSite }) => {
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={
+              createTaskMutation.isPending || updateTaskMutation.isPending
+            }
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? t("common.loading") : t("common.save")}
+          <Button
+            type="submit"
+            disabled={
+              createTaskMutation.isPending || updateTaskMutation.isPending
+            }
+          >
+            {createTaskMutation.isPending || updateTaskMutation.isPending
+              ? t("common.loading")
+              : t("common.save")}
           </Button>
         </div>
       </form>
