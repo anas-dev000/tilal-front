@@ -1,36 +1,48 @@
-import { useState, useEffect } from "react";
+// src/pages/admin/ClientModal.jsx
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+// React Query hooks
+import {
+  useCreateClient,
+  useUpdateClient,
+} from "../../hooks/queries/useClients";
+
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
-import { clientsAPI } from "../../services/api";
 
-const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
+const ClientModal = ({ isOpen, onClose, client }) => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const createMutation = useCreateClient();
+  const updateMutation = useUpdateClient();
+
+  const isEditMode = !!client;
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm({
-    defaultValues: client || {},
-  });
+  } = useForm();
 
   useEffect(() => {
     if (client) {
-      reset(client);
+      reset({
+        ...client,
+        address: client.address || { street: "", city: "" },
+      });
     } else {
       reset({
         name: "",
         email: "",
         phone: "",
         whatsapp: "",
-        password: "", //  Required
+        password: "",
         paymentType: "cash",
         address: {
           street: "",
@@ -45,39 +57,41 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
 
   const onSubmit = async (data) => {
     try {
-      setLoading(true);
-      setError("");
-
-      if (client) {
-        // Update existing client
-        await clientsAPI.updateClient(client._id, data);
+      if (isEditMode) {
+        await updateMutation.mutateAsync({
+          id: client._id,
+          data,
+        });
+        toast.success("تم تحديث بيانات العميل بنجاح");
       } else {
-        // Create new client
-        await clientsAPI.createClient(data);
+        await createMutation.mutateAsync(data);
+        toast.success("تم إضافة العميل بنجاح");
       }
 
-      onSuccess();
       onClose();
-      reset();
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred");
-    } finally {
-      setLoading(false);
+      const message =
+        err?.response?.data?.message || "حدث خطأ أثناء الحفظ";
+      toast.error(message);
     }
   };
+
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={client ? t("common.edit") : t("admin.clients.addClient")}
+      title={isEditMode ? t("common.edit") : t("admin.clients.addClient")}
       size="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Error Message */}
-        {error && (
+        {(createMutation.error || updateMutation.error) && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-            {error}
+            {createMutation.error?.response?.data?.message ||
+              updateMutation.error?.response?.data?.message ||
+              "An error occurred"}
           </div>
         )}
 
@@ -118,8 +132,8 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
           />
         </div>
 
-        {/*  Password (Required - Type Text) */}
-        {!client && (
+        {/* Password (only on create) */}
+        {!isEditMode && (
           <Input
             label="Password"
             type="text"
@@ -135,16 +149,17 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
           label="Payment Type"
           {...register("paymentType")}
           options={[
-            { value: "cash", label: " Cash" },
-            { value: "online", label: " Online Payment" },
+            { value: "cash", label: "Cash" },
+            { value: "online", label: "Online Payment" },
           ]}
           required
         />
 
-        {/*  Address - WITH LABELS */}
+        {/* Address */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            {t("admin.clients.address")} <span className="text-red-500">*</span>
+            {t("admin.clients.address")}{" "}
+            <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -170,8 +185,8 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
             label={t("admin.clients.propertyType")}
             {...register("propertyType")}
             options={[
-              { value: "residential", label: " Residential (سكني)" },
-              { value: "commercial", label: " Commercial (تجاري)" },
+              { value: "residential", label: "Residential (سكني)" },
+              { value: "commercial", label: "Commercial (تجاري)" },
             ]}
           />
 
@@ -202,12 +217,12 @@ const ClientModal = ({ isOpen, onClose, client, onSuccess }) => {
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={isLoading}
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? t("common.saving") : t("common.save")}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? t("common.saving") : t("common.save")}
           </Button>
         </div>
       </form>

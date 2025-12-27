@@ -80,6 +80,11 @@
     "required": "مطلوب",
     "description": "الوصف",
     "status": "الحالة",
+    "statuses": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "suspended": "موقوف"
+    },
     "video": "فيديو",
     "image": "صورة"
   },

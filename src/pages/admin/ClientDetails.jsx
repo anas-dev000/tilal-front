@@ -1,5 +1,5 @@
+// src/pages/admin/ClientDetails.jsx
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -11,63 +11,45 @@ import {
   Edit,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useMemo, useCallback, memo } from "react";
+
+// React Query hooks
+import { useClient, useClientTasks } from "../../hooks/queries/useClients";
+import { useSites } from "../../hooks/queries/useSites";
+
 import Loading from "../../components/common/Loading";
-import { clientsAPI, sitesAPI, tasksAPI } from "../../services/api";
 import ClientStatsGrid from "../../components/client/ClientStatsGrid";
 import ClientSitesList from "../../components/client/ClientSitesList";
 
 const ClientDetails = () => {
   const { t } = useTranslation();
   const { id } = useParams();
-  const [client, setClient] = useState(null);
-  const [sites, setSites] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [clientRes, sitesRes, tasksRes] = await Promise.all([
-          clientsAPI.getClient(id),
-          sitesAPI.getAllSites({ client: id }),
-          tasksAPI.getTasks({ client: id }),
-        ]);
+  // Data fetching with React Query
+  const { data: client, isLoading: clientLoading, error: clientError } = useClient(id);
+  const { data: sites = [], isLoading: sitesLoading } = useSites({ client: id });
+  const { data: tasks = [], isLoading: tasksLoading } = useClientTasks(id);
 
-        setClient(clientRes.data.data);
-        setSites(sitesRes.data.data || []);
-        setTasks(tasksRes.data.data || []);
-      } catch (err) {
-        console.error("Error fetching client details:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id]);
-
-  if (loading) return <Loading fullScreen />;
-  if (!client)
-    return (
-      <div className="text-center py-12">
-        {t("admin.clientDetails.notFound")}
-      </div>
-    );
+  const isLoading = clientLoading || sitesLoading || tasksLoading;
 
   // Calculate tasks this month
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const tasksThisMonth = tasks.filter((task) => {
-    const taskDate = new Date(task.createdAt);
-    return (
-      taskDate.getMonth() === currentMonth &&
-      taskDate.getFullYear() === currentYear
-    );
-  }).length;
+  const tasksThisMonth = useMemo(() => {
+    if (!tasks.length) return 0;
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    return tasks.filter((task) => {
+      const taskDate = new Date(task.createdAt);
+      return (
+        taskDate.getMonth() === currentMonth &&
+        taskDate.getFullYear() === currentYear
+      );
+    }).length;
+  }, [tasks]);
 
   // Recent tasks (last 5)
-  const recentTasks = tasks.slice(0, 5);
+  const recentTasks = useMemo(() => tasks.slice(0, 5), [tasks]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
@@ -75,7 +57,16 @@ const ClientDetails = () => {
       completed: "bg-green-100 text-green-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
+
+  if (isLoading) return <Loading fullScreen />;
+
+  if (clientError || !client)
+    return (
+      <div className="text-center py-12">
+        {t("admin.clientDetails.notFound")}
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -351,4 +342,4 @@ const ClientDetails = () => {
   );
 };
 
-export default ClientDetails;
+export default memo(ClientDetails);

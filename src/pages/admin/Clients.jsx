@@ -1,34 +1,37 @@
-import { useState, useEffect, useMemo } from "react";
+/* eslint-disable no-unused-vars */
+// src/pages/admin/Clients.jsx
+import { useState, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Search, Users, UserCheck, UserX } from "lucide-react";
-import { clientsAPI } from "../../services/api";
+import { useNavigate } from "react-router-dom";
+
+// React Query hooks (using the existing ones from useClients.js)
+import {
+  useClients,
+  useCreateClient,
+  useUpdateClient,
+  useDeleteClient,
+  useToggleClientStatus,
+} from "../../hooks/queries/useClients";
+
+// Components
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
-import Loading from "../../components/common/Loading";
 import ClientModal from "./ClientModal";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import ClientsTable from "../../components/client/ClientsTable";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
 const Clients = () => {
   const { t } = useTranslation();
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // Data
-  const [allClients, setAllClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Filters
+  // Local state
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all"); // all, active, inactive
+  const [activeTab, setActiveTab] = useState("all"); // all | active | inactive
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
@@ -36,33 +39,20 @@ const navigate = useNavigate();
     client: null,
     action: "",
   });
-const handleRowClick = (client) => {
-  navigate(`/admin/clients/${client._id}`);
-};
-  // Fetch all clients once
-  useEffect(() => {
-    fetchAllClients();
-  }, []);
 
-  const fetchAllClients = async () => {
-    try {
-      setLoading(true);
-      const response = await clientsAPI.getClients({});
-      setAllClients(response.data.data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching clients:", err);
-      setError("Failed to load clients");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ==================== Data Fetching with React Query ====================
+  const { data: allClients = [], isLoading, error } = useClients();
 
-  // Client-side filtering
+  const createClientMutation = useCreateClient();
+  const updateClientMutation = useUpdateClient();
+  const deleteClientMutation = useDeleteClient();
+  const toggleStatusMutation = useToggleClientStatus();
+
+  // ==================== Memoized Values ====================
   const filteredClients = useMemo(() => {
     let filtered = allClients;
 
-    // Filter by tab
+    // Filter by status tab
     if (activeTab === "active") {
       filtered = filtered.filter((c) => c.status === "active");
     } else if (activeTab === "inactive") {
@@ -74,8 +64,8 @@ const handleRowClick = (client) => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (c) =>
-          c.name.toLowerCase().includes(term) ||
-          c.email.toLowerCase().includes(term) ||
+          c.name?.toLowerCase().includes(term) ||
+          c.email?.toLowerCase().includes(term) ||
           (c.phone && c.phone.includes(term))
       );
     }
@@ -83,152 +73,154 @@ const handleRowClick = (client) => {
     return filtered;
   }, [allClients, activeTab, searchTerm]);
 
-  // Pagination
   const paginatedClients = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    return filteredClients.slice(start, end);
+    return filteredClients.slice(start, start + PAGE_SIZE);
   }, [filteredClients, currentPage]);
+
+  const stats = useMemo(
+    () => ({
+      total: allClients.length,
+      active: allClients.filter((c) => c.status === "active").length,
+      inactive: allClients.filter((c) => c.status !== "active").length,
+    }),
+    [allClients]
+  );
 
   const totalPages = Math.ceil(filteredClients.length / PAGE_SIZE);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
+  // Reset page when filters change
+  useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeTab]);
+  }, []);
 
-  // Handlers
-  const handleToggleStatus = (client) => {
+  // ==================== Handlers ====================
+  const handleRowClick = useCallback((client) => {
+    navigate(`/admin/clients/${client._id}`);
+  }, [navigate]);
+
+  const handleEdit = useCallback((client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedClient(null);
+  }, []);
+
+  const handleToggleStatus = useCallback((client) => {
     setConfirmModal({
       isOpen: true,
       client,
       action: client.status === "active" ? "deactivate" : "activate",
     });
-  };
+  }, []);
 
-  const confirmToggle = async () => {
-    try {
-      await clientsAPI.toggleClientStatus(confirmModal.client._id);
-      await fetchAllClients();
-      setConfirmModal({ isOpen: false, client: null, action: "" });
-    } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to toggle status", {
-        duration: 5000,
-      });
-    }
-  };
-
-  const handleDelete = (client) => {
+  const handleDelete = useCallback((client) => {
     setConfirmModal({
       isOpen: true,
       client,
       action: "delete",
     });
-  };
+  }, []);
 
-  const confirmDelete = async () => {
-    try {
-      await clientsAPI.deleteClient(confirmModal.client._id);
-      await fetchAllClients();
-      setConfirmModal({ isOpen: false, client: null, action: "" });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete client", {
-        duration: 5000,
-      });
-    }
-  };
+  const confirmToggle = useCallback(() => {
+    if (!confirmModal.client) return;
 
-  const handleEdit = (client) => {
-    setSelectedClient(client);
-    setIsModalOpen(true);
-  };
+    toggleStatusMutation.mutate(confirmModal.client._id, {
+      onSuccess: () => {
+        setConfirmModal({ isOpen: false, client: null, action: "" });
+      },
+    });
+  }, [confirmModal.client, toggleStatusMutation]);
 
-  const handleAddNew = () => {
-    setSelectedClient(null);
-    setIsModalOpen(true);
-  };
+  const confirmDelete = useCallback(() => {
+    if (!confirmModal.client) return;
 
-  const handleSuccess = () => {
-    fetchAllClients();
-  };
+    deleteClientMutation.mutate(confirmModal.client._id, {
+      onSuccess: () => {
+        setConfirmModal({ isOpen: false, client: null, action: "" });
+      },
+    });
+  }, [confirmModal.client, deleteClientMutation]);
 
-  // Stats
-  const activeCount = allClients.filter((c) => c.status === "active").length;
-  const inactiveCount = allClients.filter((c) => c.status !== "active").length;
+  const handleConfirmModalClose = useCallback(() => {
+    setConfirmModal({ isOpen: false, client: null, action: "" });
+  }, []);
 
-  if (loading) return <Loading fullScreen />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+  // ==================== Render ====================
+  if (isLoading) {
+    return <div className="py-12 text-center"><div className="animate-spin h-8 w-8 mx-auto border-4 border-primary-500 border-t-transparent rounded-full"></div></div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        {t("common.errorLoadingData") || "Failed to load clients"}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t("admin.clients.title")}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {filteredClients.length} {t("admin.clients.displayed")} • {activeCount}{" "}
-            {t("admin.clients.active")} {t("common.of")} {allClients.length}{" "}
-            {t("admin.clients.total")}
-          </p>
-        </div>
-        <Button onClick={handleAddNew} icon={Plus}>
-          {t("admin.clients.addClient")}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {t("admin.clients.title") || "Clients Management"}
+        </h1>
+        <Button
+          onClick={() => {
+            setSelectedClient(null);
+            setIsModalOpen(true);
+          }}
+          icon={Plus}
+        >
+          {t("admin.clients.addClient") || "Add Client"}
         </Button>
       </div>
 
-      {/* Search & Tabs */}
-      <Card>
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <Input
+      <Card className="overflow-hidden">
+        {/* Filters & Search */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
               placeholder={t("common.searchByNameEmailPhone")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              icon={Search}
-              className="w-full"
-            />
-          </div>
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-          <div className="flex gap-2 border-b sm:border-b-0 border-gray-200">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
-                activeTab === "all"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              {t("common.all")} ({allClients.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("active")}
-              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
-                activeTab === "active"
-                  ? "border-green-600 text-green-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <UserCheck className="w-4 h-4" />
-              {t("admin.clients.active")} ({activeCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("inactive")}
-              className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
-                activeTab === "inactive"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <UserX className="w-4 h-4" />
-              {t("admin.clients.inactive")} ({inactiveCount})
-            </button>
+            <div className="flex border-b border-gray-200">
+              <TabButton
+                active={activeTab === "all"}
+                onClick={() => setActiveTab("all")}
+                icon={Users}
+                label={`${t("common.all")} (${stats.total})`}
+                color="blue"
+              />
+              <TabButton
+                active={activeTab === "active"}
+                onClick={() => setActiveTab("active")}
+                icon={UserCheck}
+                label={`${t("admin.clients.active")} (${stats.active})`}
+                color="green"
+              />
+              <TabButton
+                active={activeTab === "inactive"}
+                onClick={() => setActiveTab("inactive")}
+                icon={UserX}
+                label={`${t("admin.clients.inactive")} (${stats.inactive})`}
+                color="red"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table / Empty State */}
         {filteredClients.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -252,23 +244,17 @@ const handleRowClick = (client) => {
         )}
       </Card>
 
-      {/* Modals */}
+      {/* ==================== Modals ==================== */}
       <ClientModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedClient(null);
-        }}
+        onClose={handleModalClose}
         client={selectedClient}
-        onSuccess={handleSuccess}
       />
 
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal({ isOpen: false })}
-        onConfirm={
-          confirmModal.action === "delete" ? confirmDelete : confirmToggle
-        }
+        onClose={handleConfirmModalClose}
+        onConfirm={confirmModal.action === "delete" ? confirmDelete : confirmToggle}
         title={
           confirmModal.action === "delete"
             ? t("common.confirmDelete")
@@ -303,5 +289,30 @@ const handleRowClick = (client) => {
     </div>
   );
 };
+
+// ==================== Memoized Tab Button ====================
+const TabButton = memo(({ active, onClick, icon: Icon, label, color }) => {
+  const colorClasses = {
+    blue: active ? "border-blue-600 text-blue-600" : "",
+    green: active ? "border-green-600 text-green-600" : "",
+    red: active ? "border-red-600 text-red-600" : "",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+        active
+          ? colorClasses[color]
+          : "border-transparent text-gray-600 hover:text-gray-900"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+    </button>
+  );
+});
+
+TabButton.displayName = "TabButton";
 
 export default Clients;

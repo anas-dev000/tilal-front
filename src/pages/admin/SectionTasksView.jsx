@@ -1,5 +1,5 @@
-// frontend/src/pages/admin/SectionTasksView.jsx
-import { useState, useEffect } from "react";
+// frontend/src/pages/admin/SectionTasksView.jsx - REFACTORED WITH REACT QUERY
+import { useMemo } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,7 +10,10 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { tasksAPI } from "../../services/api";
+
+// React Query hook
+import { useTasks } from "../../hooks/queries/useTasks";
+
 import Loading from "../../components/common/Loading";
 
 const SectionTasksView = () => {
@@ -19,42 +22,27 @@ const SectionTasksView = () => {
   const location = useLocation();
   const { sectionName = "Section", siteName = "Site" } = location.state || {};
 
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Fetch tasks using React Query with filters
+  const { data: tasks = [], isLoading } = useTasks({
+    site: siteId,
+    section: sectionId,
+  });
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await tasksAPI.getTasks({
-          site: siteId,
-          section: sectionId,
-        });
-        setTasks(res.data.data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTasks();
-  }, [siteId, sectionId]);
-
-  const getStatusBadge = (status) => {
+  // Memoize status badge styles (performance optimization)
+  const getStatusBadge = useMemo(() => {
     const styles = {
       pending: "bg-yellow-100 text-yellow-800",
       "in-progress": "bg-blue-100 text-blue-800",
       completed: "bg-green-100 text-green-800",
     };
-    return `px-3 py-1 text-xs font-medium rounded-full ${
-      styles[status] || "bg-gray-100 text-gray-800"
-    }`;
-  };
 
-  if (loading) return <Loading fullScreen />;
+    return (status) =>
+      `px-3 py-1 text-xs font-medium rounded-full ${
+        styles[status] || "bg-gray-100 text-gray-800"
+      }`;
+  }, []);
+
+  if (isLoading) return <Loading fullScreen />;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -139,8 +127,8 @@ const SectionTasksView = () => {
                   </div>
                 </div>
 
-                {(task.images.before.length > 0 ||
-                  task.images.after.length > 0) && (
+                {(task.images?.before?.length > 0 ||
+                  task.images?.after?.length > 0) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-gray-500">
                       {t("admin.sectionTasks.photos", {

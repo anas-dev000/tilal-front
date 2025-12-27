@@ -3,17 +3,30 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const ClientStatusBadge = ({ status }) => {
-  const colors = {
-    active: "bg-green-100 text-green-800",
-    inactive: "bg-gray-100 text-gray-800",
-    suspended: "bg-red-100 text-red-800",
+  const { t } = useTranslation();
+
+  const config = {
+    active: {
+      color: "bg-green-100 text-green-800",
+      label: t("common.statuses.active"),
+    },
+    inactive: {
+      color: "bg-gray-100 text-gray-800",
+      label: t("common.statuses.inactive"),
+    },
+    suspended: {
+      color: "bg-red-100 text-red-800",
+      label: t("common.statuses.suspended"),
+    },
   };
+
+  const current = config[status] || config.inactive;
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${colors[status]}`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${current.color}`}
     >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {current.label}
     </span>
   );
 };

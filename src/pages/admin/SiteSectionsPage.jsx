@@ -1,5 +1,6 @@
-// frontend/src/pages/admin/SiteSectionsPage.jsx
-import { useState, useEffect, useCallback } from "react";
+/* eslint-disable no-unused-vars */
+// frontend/src/pages/admin/SiteSectionsPage.jsx - REFACTORED WITH REACT QUERY
+import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,111 +11,79 @@ import {
   Plus,
   AlertCircle,
 } from "lucide-react";
+
+// React Query hooks
+import { useSite } from "../../hooks/queries/useSites";
+import { useClients } from "../../hooks/queries/useClients";
+import { useTasks } from "../../hooks/queries/useTasks";
+
 import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
 import SiteModal from "./SiteModal";
 import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
-import { sitesAPI, clientsAPI, tasksAPI } from "../../services/api";
 import { toast } from "sonner";
 
 const SiteSectionsPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [site, setSite] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // React Query data fetching
+  const { data: site, isLoading: siteLoading, isError } = useSite(id);
+  const { data: clients = [] } = useClients();
+  const { data: tasks = [] } = useTasks({ site: id });
+
+  const isLoading = siteLoading;
+
+  // Memoized rejected tasks (last 2 rejected with comments)
+  const rejectedTasks = useMemo(() => {
+    return tasks
+      .filter(
+        (task) =>
+          task.adminReview?.status === "rejected" &&
+          task.adminReview?.comments
+      )
+      .sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt);
+        const dateB = new Date(b.updatedAt || b.createdAt);
+        return dateB - dateA;
+      })
+      .slice(0, 2);
+  }, [tasks]);
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [rejectedTasks, setRejectedTasks] = useState([]);
 
-  const fetchSite = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await sitesAPI.getSite(id);
-      setSite(response.data.data);
-    } catch (error) {
-      console.error("Error fetching site:", error);
-      toast.error(t("common.errorOccurred"), {
-        duration: 5000,
-      });
-      navigate("/admin/sites");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, navigate, t]);
-
-  const fetchClients = useCallback(async () => {
-    try {
-      const response = await clientsAPI.getClients();
-      setClients(response.data.data || []);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-    }
+  const handleEditSite = useCallback(() => {
+    setIsEditModalOpen(true);
   }, []);
 
-  const fetchRejectedTasks = useCallback(async () => {
-    try {
-      const response = await tasksAPI.getTasks({ site: id });
-      const tasks = response.data.data || [];
-
-      const rejected = tasks
-        .filter(
-          (task) =>
-            task.adminReview?.status === "rejected" &&
-            task.adminReview?.comments
-        )
-        .sort((a, b) => {
-          const dateA = new Date(a.updatedAt || a.createdAt);
-          const dateB = new Date(b.updatedAt || b.createdAt);
-          return dateB - dateA;
-        })
-        .slice(0, 2);
-
-      setRejectedTasks(rejected);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchSite();
-    fetchClients();
-    fetchRejectedTasks();
-  }, [fetchSite, fetchClients, fetchRejectedTasks]);
-
-  const handleEditSite = () => {
-    setIsEditModalOpen(true);
-  };
-
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     setIsTaskModalOpen(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsEditModalOpen(false);
-  };
+  }, []);
 
-  const handleTaskModalClose = () => {
+  const handleTaskModalClose = useCallback(() => {
     setIsTaskModalOpen(false);
-  };
+  }, []);
 
-  const handleSuccess = () => {
-    fetchSite();
-    fetchRejectedTasks();
-  };
+  const handleSuccess = useCallback(() => {
+    // React Query invalidation will handle refetching automatically
+  }, []);
 
-  const handleTaskSuccess = () => {
-    fetchSite();
-    fetchRejectedTasks();
-  };
+  const handleTaskSuccess = useCallback(() => {
+    // React Query invalidation will handle refetching automatically
+  }, []);
 
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
-  if (!site) {
+  if (isError || !site) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">{t("admin.siteSections.siteNotFound")}</p>
@@ -155,7 +124,7 @@ const SiteSectionsPage = () => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary-100 to-primary-200">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200">
               <MapPin className="w-24 h-24 text-primary-400" />
             </div>
           )}
@@ -322,7 +291,7 @@ const SiteSectionsPage = () => {
       </div>
 
       {/* Section Management Component */}
-      <SectionManagement site={site} onUpdate={fetchSite} />
+      <SectionManagement site={site} onUpdate={() => {}} />
 
       {/* Edit Site Modal */}
       <SiteModal
@@ -330,7 +299,6 @@ const SiteSectionsPage = () => {
         onClose={handleModalClose}
         site={site}
         clients={clients}
-        onSuccess={handleSuccess}
       />
 
       {/* Task Modal */}
@@ -338,7 +306,6 @@ const SiteSectionsPage = () => {
         isOpen={isTaskModalOpen}
         onClose={handleTaskModalClose}
         task={null}
-        onSuccess={handleTaskSuccess}
         preFillSite={site}
       />
     </div>

@@ -52,7 +52,7 @@
     "whatsapp": "WhatsApp",
     "all": "All",
     "available": "available",
-    "priority":"Priority",
+    "priority": "Priority",
     "of": "of",
     "searchByNameEmailPhone": "Search by name, email or phone",
     "areYouSure": "Are you sure you want to",
@@ -80,6 +80,11 @@
     "required": "is required",
     "description": "Description",
     "status": "Status",
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended"
+    },
     "video": "video",
     "image": "image"
   },

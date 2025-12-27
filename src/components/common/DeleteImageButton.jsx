@@ -1,8 +1,10 @@
 // frontend/src/components/common/DeleteImageButton.jsx
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteImageAPI } from "../../services/api";
 import { toast } from "sonner";
+
+// React Query hook
+import { useDeleteImage } from "../../hooks/queries/useDeleteImage";
 
 /**
  * Reusable Delete Image Button Component
@@ -31,6 +33,8 @@ const DeleteImageButton = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const deleteImageMutation = useDeleteImage();
+
   const handleDelete = async (e) => {
     e.stopPropagation(); // Prevent triggering parent click events
 
@@ -46,7 +50,7 @@ const DeleteImageButton = ({
     setIsDeleting(true);
 
     try {
-      await deleteImageAPI.deleteImage({
+      await deleteImageMutation.mutateAsync({
         cloudinaryId: imageData.cloudinaryId,
         resourceType: imageData.mediaType === "video" ? "video" : "image",
         entityType,
@@ -56,6 +60,8 @@ const DeleteImageButton = ({
         imageType,
       });
 
+      // Success toast is already handled inside useDeleteImage hook
+      // But we keep the custom message pattern for consistency
       toast.success(
         `${
           imageData.mediaType === "video" ? "Video" : "Image"
@@ -66,6 +72,8 @@ const DeleteImageButton = ({
         onSuccess();
       }
     } catch (error) {
+      // Error toast is already handled inside useDeleteImage
+      // We keep fallback for safety
       console.error("Delete image error:", error);
       toast.error(
         error.response?.data?.message ||
@@ -103,7 +111,7 @@ const DeleteImageButton = ({
     <button
       type="button"
       onClick={handleDelete}
-      disabled={isDeleting}
+      disabled={isDeleting || deleteImageMutation.isPending}
       className={`
         absolute ${positionClasses[position]}
         bg-red-600 hover:bg-red-700 
@@ -118,7 +126,7 @@ const DeleteImageButton = ({
       `}
       title={`Delete ${imageData.mediaType === "video" ? "video" : "image"}`}
     >
-      {isDeleting ? (
+      {isDeleting || deleteImageMutation.isPending ? (
         <div
           className={`${iconSizes[size]} border-2 border-white border-t-transparent rounded-full animate-spin`}
         />

@@ -1,3 +1,6 @@
+// src/components/common/Button.jsx
+import { Loader2 } from "lucide-react"; // ← add this import (or use any spinner icon you prefer)
+
 const Button = ({
   children,
   variant = "primary",
@@ -5,11 +8,11 @@ const Button = ({
   onClick,
   type = "button",
   disabled = false,
+  isLoading = false,          // ← NEW: loading state prop
   className = "",
   icon: Icon,
   iconLeft: IconLeft,
   iconRight: IconRight,
-
   ...props
 }) => {
   const baseStyles =
@@ -24,6 +27,7 @@ const Button = ({
     success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
     outline:
       "border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
+    // You can add more variants if needed
   };
 
   const sizes = {
@@ -38,21 +42,35 @@ const Button = ({
     lg: "w-6 h-6",
   };
 
+  // Disable button when loading OR explicitly disabled
+  const isDisabled = isLoading || disabled;
+
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      disabled={isDisabled}
+      className={`${baseStyles} ${variants[variant] || ""} ${sizes[size]} ${className}`}
       {...props}
     >
-      {Icon && <Icon className="w-5 h-5 mr-2" />}
-
-      {IconLeft && <IconLeft className={iconSize[size]} />}
-
-      {children && <span>{children}</span>}
-
-      {IconRight && <IconRight className={iconSize[size]} />}
+      {isLoading ? (
+        <>
+          <Loader2 
+            className={`animate-spin ${iconSize[size]} mr-2`} 
+          />
+          <span>{children || "Loading..."}</span>
+        </>
+      ) : (
+        <>
+          {Icon && <Icon className={`${iconSize[size]} mr-2`} />}
+          
+          {IconLeft && <IconLeft className={iconSize[size]} />}
+          
+          {children && <span>{children}</span>}
+          
+          {IconRight && <IconRight className={iconSize[size]} />}
+        </>
+      )}
     </button>
   );
 };

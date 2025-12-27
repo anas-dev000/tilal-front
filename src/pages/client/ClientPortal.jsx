@@ -1,5 +1,5 @@
-// frontend/src/pages/client/ClientPortal.jsx -  WITH MEDIA MODAL
-import { useState, useEffect, useCallback } from "react";
+// frontend/src/pages/client/ClientPortal.jsx - REFACTORED WITH REACT QUERY (FIXED IMPORT)
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LogOut,
@@ -8,11 +8,19 @@ import {
   MapPin,
   Calendar,
   CheckCircle,
-  ImageIcon,
+  Image as ImageIcon,
   ThumbsUp,
 } from "lucide-react";
+
 import { useAuth } from "../../contexts/AuthContext";
-import { tasksAPI, clientsAPI } from "../../services/api";
+
+// React Query hooks - use the correct existing exports from useTasks.js
+import {
+  useTasks,              // General tasks hook - filters by current user in backend/hook
+  useSubmitFeedback,
+  useMarkSatisfied,
+} from "../../hooks/queries/useTasks";
+
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
@@ -26,15 +34,18 @@ import { toast } from "sonner";
 const ClientPortal = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Modal States
+  // Use the general useTasks hook - assumes it filters tasks by current authenticated client
+  const { data: tasks = [], isLoading } = useTasks();
+
+  const submitFeedbackMutation = useSubmitFeedback();
+  const markSatisfiedMutation = useMarkSatisfied();
+
+  const [selectedTask, setSelectedTask] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
-  //  Media Modal States
+  // Media Modal States
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
   const [selectedMediaTitle, setSelectedMediaTitle] = useState("");
@@ -43,80 +54,43 @@ const ClientPortal = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      const clientId = user._id || user.id;
-
-      if (!clientId) {
-        console.error(" No client ID found in user object:", user);
-        return;
-      }
-
-      console.log(" Fetching tasks for client:", clientId);
-      const response = await clientsAPI.getClientTasks(clientId);
-      setTasks(response.data.data || []);
-      console.log(" Tasks loaded:", response.data.data?.length || 0);
-    } catch (error) {
-      console.error(" Error fetching tasks:", error);
-
-      if (error.response?.status === 401) {
-        console.log(" Unauthorized - Session expired");
-        logout();
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [logout, navigate, user]);
-
-  useEffect(() => {
-    if (user === undefined) return;
-    if (!user || user.role !== "client") {
-      console.log(" Not authenticated as client, redirecting to login");
-      navigate("/login");
-      return;
-    }
-
-    fetchTasks();
-  }, [user, navigate, fetchTasks]);
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const handleViewTask = (task) => {
+  const handleViewTask = useCallback((task) => {
     setSelectedTask(task);
     setShowDetailModal(true);
     setShowFeedbackModal(false);
-  };
+  }, []);
 
-  const handleOpenFeedbackModal = (task) => {
+  const handleOpenFeedbackModal = useCallback((task) => {
     setSelectedTask(task);
     setShowFeedbackModal(true);
     setShowDetailModal(false);
-  };
+  }, []);
 
-  const handleSubmitFeedback = async (formData) => {
+  const handleSubmitFeedback = useCallback(async (formData) => {
+    if (!selectedTask?._id) return;
+
     try {
-      await tasksAPI.submitFeedback(selectedTask._id, formData);
+      await submitFeedbackMutation.mutateAsync({
+        taskId: selectedTask._id,
+        feedback: formData,
+      });
 
       setSuccessMessage("Feedback submitted successfully!");
       setShowSuccessToast(true);
       setShowFeedbackModal(false);
       setShowDetailModal(false);
-
-      await fetchTasks();
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      toast.error("Failed to submit feedback", {
-        duration: 5000,
-      });
+      toast.error("Failed to submit feedback", { duration: 5000 });
     }
-  };
+  }, [selectedTask?._id, submitFeedbackMutation]);
 
-  const handleMarkSatisfied = async (taskId) => {
+  const handleMarkSatisfied = useCallback(async (taskId) => {
     if (
       !window.confirm(
         "Are you satisfied with this work? This will mark the task as completed with 5 stars."
@@ -126,41 +100,46 @@ const ClientPortal = () => {
     }
 
     try {
-      await tasksAPI.markSatisfied(taskId);
+      await markSatisfiedMutation.mutateAsync(taskId);
 
       setSuccessMessage("Thank you! Task marked as satisfied ✓");
       setShowSuccessToast(true);
-
-      await fetchTasks();
     } catch (error) {
       console.error("Error marking satisfied:", error);
-      toast.error("Failed to mark task as satisfied", {
-        duration: 5000,
-      });
+      toast.error("Failed to mark task as satisfied", { duration: 5000 });
     }
-  };
+  }, [markSatisfiedMutation]);
 
-  //  Handle media click
-  const handleMediaClick = (
-    mediaUrl,
-    mediaType = "image",
-    title = "Task Media"
-  ) => {
-    setSelectedMedia(mediaUrl);
-    setSelectedMediaType(mediaType);
-    setSelectedMediaTitle(title);
-  };
+  // Handle media click
+  const handleMediaClick = useCallback(
+    (mediaUrl, mediaType = "image", title = "Task Media") => {
+      setSelectedMedia(mediaUrl);
+      setSelectedMediaType(mediaType);
+      setSelectedMediaTitle(title);
+    },
+    []
+  );
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       completed: "bg-green-100 text-green-800",
       "in-progress": "bg-blue-100 text-blue-800",
       pending: "bg-yellow-100 text-yellow-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
 
-  if (loading) {
+  // Stats calculation (memoized)
+  const stats = useMemo(() => {
+    return {
+      total: tasks.length,
+      completed: tasks.filter((t) => t.status === "completed").length,
+      inProgress: tasks.filter((t) => t.status === "in-progress").length,
+      pending: tasks.filter((t) => t.status === "pending").length,
+    };
+  }, [tasks]);
+
+  if (isLoading) {
     return <Loading fullScreen />;
   }
 
@@ -208,7 +187,7 @@ const ClientPortal = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Tasks</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tasks.length}
+                  {stats.total}
                 </p>
               </div>
             </div>
@@ -222,7 +201,7 @@ const ClientPortal = () => {
               <div>
                 <p className="text-sm text-gray-600">Completed</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {tasks.filter((t) => t.status === "completed").length}
+                  {stats.completed}
                 </p>
               </div>
             </div>
@@ -236,7 +215,7 @@ const ClientPortal = () => {
               <div>
                 <p className="text-sm text-gray-600">In Progress</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {tasks.filter((t) => t.status === "in-progress").length}
+                  {stats.inProgress}
                 </p>
               </div>
             </div>
@@ -250,7 +229,7 @@ const ClientPortal = () => {
               <div>
                 <p className="text-sm text-gray-600">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {tasks.filter((t) => t.status === "pending").length}
+                  {stats.pending}
                 </p>
               </div>
             </div>
@@ -406,7 +385,9 @@ const ClientPortal = () => {
                                 onClick={() => handleOpenFeedbackModal(task)}
                                 icon={Star}
                                 className="flex-1 border-yellow-500 text-yellow-600 hover:bg-yellow-50"
-                              ></Button>
+                              >
+                                Rate
+                              </Button>
                             </>
                           )}
                       </div>
@@ -445,7 +426,7 @@ const ClientPortal = () => {
         onSubmit={handleSubmitFeedback}
       />
 
-      {/*  Media Modal */}
+      {/* Media Modal */}
       <MediaModal
         isOpen={!!selectedMedia}
         onClose={() => {
