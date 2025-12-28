@@ -1,4 +1,4 @@
-// frontend/src/pages/worker/TaskDetail.jsx - REFACTORED WITH REACT QUERY (FIXED UPLOAD)
+// frontend/src/pages/worker/TaskDetail.jsx - REFACTORED WITH REACT QUERY (COMPLETE)
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import {
   useUploadTaskImages,
   useStartTask,
   useCompleteTask,
+  useUpdateTask,
 } from "../../hooks/queries/useTasks";
 import { useInventory } from "../../hooks/queries/useInventory";
 
@@ -35,7 +36,6 @@ import MediaModal from "../../components/common/MediaModal";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
-import { tasksAPI } from "../../services/api";
 
 const TaskDetail = () => {
   const { t } = useTranslation();
@@ -45,9 +45,10 @@ const TaskDetail = () => {
   const { data: task, isLoading: taskLoading } = useTask(id);
   const { data: inventory = [] } = useInventory();
 
-  const uploadImagesMutation = useUploadTaskImages(id);
+  const uploadImagesMutation = useUploadTaskImages();
   const startTaskMutation = useStartTask();
-  const completeTaskMutation = useCompleteTask(id);
+  const completeTaskMutation = useCompleteTask();
+  const updateTaskMutation = useUpdateTask();
 
   const [uploadingImages, setUploadingImages] = useState({});
   const [selectedMaterials, setSelectedMaterials] = useState([]);
@@ -125,55 +126,58 @@ const TaskDetail = () => {
     }
   }, [task, initializeQTNStructure]);
 
-  const getUploadKey = (type, refIndex, qtnIndex) => {
+  const getUploadKey = useCallback((type, refIndex, qtnIndex) => {
     return `${type}-${refIndex}-${qtnIndex}`;
-  };
+  }, []);
 
-  const handleImageUpload = async (type, refIndex, qtnIndex, file) => {
-    if (!file || !id) return;
+  const handleImageUpload = useCallback(
+    async (type, refIndex, qtnIndex, file) => {
+      if (!file || !id) return;
 
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
 
-    if (!isImage && !isVideo) {
-      toast.error("Please select an image or video file");
-      return;
-    }
+      if (!isImage && !isVideo) {
+        toast.error("Please select an image or video file");
+        return;
+      }
 
-    const maxSize = 100 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error("File size must be less than 100MB");
-      return;
-    }
+      const maxSize = 100 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error("File size must be less than 100MB");
+        return;
+      }
 
-    const uploadKey = getUploadKey(type, refIndex, qtnIndex);
+      const uploadKey = getUploadKey(type, refIndex, qtnIndex);
 
-    try {
-      setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
+      try {
+        setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
 
-      toast.info(`Uploading ${isVideo ? "video" : "image"}...`);
+        toast.info(`Uploading ${isVideo ? "video" : "image"}...`);
 
-      const formData = new FormData();
-      formData.append("images", file);
-      formData.append("imageType", type);
-      formData.append("isVisibleToClient", "true");
+        const formData = new FormData();
+        formData.append("images", file);
+        formData.append("imageType", type);
+        formData.append("isVisibleToClient", "true");
 
-      await uploadImagesMutation.mutateAsync(formData);
+        await uploadImagesMutation.mutateAsync({ id, formData });
 
-      toast.success(`${isVideo ? "Video" : "Image"} uploaded successfully!`);
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to upload. Please try again."
-      );
-    } finally {
-      setUploadingImages((prev) => {
-        const newState = { ...prev };
-        delete newState[uploadKey];
-        return newState;
-      });
-    }
-  };
+        toast.success(`${isVideo ? "Video" : "Image"} uploaded successfully!`);
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error(
+          error.response?.data?.message || "Failed to upload. Please try again."
+        );
+      } finally {
+        setUploadingImages((prev) => {
+          const newState = { ...prev };
+          delete newState[uploadKey];
+          return newState;
+        });
+      }
+    },
+    [id, getUploadKey, uploadImagesMutation]
+  );
 
   const calculateProgress = useCallback(() => {
     let total = 0;
@@ -192,7 +196,7 @@ const TaskDetail = () => {
     return { total, beforeCount, afterCount };
   }, [referenceImages, previewsByRef]);
 
-  const progress = calculateProgress();
+  const progress = useMemo(() => calculateProgress(), [calculateProgress]);
   const totalLocations = progress.total;
   const beforeCount = progress.beforeCount;
   const afterCount = progress.afterCount;
@@ -207,45 +211,56 @@ const TaskDetail = () => {
     [uploadingImages]
   );
 
-  const handleAddMaterial = (item) => {
-    if (selectedMaterials.find((m) => m.item === item._id)) {
-      toast.warning("Material already added");
-      return;
-    }
-    setSelectedMaterials([
-      ...selectedMaterials,
-      {
-        item: item._id,
-        name: item.name,
-        quantity: 1,
-        unit: item.unit,
-        confirmed: false,
-      },
-    ]);
-    setShowAddMaterial(false);
-    toast.success(`${item.name} added`);
-  };
+  const handleAddMaterial = useCallback(
+    (item) => {
+      if (selectedMaterials.find((m) => m.item === item._id)) {
+        toast.warning("Material already added");
+        return;
+      }
+      setSelectedMaterials((prev) => [
+        ...prev,
+        {
+          item: item._id,
+          name: item.name,
+          quantity: 1,
+          unit: item.unit,
+          confirmed: false,
+        },
+      ]);
+      setShowAddMaterial(false);
+      toast.success(`${item.name} added`);
+    },
+    [selectedMaterials]
+  );
 
-  const handleUpdateMaterialQuantity = (index, change) => {
-    const updated = [...selectedMaterials];
-    updated[index].quantity = Math.max(1, updated[index].quantity + change);
-    setSelectedMaterials(updated);
-  };
+  const handleUpdateMaterialQuantity = useCallback((index, change) => {
+    setSelectedMaterials((prev) => {
+      const updated = [...prev];
+      updated[index].quantity = Math.max(1, updated[index].quantity + change);
+      return updated;
+    });
+  }, []);
 
-  const handleRemoveMaterial = (index) => {
-    const materialName = selectedMaterials[index].name;
-    setSelectedMaterials(selectedMaterials.filter((_, i) => i !== index));
-    toast.success(`${materialName} removed`);
-  };
+  const handleRemoveMaterial = useCallback(
+    (index) => {
+      const materialName = selectedMaterials[index].name;
+      setSelectedMaterials((prev) => prev.filter((_, i) => i !== index));
+      toast.success(`${materialName} removed`);
+    },
+    [selectedMaterials]
+  );
 
-  const handleConfirmMaterials = async () => {
+  const handleConfirmMaterials = useCallback(async () => {
     try {
-      await tasksAPI.updateTask(id, {
-        materials: selectedMaterials.map((m) => ({
-          ...m,
-          confirmed: true,
-          confirmedAt: new Date(),
-        })),
+      await updateTaskMutation.mutateAsync({
+        id,
+        data: {
+          materials: selectedMaterials.map((m) => ({
+            ...m,
+            confirmed: true,
+            confirmedAt: new Date(),
+          })),
+        },
       });
       toast.success("Materials confirmed successfully!");
     } catch (error) {
@@ -253,11 +268,14 @@ const TaskDetail = () => {
         error.response?.data?.message || "Failed to confirm materials"
       );
     }
-  };
+  }, [id, selectedMaterials, updateTaskMutation]);
 
-  const materialsConfirmed = selectedMaterials.every((m) => m.confirmed);
+  const materialsConfirmed = useMemo(
+    () => selectedMaterials.every((m) => m.confirmed),
+    [selectedMaterials]
+  );
 
-  const handleStartTask = async () => {
+  const handleStartTask = useCallback(async () => {
     try {
       const getLocation = () =>
         new Promise((resolve, reject) => {
@@ -296,8 +314,8 @@ const TaskDetail = () => {
       }
 
       await startTaskMutation.mutateAsync({
-        taskId: id,
-        location: position
+        id,
+        data: position
           ? {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
@@ -309,9 +327,9 @@ const TaskDetail = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to start task");
     }
-  };
+  }, [id, startTaskMutation]);
 
-  const handleFinishTask = async () => {
+  const handleFinishTask = useCallback(async () => {
     if (!allPhotosComplete) {
       toast.error(
         `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`,
@@ -354,12 +372,15 @@ const TaskDetail = () => {
       }
 
       await completeTaskMutation.mutateAsync({
-        location: position
-          ? {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            }
-          : {},
+        id,
+        data: {
+          location: position
+            ? {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              }
+            : {},
+        },
       });
 
       toast.success("Task completed successfully! 🎉", { duration: 4000 });
@@ -367,13 +388,27 @@ const TaskDetail = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to complete task");
     }
-  };
+  }, [
+    id,
+    allPhotosComplete,
+    beforeCount,
+    totalLocations,
+    afterCount,
+    materialsConfirmed,
+    hasAnyUploading,
+    completeTaskMutation,
+    navigate,
+  ]);
 
-  const openMediaModal = (url, mediaType) => {
+  const openMediaModal = useCallback((url, mediaType) => {
     setSelectedMedia(url);
     setSelectedMediaType(mediaType || "image");
     setShowMediaModal(true);
-  };
+  }, []);
+
+  const closeMediaModal = useCallback(() => {
+    setShowMediaModal(false);
+  }, []);
 
   const SkeletonLoader = () => (
     <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
@@ -387,13 +422,7 @@ const TaskDetail = () => {
     </div>
   );
 
-  if (taskLoading) return <Loading fullScreen />;
-  if (!task)
-    return (
-      <div className="text-center py-12 text-gray-500">Task not found</div>
-    );
-
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
@@ -401,7 +430,13 @@ const TaskDetail = () => {
       completed: "bg-green-100 text-green-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
+
+  if (taskLoading) return <Loading fullScreen />;
+  if (!task)
+    return (
+      <div className="text-center py-12 text-gray-500">Task not found</div>
+    );
 
   return (
     <div className="space-y-6 pb-10">
@@ -423,7 +458,7 @@ const TaskDetail = () => {
       {/* Media Modal */}
       <MediaModal
         isOpen={showMediaModal}
-        onClose={() => setShowMediaModal(false)}
+        onClose={closeMediaModal}
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}
         title={t(
@@ -470,7 +505,7 @@ const TaskDetail = () => {
           {referenceImages.length > 0 && (
             <Card title={t("worker.referenceGuideTitle")}>
               {/* Progress Header */}
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
+              <div className="bg-linear-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
                 <div className="flex items-center gap-4">
                   <AlertCircle className="w-10 h-10 text-indigo-600" />
                   <div>
@@ -503,7 +538,7 @@ const TaskDetail = () => {
                       className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
                     >
                       {/* Header */}
-                      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
+                      <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <span className="text-3xl font-bold">
                             {t("worker.reference")} #{refIdx + 1}
@@ -705,7 +740,6 @@ const TaskDetail = () => {
                                       </label>
                                     )}
                                   </div>
-
                                   {/* After */}
                                   <div>
                                     <label className="block text-center text-md font-semibold text-gray-700 mb-3">
@@ -846,7 +880,7 @@ const TaskDetail = () => {
               </div>
 
               {/* Final Progress */}
-              <div className="mt-10 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
+              <div className="mt-10 bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
                 <p className="text-3xl font-bold text-green-800">
                   {beforeCount + afterCount} / {totalLocations * 2}{" "}
                   {t("worker.photosCompleted")}
@@ -1028,5 +1062,4 @@ const TaskDetail = () => {
     </div>
   );
 };
-
 export default TaskDetail;

@@ -1,5 +1,5 @@
-// frontend/src/pages/worker/MyTasks.jsx - FINAL VERSION WITH START TASK FROM LIST
-import { useState, useEffect } from "react";
+// frontend/src/pages/worker/MyTasks.jsx - REFACTORED WITH REACT QUERY
+import { useState, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,7 +13,10 @@ import {
   Calendar,
   Layers,
 } from "lucide-react";
-import { tasksAPI } from "../../services/api";
+
+// React Query hooks
+import { useTasks, useStartTask } from "../../hooks/queries/useTasks";
+
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
@@ -21,83 +24,100 @@ import Loading from "../../components/common/Loading";
 const MyTasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [filter, setFilter] = useState("all");
   const [startingTaskId, setStartingTaskId] = useState(null);
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  // React Query hooks
+  const { data: tasks = [], isLoading: loading, error } = useTasks();
+  const startTaskMutation = useStartTask();
 
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const response = await tasksAPI.getTasks();
-      setTasks(response.data.data || []);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setLoading(false);
+  // Memoized filtered tasks
+  const filteredTasks = useMemo(() => {
+    if (filter === "all") return tasks;
+    if (filter === "active") {
+      return tasks.filter((task) =>
+        ["assigned", "in-progress"].includes(task.status)
+      );
     }
-  };
+    return tasks.filter((task) => task.status === filter);
+  }, [tasks, filter]);
 
-  const handleStartTask = async (taskId, e) => {
-    e.stopPropagation();
-    setStartingTaskId(taskId);
+  // Memoized stats
+  const stats = useMemo(
+    () => ({
+      total: tasks.length,
+      pending: tasks.filter((t) => t.status === "pending").length,
+      assigned: tasks.filter((t) => t.status === "assigned").length,
+      inProgress: tasks.filter((t) => t.status === "in-progress").length,
+      completed: tasks.filter((t) => t.status === "completed").length,
+      active: tasks.filter((t) =>
+        ["assigned", "in-progress"].includes(t.status)
+      ).length,
+    }),
+    [tasks]
+  );
 
-    const getLocation = () =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Geolocation not supported"));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: Infinity,
+  // Stable callback for starting task
+  const handleStartTask = useCallback(
+    async (taskId, e) => {
+      e.stopPropagation();
+      setStartingTaskId(taskId);
+
+      const getLocation = () =>
+        new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("Geolocation not supported"));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: Infinity,
+          });
         });
-      });
 
-    try {
-      const position = await getLocation();
-      await tasksAPI.startTask(taskId, {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-      toast.success("تم فتح المهمة", {
-        duration: 8000,
-      });
-
-      fetchTasks();
-    } catch (locationError) {
-      if (locationError.code === 1) {
-        toast.error(
-          "Location access denied. Please enable location in your browser settings.",
-          { duration: 5000 }
-        );
-      } else if (locationError.code === 2) {
-        const confirm = window.confirm(
-          "Unable to get location. Start task without location?"
-        );
-        if (confirm) {
-          await tasksAPI.startTask(taskId, {});
-          toast.error("Task started (location not saved)!", {
-        duration: 5000,
-      });
-          fetchTasks();
+      try {
+        const position = await getLocation();
+        await startTaskMutation.mutateAsync({
+          id: taskId,
+          data: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+        });
+        toast.success("تم فتح المهمة", { duration: 8000 });
+      } catch (locationError) {
+        if (locationError.code === 1) {
+          toast.error(
+            "Location access denied. Please enable location in your browser settings.",
+            { duration: 5000 }
+          );
+        } else if (locationError.code === 2) {
+          const confirm = window.confirm(
+            "Unable to get location. Start task without location?"
+          );
+          if (confirm) {
+            await startTaskMutation.mutateAsync({
+              id: taskId,
+              data: {},
+            });
+            toast.error("Task started (location not saved)!", {
+              duration: 5000,
+            });
+          }
+        } else {
+          toast.error("Location error. Please try again.", { duration: 5000 });
         }
-      } else {
-        toast.error("Location error. Please try again.", {
-        duration: 5000,
-      });
+      } finally {
+        setStartingTaskId(null);
       }
-    } finally {
-      setStartingTaskId(null);
-    }
-  };
+    },
+    [startTaskMutation]
+  );
 
-  const getStatusColor = (status) => {
+  // Memoized status color getter
+  const getStatusColor = useCallback((status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
       assigned: "bg-blue-100 text-blue-800 border-blue-300",
@@ -107,9 +127,9 @@ const MyTasks = () => {
       rejected: "bg-red-100 text-red-800 border-red-300",
     };
     return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  };
+  }, []);
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = useCallback((status) => {
     const icons = {
       pending: <Clock className="w-4 h-4" />,
       assigned: <AlertCircle className="w-4 h-4" />,
@@ -119,9 +139,9 @@ const MyTasks = () => {
       rejected: <AlertCircle className="w-4 h-4" />,
     };
     return icons[status] || null;
-  };
+  }, []);
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = useCallback((priority) => {
     const colors = {
       low: "text-gray-600",
       medium: "text-yellow-600",
@@ -129,26 +149,29 @@ const MyTasks = () => {
       urgent: "text-red-600 font-bold",
     };
     return colors[priority] || "text-gray-600";
-  };
+  }, []);
 
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "all") return true;
-    if (filter === "active")
-      return ["assigned", "in-progress"].includes(task.status);
-    return task.status === filter;
-  });
+  // Stable filter handlers
+  const handleFilterChange = useCallback((newFilter) => {
+    setFilter(newFilter);
+  }, []);
 
-  const stats = {
-    total: tasks.length,
-    pending: tasks.filter((t) => t.status === "pending").length,
-    assigned: tasks.filter((t) => t.status === "assigned").length,
-    inProgress: tasks.filter((t) => t.status === "in-progress").length,
-    completed: tasks.filter((t) => t.status === "completed").length,
-    active: tasks.filter((t) => ["assigned", "in-progress"].includes(t.status))
-      .length,
-  };
+  const handleNavigateToTask = useCallback(
+    (taskId) => {
+      navigate(`/worker/tasks/${taskId}`);
+    },
+    [navigate]
+  );
 
   if (loading) return <Loading fullScreen />;
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        {error.message || "Failed to load tasks"}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -199,35 +222,35 @@ const MyTasks = () => {
       <div className="flex gap-2 mb-6 flex-wrap justify-center items-center">
         <Button
           variant={filter === "all" ? "primary" : "secondary"}
-          onClick={() => setFilter("all")}
+          onClick={() => handleFilterChange("all")}
           size="sm"
         >
           All ({stats.total})
         </Button>
         <Button
           variant={filter === "active" ? "primary" : "secondary"}
-          onClick={() => setFilter("active")}
+          onClick={() => handleFilterChange("active")}
           size="sm"
         >
           Active ({stats.active})
         </Button>
         <Button
           variant={filter === "assigned" ? "primary" : "secondary"}
-          onClick={() => setFilter("assigned")}
+          onClick={() => handleFilterChange("assigned")}
           size="sm"
         >
           Assigned ({stats.assigned})
         </Button>
         <Button
           variant={filter === "in-progress" ? "primary" : "secondary"}
-          onClick={() => setFilter("in-progress")}
+          onClick={() => handleFilterChange("in-progress")}
           size="sm"
         >
           In Progress ({stats.inProgress})
         </Button>
         <Button
           variant={filter === "completed" ? "primary" : "secondary"}
-          onClick={() => setFilter("completed")}
+          onClick={() => handleFilterChange("completed")}
           size="sm"
         >
           Completed ({stats.completed})
@@ -239,7 +262,7 @@ const MyTasks = () => {
           <Card
             key={task._id}
             className="hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden"
-            onClick={() => navigate(`/worker/tasks/${task._id}`)}
+            onClick={() => handleNavigateToTask(task._id)}
           >
             <div
               className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -299,7 +322,7 @@ const MyTasks = () => {
                       task.priority
                     )}`}
                   >
-                    {task.priority === "urgent" && "Fire "}{" "}
+                    {task.priority === "urgent" && "🔥 "}{" "}
                     {t(`priority.${task.priority}`)} Priority
                   </span>
                 </div>
@@ -323,7 +346,7 @@ const MyTasks = () => {
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStartTask(task._id, e);
-                    navigate(`/worker/tasks/${task._id}`);
+                    handleNavigateToTask(task._id);
                   }}
                 >
                   Continue Task
@@ -336,7 +359,7 @@ const MyTasks = () => {
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/worker/tasks/${task._id}`);
+                    handleNavigateToTask(task._id);
                   }}
                 >
                   View Details
@@ -351,7 +374,7 @@ const MyTasks = () => {
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/worker/tasks/${task._id}`);
+                    handleNavigateToTask(task._id);
                   }}
                 >
                   View Details
@@ -362,23 +385,32 @@ const MyTasks = () => {
         ))}
       </div>
 
-      {filteredTasks.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-10 h-10 text-gray-400" />
-          </div>
-          <p className="text-gray-500 text-lg font-medium mb-2">
-            {filter === "all" ? "No tasks assigned" : `No ${filter} tasks`}
-          </p>
-          <p className="text-gray-400 text-sm">
-            {filter === "completed"
-              ? "Completed tasks will appear here"
-              : "New tasks will appear here when assigned"}
-          </p>
-        </div>
-      )}
+      {filteredTasks.length === 0 && <EmptyState filter={filter} />}
     </div>
   );
 };
 
-export default MyTasks;
+// Memoized EmptyState component
+const EmptyState = memo(({ filter }) => {
+  // const { t } = useTranslation();
+
+  return (
+    <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <CheckCircle className="w-10 h-10 text-gray-400" />
+      </div>
+      <p className="text-gray-500 text-lg font-medium mb-2">
+        {filter === "all" ? "No tasks assigned" : `No ${filter} tasks`}
+      </p>
+      <p className="text-gray-400 text-sm">
+        {filter === "completed"
+          ? "Completed tasks will appear here"
+          : "New tasks will appear here when assigned"}
+      </p>
+    </div>
+  );
+});
+
+EmptyState.displayName = "EmptyState";
+
+export default memo(MyTasks);
