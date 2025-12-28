@@ -1,5 +1,5 @@
-// frontend/src/pages/worker/MyTasks.jsx - REFACTORED WITH REACT QUERY (CORRECT HOOK)
-import { useState, useCallback, useMemo } from "react";
+// frontend/src/pages/worker/MyTasks.jsx - FINAL VERSION WITH START TASK FROM LIST
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,11 +13,7 @@ import {
   Calendar,
   Layers,
 } from "lucide-react";
-
-// React Query hooks
-import { useTasks } from "../../hooks/queries/useTasks"; // Use the general useTasks
-import { useStartTask } from "../../hooks/queries/useTasks";
-
+import { tasksAPI } from "../../services/api";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
@@ -25,102 +21,83 @@ import Loading from "../../components/common/Loading";
 const MyTasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  // Use the general useTasks hook (filtered by worker in the backend or hook logic)
-  const { data: tasks = [], isLoading } = useTasks(); // Assumes useTasks fetches worker's tasks
-  const startTaskMutation = useStartTask();
-
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [startingTaskId, setStartingTaskId] = useState(null);
 
-  const filteredTasks = useMemo(() => {
-    if (filter === "all") return tasks;
-    if (filter === "active")
-      return tasks.filter((task) =>
-        ["assigned", "in-progress"].includes(task.status)
-      );
-    return tasks.filter((task) => task.status === filter);
-  }, [tasks, filter]);
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
-  const stats = useMemo(() => {
-    return {
-      total: tasks.length,
-      pending: tasks.filter((t) => t.status === "pending").length,
-      assigned: tasks.filter((t) => t.status === "assigned").length,
-      inProgress: tasks.filter((t) => t.status === "in-progress").length,
-      completed: tasks.filter((t) => t.status === "completed").length,
-      active: tasks.filter((t) =>
-        ["assigned", "in-progress"].includes(t.status)
-      ).length,
-    };
-  }, [tasks]);
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await tasksAPI.getTasks();
+      setTasks(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleStartTask = useCallback(
-    async (taskId, e) => {
-      e.stopPropagation();
-      setStartingTaskId(taskId);
+  const handleStartTask = async (taskId, e) => {
+    e.stopPropagation();
+    setStartingTaskId(taskId);
 
-      const getLocation = () =>
-        new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("Geolocation not supported"));
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: Infinity,
-          });
-        });
-
-      try {
-        let position;
-        try {
-          position = await getLocation();
-        } catch (locationError) {
-          if (locationError.code === 1) {
-            toast.error(
-              "Location access denied. Please enable location in your browser settings.",
-              { duration: 5000 }
-            );
-            return;
-          } else if (locationError.code === 2) {
-            const confirm = window.confirm(
-              "Unable to get location. Start task without location?"
-            );
-            if (!confirm) return;
-          } else {
-            toast.error("Location error. Please try again.", {
-              duration: 5000,
-            });
-            return;
-          }
+    const getLocation = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation not supported"));
+          return;
         }
-
-        await startTaskMutation.mutateAsync({
-          taskId,
-          location: position
-            ? {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              }
-            : {},
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: Infinity,
         });
+      });
 
-        toast.success("تم فتح المهمة", {
-          duration: 8000,
-        });
-      } catch (err) {
-        console.error("Start task error:", err);
-        toast.error("Failed to start task. Please try again.");
-      } finally {
-        setStartingTaskId(null);
+    try {
+      const position = await getLocation();
+      await tasksAPI.startTask(taskId, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      toast.success("تم فتح المهمة", {
+        duration: 8000,
+      });
+
+      fetchTasks();
+    } catch (locationError) {
+      if (locationError.code === 1) {
+        toast.error(
+          "Location access denied. Please enable location in your browser settings.",
+          { duration: 5000 }
+        );
+      } else if (locationError.code === 2) {
+        const confirm = window.confirm(
+          "Unable to get location. Start task without location?"
+        );
+        if (confirm) {
+          await tasksAPI.startTask(taskId, {});
+          toast.error("Task started (location not saved)!", {
+        duration: 5000,
+      });
+          fetchTasks();
+        }
+      } else {
+        toast.error("Location error. Please try again.", {
+        duration: 5000,
+      });
       }
-    },
-    [startTaskMutation]
-  );
+    } finally {
+      setStartingTaskId(null);
+    }
+  };
 
-  const getStatusColor = useCallback((status) => {
+  const getStatusColor = (status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
       assigned: "bg-blue-100 text-blue-800 border-blue-300",
@@ -130,9 +107,9 @@ const MyTasks = () => {
       rejected: "bg-red-100 text-red-800 border-red-300",
     };
     return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
-  }, []);
+  };
 
-  const getStatusIcon = useCallback((status) => {
+  const getStatusIcon = (status) => {
     const icons = {
       pending: <Clock className="w-4 h-4" />,
       assigned: <AlertCircle className="w-4 h-4" />,
@@ -142,9 +119,9 @@ const MyTasks = () => {
       rejected: <AlertCircle className="w-4 h-4" />,
     };
     return icons[status] || null;
-  }, []);
+  };
 
-  const getPriorityColor = useCallback((priority) => {
+  const getPriorityColor = (priority) => {
     const colors = {
       low: "text-gray-600",
       medium: "text-yellow-600",
@@ -152,9 +129,26 @@ const MyTasks = () => {
       urgent: "text-red-600 font-bold",
     };
     return colors[priority] || "text-gray-600";
-  }, []);
+  };
 
-  if (isLoading) return <Loading fullScreen />;
+  const filteredTasks = tasks.filter((task) => {
+    if (filter === "all") return true;
+    if (filter === "active")
+      return ["assigned", "in-progress"].includes(task.status);
+    return task.status === filter;
+  });
+
+  const stats = {
+    total: tasks.length,
+    pending: tasks.filter((t) => t.status === "pending").length,
+    assigned: tasks.filter((t) => t.status === "assigned").length,
+    inProgress: tasks.filter((t) => t.status === "in-progress").length,
+    completed: tasks.filter((t) => t.status === "completed").length,
+    active: tasks.filter((t) => ["assigned", "in-progress"].includes(t.status))
+      .length,
+  };
+
+  if (loading) return <Loading fullScreen />;
 
   return (
     <div className="space-y-6">
