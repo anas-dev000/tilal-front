@@ -32,6 +32,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
   const { data: workers = [] } = useWorkers();
 
   const [selectedSite, setSelectedSite] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(null);
   const [availableSections, setAvailableSections] = useState([]);
   const [selectedSections, setSelectedSections] = useState([]);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -141,6 +142,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
         const payload = {
           ...data,
           sections: selectedSections,
+          client: selectedClient || task?.client?._id,
         };
 
         if (task) {
@@ -160,6 +162,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     },
     [
       task,
+      selectedClient,
       selectedSections,
       watchSite,
       updateTaskMutation,
@@ -228,13 +231,17 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
               selectedSite
                 ? {
                     value: selectedSite._id,
-                    label: `${selectedSite.name} - ${selectedSite.client?.name || ""}`,
+                    label: `${selectedSite.name} - ${
+                      selectedSite.client?.name || ""
+                    }`,
                   }
                 : null
             }
             onChange={(option) => {
               const selected = sites.find((s) => s._id === option?.value);
+              const selectedClient = selected ? selected.client._id : null;
               setSelectedSite(selected);
+              setSelectedClient(selectedClient);
               setValue("site", option?.value || "");
               setValue("sections", []);
               setSelectedSections([]);

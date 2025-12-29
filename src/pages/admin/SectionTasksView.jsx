@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft,
   Calendar,
   User,
   Clock,
@@ -48,13 +47,6 @@ const SectionTasksView = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <Link
-            to={`/admin/sites/${siteId}/sections`}
-            className="inline-flex items-center text-primary-600 hover:text-primary-800 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            {t("admin.sectionTasks.backToSections")}
-          </Link>
           <h1 className="text-3xl font-bold text-gray-900">
             {t("admin.sectionTasks.title", { section: sectionName })}
           </h1>

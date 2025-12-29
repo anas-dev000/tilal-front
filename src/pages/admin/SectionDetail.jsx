@@ -3,7 +3,6 @@ import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft,
   MapPin,
   Calendar,
   CheckCircle,
@@ -150,7 +149,8 @@ const SectionDetail = () => {
       },
     };
 
-    const config = statusConfig[section.lastTaskStatus] || statusConfig["pending"];
+    const config =
+      statusConfig[section.lastTaskStatus] || statusConfig["pending"];
     const Icon = config.icon;
 
     return (
@@ -181,14 +181,7 @@ const SectionDetail = () => {
         <p className="text-gray-500 text-lg">
           {t("admin.sectionDetails.notFound")}
         </p>
-        <Button
-          variant="secondary"
-          icon={ArrowLeft}
-          onClick={() => navigate(`/admin/sites/${siteId}/sections`)}
-          className="mt-4"
-        >
-          {t("admin.sectionDetails.backToSections")}
-        </Button>
+
       </div>
     );
   }
@@ -198,14 +191,6 @@ const SectionDetail = () => {
 
   return (
     <div className="space-y-6">
-      <Button
-        variant="secondary"
-        icon={ArrowLeft}
-        onClick={() => navigate(`/admin/sites/${siteId}/sections`)}
-      >
-        {t("admin.sectionDetails.backToSections")}
-      </Button>
-
       {/* Section Header Card */}
       <div className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200">
         <div className="flex items-start justify-between mb-4">

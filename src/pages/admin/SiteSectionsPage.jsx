@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft,
   MapPin,
   Layers,
   Edit,
@@ -96,14 +95,6 @@ const SiteSectionsPage = () => {
       {/* Header with Back Button */}
       <div className="flex items-center justify-between gap-4">
         <Button
-          variant="secondary"
-          icon={ArrowLeft}
-          onClick={() => navigate("/admin/sites")}
-        >
-          {t("admin.siteSections.backToSites")}
-        </Button>
-
-        <Button
           variant="primary"
           icon={Plus}
           onClick={handleAddTask}
@@ -124,7 +115,7 @@ const SiteSectionsPage = () => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200">
+            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary-100 to-primary-200">
               <MapPin className="w-24 h-24 text-primary-400" />
             </div>
           )}

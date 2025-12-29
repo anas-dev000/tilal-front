@@ -332,7 +332,11 @@ const MyTasks = () => {
                 <Button
                   className="w-full"
                   variant="primary"
-                  onClick={(e) => handleStartTask(task._id, e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartTask(task._id, e);
+                    handleNavigateToTask(task._id);
+                  }}
                   disabled={startingTaskId === task._id}
                 >
                   {startingTaskId === task._id ? "Starting..." : "Start Task"}

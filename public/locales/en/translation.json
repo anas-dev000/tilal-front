@@ -1,5 +1,6 @@
 {
   "common": {
+    "collapse": "Collapse",
     "worker": "Worker",
     "welcome": "Welcome",
     "viewOnGoogleMaps": "View on Google Maps",
