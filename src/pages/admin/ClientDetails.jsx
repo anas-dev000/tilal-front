@@ -2,7 +2,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft,
   Mail,
   Phone,
   MapPin,
@@ -73,12 +72,6 @@ const ClientDetails = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            to="/admin/clients"
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
             <p className="text-gray-600 mt-1">

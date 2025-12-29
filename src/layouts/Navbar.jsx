@@ -1,14 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
-import { Menu, Bell, X } from "lucide-react";
+import {
+  Menu,
+  ChevronsLeft,
+  ChevronsRight,
+  Bell,
+  X,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationsAPI } from "../services/api";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
+import NavbarBackButton from "../components/common/NavbarBackButton";
 
 let pollInterval = null;
 
-const Navbar = ({ onMenuClick }) => {
+const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
@@ -86,17 +95,39 @@ const Navbar = ({ onMenuClick }) => {
     return `${Math.floor(seconds / 86400)}${t("navbar.daysAgo")}`;
   };
 
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
-        >
-          <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+          >
+            <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+          </button>
 
-        <div className="hidden lg:block" />
+          <button
+            onClick={onDesktopToggle}
+            className="hidden lg:flex p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0 items-center"
+          >
+            {isRTL ? (
+              isDesktopSidebarOpen ? (
+                <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+              ) : (
+                <ChevronsLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+              )
+            ) : isDesktopSidebarOpen ? (
+              ""
+            ) : (
+              <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+            )}
+          </button>
+
+          <NavbarBackButton className="ml-2 lg:ml-0" icon={BackIcon} />
+          <div className="hidden lg:block w-5 h-5 sm:w-6 sm:h-6" />
+        </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="relative">
@@ -111,7 +142,6 @@ const Navbar = ({ onMenuClick }) => {
                 </span>
               )}
             </button>
-
             {showNotifications && (
               <div
                 className={`absolute ${
@@ -129,7 +159,6 @@ const Navbar = ({ onMenuClick }) => {
                     <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
-
                 <div className="max-h-80 sm:max-h-96 overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
@@ -150,7 +179,6 @@ const Navbar = ({ onMenuClick }) => {
                           </button>
                         </div>
                       )}
-
                       {notifications.map((n) => (
                         <div
                           key={n._id}
@@ -183,7 +211,6 @@ const Navbar = ({ onMenuClick }) => {
                     </>
                   )}
                 </div>
-
                 {notifications.length > 0 && (
                   <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
                     <button
@@ -197,7 +224,6 @@ const Navbar = ({ onMenuClick }) => {
               </div>
             )}
           </div>
-
           <LanguageSwitcher />
         </div>
       </div>

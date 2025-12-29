@@ -2,7 +2,7 @@
 /* eslint-disable no-unused-vars */
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Edit, Power } from "lucide-react";
+import { Edit, Power } from "lucide-react";
 import { useMemo, useCallback, memo, useState } from "react";
 
 // React Query hooks
@@ -35,10 +35,9 @@ const WorkerDetails = () => {
     error: workerError,
   } = useUser(id);
 
-  const {
-    data: tasks = [],
-    isLoading: isTasksLoading,
-  } = useTasks({ worker: id });
+  const { data: tasks = [], isLoading: isTasksLoading } = useTasks({
+    worker: id,
+  });
 
   const updateUserMutation = useUpdateUser();
 
@@ -114,12 +113,6 @@ const WorkerDetails = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            to="/admin/workers"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
           <h1 className="text-3xl font-bold">{worker.name}</h1>
         </div>
 
@@ -141,9 +134,7 @@ const WorkerDetails = () => {
             }`}
           >
             <Power className="w-4 h-4" />
-            {worker.isActive
-              ? t("common.deactivate")
-              : t("common.activate")}
+            {worker.isActive ? t("common.deactivate") : t("common.activate")}
           </button>
         </div>
       </div>

@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import {
-  ArrowLeft,
   Camera,
   CheckCircle,
   Clock,
@@ -467,11 +466,6 @@ const TaskDetail = () => {
           }`
         )}
       />
-
-      <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate(-1)}>
-        {t("common.back")}
-      </Button>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Task Info Card */}

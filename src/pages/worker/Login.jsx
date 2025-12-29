@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/pages/worker/Login.jsx
+import { useState, useEffect } from "react"; // Import useEffect
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -9,29 +10,36 @@ import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 
 const Login = () => {
   const { t } = useTranslation();
-  const { login, clientLogin } = useAuth();
+  const { login, clientLogin, isAuthenticated, user } = useAuth(); // Get isAuthenticated and user from useAuth
   const navigate = useNavigate();
-
   const [loginType, setLoginType] = useState("staff");
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // NEW: Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (user.role === "worker") {
+        navigate("/worker", { replace: true });
+      } else if (user.role === "client") {
+        navigate("/client/dashboard", { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]); // Depend on isAuthenticated and user
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       let result;
-
       if (loginType === "staff") {
-        //  Staff Login (Admin/Worker)
         result = await login(credentials);
-
         if (result.success) {
           const { user } = result;
-
           // Route based on role
           if (user.role === "admin") {
             navigate("/admin");
@@ -44,9 +52,7 @@ const Login = () => {
           setError(result.error);
         }
       } else {
-        //  Client Login
         result = await clientLogin(credentials);
-
         if (result.success) {
           if (result.isPasswordTemporary) {
             navigate("/client/change-password");
@@ -70,7 +76,6 @@ const Login = () => {
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
-
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         {/* Logo & Title */}
         <div className="text-center mb-8">
@@ -82,8 +87,6 @@ const Login = () => {
           </h1>
           <p className="text-gray-600">{t("common.login")}</p>
         </div>
-
-        {/*  Login Type Selector */}
         <div className="flex gap-2 mb-6">
           <button
             type="button"
@@ -102,7 +105,6 @@ const Login = () => {
             <span className="text-sm font-medium">Staff Login</span>
             <p className="text-xs text-gray-500 mt-1">Admin / Worker</p>
           </button>
-
           <button
             type="button"
             onClick={() => {
@@ -121,7 +123,6 @@ const Login = () => {
             <p className="text-xs text-gray-500 mt-1">Customer Portal</p>
           </button>
         </div>
-
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
@@ -135,7 +136,6 @@ const Login = () => {
             required
             autoComplete="email"
           />
-
           <Input
             label={t("auth.password")}
             type="password"
@@ -147,13 +147,11 @@ const Login = () => {
             required
             autoComplete="current-password"
           />
-
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
-
           {loginType === "staff" && (
             <div className="flex items-center justify-between">
               <label className="flex items-center">
@@ -170,12 +168,10 @@ const Login = () => {
               </a>
             </div>
           )}
-
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? t("common.loading") : t("common.login")}
           </Button>
         </form>
-
         {/* Demo Credentials */}
         <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
           <p className="font-semibold mb-2">Demo Credentials:</p>

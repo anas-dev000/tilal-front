@@ -1,9 +1,8 @@
 // frontend/src/pages/admin/AdminTaskDetail.jsx - REFACTORED WITH REACT QUERY
 import { useState, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft,
   CheckCircle,
   XCircle,
   MapPin,
@@ -26,7 +25,6 @@ import { toast } from "sonner";
 const AdminTaskDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const updateTaskMutation = useUpdateTask();
 
@@ -189,10 +187,6 @@ const AdminTaskDetail = () => {
 
   return (
     <div className="space-y-6">
-      <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate(-1)}>
-        {t("common.back")}
-      </Button>
-
       {/* Header */}
       <Card>
         <div className="flex justify-between items-start">
