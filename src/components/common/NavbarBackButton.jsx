@@ -12,7 +12,7 @@ const NavbarBackButton = ({ className = "", icon: CustomIcon }) => {
 
   const currentPath = location.pathname;
 
-  const logoutPaths = ["/admin", "/worker", "/client/dashboard"];
+  const logoutPaths = ["/admin", "/worker", "/accountant", "/client/dashboard"];
 
   const isOnDashboardPath = logoutPaths.includes(currentPath);
 

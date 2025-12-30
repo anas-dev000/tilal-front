@@ -344,17 +344,32 @@ export const inventoryAPI = {
   restockInventory: (id, data) => api.post(`/inventory/${id}/restock`, data),
 };
 
-//  Invoices API
-export const invoicesAPI = {
-  getInvoices: (params) => api.get("/invoices", { params }),
-  getInvoice: (id) => api.get(`/invoices/${id}`),
-  createInvoice: (data) => api.post("/invoices", data),
-  updateInvoice: (id, data) => api.put(`/invoices/${id}`, data),
-  deleteInvoice: (id) => api.delete(`/invoices/${id}`),
-  updatePaymentStatus: (id, data) =>
-    api.put(`/invoices/${id}/payment-status`, data),
-  downloadInvoice: (id) =>
-    api.get(`/invoices/${id}/download`, { responseType: "blob" }),
+//  Accountant API - Complete separation from admin
+export const accountantAPI = {
+  // Invoice management
+  getInvoices: (params) => api.get("/accountant/invoices", { params }),
+  getInvoice: (id) => api.get(`/accountant/invoices/${id}`),
+  createInvoice: (formData) =>
+    api.post("/accountant/invoices", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  updateInvoice: (id, formData) =>
+    api.put(`/accountant/invoices/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  deleteInvoice: (id) => api.delete(`/accountant/invoices/${id}`),
+  
+  // Invoice statistics and alerts
+  getInvoiceStats: () => api.get("/accountant/invoices/stats"),
+  getPaymentAlerts: () => api.get("/accountant/invoices/payment-alerts"),
+  
+  // Sites (read-only for accountants)
+  getSites: (params) => api.get("/accountant/sites", { params }),
+  getSite: (id) => api.get(`/accountant/sites/${id}`),
+
+  // Clients (read-only for accountants)
+  getClients: (params) => api.get("/accountant/clients", { params }),
+  getClient: (id) => api.get(`/accountant/clients/${id}`),
 };
 
 //  Reports API

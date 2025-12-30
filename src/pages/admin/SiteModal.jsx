@@ -46,6 +46,9 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
       googleMapsLink: "",
     },
     notes: "",
+    paymentCycle: "monthly",
+    lastPaymentDate: "",
+    nextPaymentDate: "",
   });
 
   // Cover image states
@@ -67,6 +70,9 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
           googleMapsLink: site.location?.googleMapsLink || "",
         },
         notes: site.notes || "",
+        paymentCycle: site.paymentCycle || "monthly",
+        lastPaymentDate: site.lastPaymentDate ? new Date(site.lastPaymentDate).toISOString().split('T')[0] : "",
+        nextPaymentDate: site.nextPaymentDate ? new Date(site.nextPaymentDate).toISOString().split('T')[0] : "",
       });
       setCoverImagePreview(site.coverImage?.url || null);
     } else {
@@ -78,6 +84,9 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
         description: "",
         location: { address: "", city: "", googleMapsLink: "" },
         notes: "",
+        paymentCycle: "monthly",
+        lastPaymentDate: "",
+        nextPaymentDate: "",
       });
       setCoverImagePreview(null);
     }
@@ -160,6 +169,15 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
         "location[googleMapsLink]",
         formData.location.googleMapsLink || ""
       );
+
+      // Payment Cycle Information
+      formDataToSend.append("paymentCycle", formData.paymentCycle || "monthly");
+      if (formData.lastPaymentDate) {
+        formDataToSend.append("lastPaymentDate", formData.lastPaymentDate);
+      }
+      if (formData.nextPaymentDate) {
+        formDataToSend.append("nextPaymentDate", formData.nextPaymentDate);
+      }
 
       // Cover Image
       if (coverImage) {
@@ -304,6 +322,50 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
           placeholder="e.g., 500"
           min="0"
         />
+
+        {/* Payment Cycle */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Payment Cycle
+          </label>
+          <Select
+            value={[
+              { value: "monthly", label: "Monthly" },
+              { value: "quarterly", label: "Quarterly" },
+              { value: "semi-annually", label: "Semi-Annually" },
+              { value: "annually", label: "Annually" },
+            ].find((opt) => opt.value === formData.paymentCycle)}
+            onChange={(opt) =>
+              setFormData({ ...formData, paymentCycle: opt.value })
+            }
+            options={[
+              { value: "monthly", label: "Monthly" },
+              { value: "quarterly", label: "Quarterly" },
+              { value: "semi-annually", label: "Semi-Annually" },
+              { value: "annually", label: "Annually" },
+            ]}
+          />
+        </div>
+
+        {/* Payment Dates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Last Payment Date"
+            type="date"
+            value={formData.lastPaymentDate}
+            onChange={(e) =>
+              setFormData({ ...formData, lastPaymentDate: e.target.value })
+            }
+          />
+          <Input
+            label="Next Payment Date"
+            type="date"
+            value={formData.nextPaymentDate}
+            onChange={(e) =>
+              setFormData({ ...formData, nextPaymentDate: e.target.value })
+            }
+          />
+        </div>
 
         {/* Location */}
         <div className="space-y-2">

@@ -1,4 +1,4 @@
-// src/pages/admin/Dashboard.jsx - REFACTORED WITH REACT QUERY
+// src/pages/admin/Dashboard.jsx - ENHANCED WITH INVOICE STATS
 import { useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,13 +9,16 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// React Query hooks (you need to create these in hooks/queries)
-import { useDashboardStats } from "../../hooks/queries/useReports"; // new - see below
+// React Query hooks
+import { useDashboardStats } from "../../hooks/queries/useReports";
 import { useLowStockItems } from "../../hooks/queries/useInventory";
+import { useInvoiceStats, usePaymentAlerts } from "../../hooks/queries/useInvoices";
 
 import StatCard from "../../components/common/StatCard";
 import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
+import InvoiceStats from "../../components/admin/InvoiceStats";
+import PaymentAlerts from "../../components/admin/PaymentAlerts";
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -24,10 +27,12 @@ const Dashboard = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: lowStockItems = [], isLoading: inventoryLoading } =
     useLowStockItems();
+  const { data: invoiceStats, isLoading: invoiceStatsLoading } = useInvoiceStats();
+  const { data: paymentAlerts, isLoading: alertsLoading } = usePaymentAlerts();
 
-  const isLoading = statsLoading || inventoryLoading;
+  const isLoading = statsLoading || inventoryLoading || invoiceStatsLoading || alertsLoading;
 
-  // Memoized values (optional but follows Workers pattern)
+  // Memoized values
   const hasLowStock = useMemo(() => lowStockItems.length > 0, [lowStockItems]);
 
   if (isLoading) {
@@ -38,7 +43,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">{t("admin.title")}</h1>
 
-      {/* Stats Grid - Real Data */}
+      {/* General Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title={t("admin.stats.totalClients")}
@@ -65,6 +70,17 @@ const Dashboard = () => {
           color="primary"
         />
       </div>
+
+      {/* Invoice Statistics */}
+      {invoiceStats && (
+        <InvoiceStats 
+          stats={invoiceStats} 
+          monthlyBreakdown={invoiceStats.monthlyBreakdown}
+        />
+      )}
+
+      {/* Payment Alerts */}
+      {paymentAlerts && <PaymentAlerts alerts={paymentAlerts} />}
 
       {/* Low Stock Alert */}
       <Card title={t("admin.dashboard.lowStockAlerts")}>
@@ -137,5 +153,4 @@ const Dashboard = () => {
   );
 };
 
-// Optional: memoize the whole component (like Workers)
 export default memo(Dashboard);
