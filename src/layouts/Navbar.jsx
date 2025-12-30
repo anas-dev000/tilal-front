@@ -12,8 +12,10 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationsAPI } from "../services/api";
+import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
 import NavbarBackButton from "../components/common/NavbarBackButton";
+import { useSocket } from "../context/SocketContext";
 
 let pollInterval = null;
 
@@ -21,6 +23,7 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -31,18 +34,20 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
     try {
       const response = await notificationsAPI.getNotifications({
         limit: 10,
-        unreadOnly: true,
+        unreadOnly: false,
       });
 
       const data = response.data.data || [];
       setNotifications(data);
-      setUnreadCount(data.filter((n) => !n.read).length);
+      setUnreadCount(data.length); // Everything in DB is effectively unread now because we delete on read
     } catch (error) {
       if (error.response?.status !== 429) {
         console.error("Error fetching notifications:", error);
       }
     }
   }, [user]);
+
+  const socket = useSocket();
 
   useEffect(() => {
     if (!user) {
@@ -53,26 +58,66 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
 
     fetchNotifications();
 
-    if (pollInterval) clearInterval(pollInterval);
+    if (socket) {
+      const handleNewNotification = (notification) => {
+        setNotifications(prev => [notification, ...prev].slice(0, 10)); // Keep only last 10
+        setUnreadCount(prev => prev + 1);
+      };
 
-    const intervalMs = import.meta.env.DEV ? 300000 : 60000;
+      socket.on('new_notification', handleNewNotification);
+      
+      return () => {
+        socket.off('new_notification', handleNewNotification);
+      };
+    }
+  }, [user, fetchNotifications, socket]);
 
-    pollInterval = setInterval(fetchNotifications, intervalMs);
-
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-      }
-    };
-  }, [user, fetchNotifications]);
-
-  const markAsRead = async (id) => {
+  const handleNotificationClick = async (n) => {
     try {
-      await notificationsAPI.markAsRead(id);
-      fetchNotifications();
+      // 1. Delete from database (as requested)
+      await notificationsAPI.deleteNotification(n._id);
+      
+      // 2. Remove from local state
+      setNotifications(prev => prev.filter(item => item._id !== n._id));
+      setUnreadCount(prev => Math.max(0, prev - (n.read ? 0 : 1)));
+
+      // 3. Navigate based on type and data
+      if (n.data) {
+        const role = user?.role;
+        
+        if (n.data.relatedTask) {
+          if (role === 'admin') {
+            navigate(`/admin/tasks/${n.data.relatedTask}`);
+          } else if (role === 'worker') {
+            navigate(`/worker/tasks/${n.data.relatedTask}`);
+          } else {
+            // Clients or others go to their dashboard/portal
+            navigate(role === 'client' ? '/client/dashboard' : '/');
+          }
+        } else if (n.data.relatedInvoice) {
+          const route = role === 'client' ? `/client/dashboard` : 
+                        role === 'accountant' ? `/accountant/invoices` : 
+                        role === 'admin' ? `/admin/tasks` : `/`; // Admin might view invoices in tasks or a generic list if exists
+          navigate(route);
+        } else if (n.type === 'low-stock') {
+          navigate(role === 'admin' ? '/admin/inventory' : '/');
+        } else if (n.data.siteId) {
+          if (role === 'admin') {
+            navigate(`/admin/sites/${n.data.siteId}/sections`);
+          } else if (role === 'accountant') {
+            navigate('/accountant/sites');
+          } else {
+            navigate('/');
+          }
+        }
+      }
+      
+      // 4. Close dropdown
+      setShowNotifications(false);
     } catch (error) {
-      console.error("Error marking as read:", error);
+      console.error("Error handling notification click:", error);
+      // Even if delete fails, still try to navigate
+      setShowNotifications(false);
     }
   };
 
@@ -159,7 +204,7 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
                     <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
-                <div className="max-h-80 sm:max-h-96 overflow-y-auto">
+                <div className="max-h-80 sm:max-h-96 overflow-y-auto notification-scroll">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
                       <Bell className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
@@ -185,15 +230,19 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
                           className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
                             !n.read ? "bg-blue-50" : ""
                           }`}
-                          onClick={() => !n.read && markAsRead(n._id)}
+                          onClick={() => handleNotificationClick(n)}
                         >
                           <div className="flex items-start gap-2 sm:gap-3">
                             <span className="text-xl sm:text-2xl shrink-0">
-                              Notification
+                              {n.type === 'invoice-generated' ? '📄' : 
+                               n.type === 'task-assigned' ? '📋' : 
+                               n.type === 'task-completed' ? '✅' : 
+                               n.type === 'low-stock' ? '⚠️' : 
+                               n.type === 'feedback-received' ? '⭐' : '🔔'}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
-                                {n.title}
+                                {n.subject}
                               </p>
                               <p className="text-[10px] sm:text-xs text-gray-600 mb-1">
                                 {n.message}
