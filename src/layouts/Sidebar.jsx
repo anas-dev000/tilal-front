@@ -30,7 +30,7 @@ const Sidebar = ({
     { path: "/admin", icon: LayoutDashboard, label: t("nav.dashboard") },
     { path: "/admin/clients", icon: Users, label: t("nav.clients") },
     { path: "/admin/workers", icon: Briefcase, label: t("nav.workers") },
-    { path: "/admin/sites", icon: MapPin, label: "Sites" },
+    { path: "/admin/sites", icon: MapPin, label: t("nav.sites") },
     { path: "/admin/tasks", icon: CheckSquare, label: t("nav.tasks") },
     { path: "/admin/inventory", icon: Package, label: t("nav.inventory") },
   ];
@@ -40,10 +40,19 @@ const Sidebar = ({
     { path: "/worker/tasks", icon: CheckSquare, label: t("worker.myTasks") },
   ];
 
-  const menuItems = user?.role === "admin" ? adminMenuItems : workerMenuItems;
+  const accountantMenuItems = [
+    { path: "/accountant", icon: LayoutDashboard, label: t("nav.dashboard") },
+    { path: "/accountant/invoices", icon: Package, label: t("nav.invoices") },
+    { path: "/accountant/sites", icon: MapPin, label: t("nav.sites") },
+  ];
+
+  const menuItems = 
+    user?.role === "admin" ? adminMenuItems : 
+    user?.role === "accountant" ? accountantMenuItems : 
+    workerMenuItems;
 
   const isActive = (path) => {
-    if (path === "/admin" || path === "/worker") {
+    if (path === "/admin" || path === "/worker" || path === "/accountant") {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);

@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { SocketProvider } from "./context/SocketContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Loading from "./components/common/Loading";
 
@@ -30,6 +31,15 @@ import TaskDetail from "./pages/worker/TaskDetail";
 // Client Pages
 import ClientPortal from "./pages/client/ClientPortal";
 import ClientDetails from "./pages/admin/ClientDetails";
+
+// Accountant Pages
+import AccountantDashboard from "./pages/accountant/AccountantDashboard";
+import AccountantInvoices from "./pages/accountant/AccountantInvoices";
+import CreateInvoice from "./pages/accountant/CreateInvoice";
+import AccountantSites from "./pages/accountant/AccountantSites";
+
+// Common Components
+import ScrollToTop from "./components/common/ScrollToTop";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -224,6 +234,48 @@ const AppRoutes = () => {
         }
       />
 
+      {/* Accountant Routes */}
+      <Route
+        path="/accountant"
+        element={
+          <ProtectedRoute allowedRoles={["accountant"]}>
+            <DashboardLayout>
+              <AccountantDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/invoices"
+        element={
+          <ProtectedRoute allowedRoles={["accountant"]}>
+            <DashboardLayout>
+              <AccountantInvoices />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/invoices/create"
+        element={
+          <ProtectedRoute allowedRoles={["accountant"]}>
+            <DashboardLayout>
+              <CreateInvoice />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/sites"
+        element={
+          <ProtectedRoute allowedRoles={["accountant"]}>
+            <DashboardLayout>
+              <AccountantSites />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Default Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route
@@ -265,9 +317,12 @@ const AppRoutes = () => {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <LanguageProvider>
-          <AppRoutes />
+          <SocketProvider>
+            <AppRoutes />
+          </SocketProvider>
         </LanguageProvider>
       </AuthProvider>
     </Router>

@@ -154,6 +154,7 @@
     "branches": "الفروع",
     "projects": "المشاريع",
     "tasks": "المهام",
+    "sites": "المواقع",
     "invoices": "الفواتير",
     "inventory": "المخزون",
     "reports": "التقارير",
@@ -666,7 +667,13 @@
     "inactive": "غير نشط",
     "review": "قيد المراجعة",
     "rejected": "مرفوض",
-    "approved": "مبقول"
+    "approved": "مقبول",
+    "paid": "مدفوع",
+    "overdue": "متأخر",
+    "partially-paid": "مدفوع جزئياً",
+    "monthly": "شهري",
+    "quarterly": "ربع سنوي",
+    "annually": "سنوي"
   },
   "priority": {
     "low": "منخفض",
@@ -683,7 +690,8 @@
   "roles": {
     "admin": "مدير",
     "worker": "عامل",
-    "client": "عميل"
+    "client": "عميل",
+    "accountant": "محاسب"
   },
   "plantCategories": {
     "flower": "زهور",
@@ -735,6 +743,91 @@
       "saving": "جاري الحفظ...",
       "updated": "تم تحديث الفاتورة بنجاح",
       "error": "فشل تحديث الفاتورة"
+    }
+  },
+  "accountant": {
+    "dashboard": "لوحة تحكم المحاسب",
+    "invoiceStats": {
+      "title": "إحصائيات الفواتير",
+      "thisMonth": "فواتير هذا الشهر",
+      "monthlyRevenue": "إيرادات الشهر",
+      "thisYear": "فواتير هذه السنة",
+      "yearlyRevenue": "إيرادات السنة",
+      "collected": "مُحصلة",
+      "trend": "اتجاه الفواتير الشهري",
+      "count": "عدد الفواتير",
+      "totalAmount": "المبلغ الإجمالي (ر.س)"
+    },
+    "paymentAlerts": {
+      "title": "تنبيهات الدفع",
+      "upToDate": "جميع المدفوعات محدثة!",
+      "overdue": "مدفوعات متأخرة",
+      "dueSoon": "تستحق قريبًا",
+      "cycle": "دورة الدفع",
+      "daysOverdue": "متأخرة",
+      "dueIn": "تستحق خلال"
+    },
+    "invoices": "الفواتير",
+    "sites": "المواقع",
+    "sitesTitle": "المواقع (عرض الفواتير)",
+    "sitesSubtitle": "تصفح المواقع للتحقق من حالة الدفع ودورات الفوترة.",
+    "searchSites": "البحث في المواقع...",
+    "filterByClient": "تصفية حسب العميل",
+    "allClients": "جميع العملاء",
+    "noSitesFound": "لم يتم العثور على مواقع تطابق معاييرك.",
+    "cycle": "دورة",
+    "nextPayment": "التالي",
+    "notSet": "غير محدد",
+    "sections": "أقسام",
+    "createInvoice": "إنشاء فاتورة جديدة",
+    "invoicesManaged": "فاتورة تحت إدارة المحاسبة",
+    "noInvoicesFound": "لم يتم العثور على فواتير",
+    "timeToGenerate": "وقت تحقيق بعض الإيرادات!",
+    "invoiceNumber": "رقم الفاتورة",
+    "clientSite": "العميل والموقع",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "viewDetails": "عرض التفاصيل",
+    "downloadPDF": "تحميل PDF",
+    "deleteInvoice": "حذف الفاتورة",
+    "confirmDelete": "هل أنت متأكد من حذف هذه الفاتورة؟",
+    "create": {
+      "title": "إنشاء فاتورة جديدة",
+      "backToInvoices": "العودة إلى الفواتير",
+      "invoiceDetails": "تفاصيل الفاتورة",
+      "uploadPDF": "رفع ملف الفاتورة PDF",
+      "enterDetails": "أدخل معلومات الفاتورة يدويًا أو ارفع ملف PDF للتعبئة التلقائية (قريبًا).",
+      "selectSite": "اختر الموقع",
+      "searchSitePlaceholder": "ابحث عن موقع...",
+      "amount": "المبلغ",
+      "issueDate": "تاريخ الإصدار",
+      "dueDate": "تاريخ الاستحقاق",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف أي ملاحظات داخلية إضافية...",
+      "submit": "إرسال الفاتورة",
+      "dragDrop": "اسحب وأفلت ملف الفاتورة هنا، أو انقر على الزر أدناه للتصفح.",
+      "browseFiles": "تصفح الملفات",
+      "pdfOnly": "PDF فقط",
+      "maxSize": "الحد الأقصى 5 ميجابايت",
+      "secure": "آمن",
+      "submitting": "جاري الإرسال...",
+      "success": "تم إنشاء الفاتورة بنجاح",
+      "error": "فشل إنشاء الفاتورة",
+      "selectSiteRequired": "يرجى اختيار موقع"
+    },
+    "modal": {
+      "client": "العميل",
+      "site": "الموقع",
+      "issuedOn": "تاريخ الإصدار",
+      "status": "الحالة",
+      "totalAmount": "المبلغ الإجمالي",
+      "generatedBy": "تم إنشاؤه بواسطة النظام المحاسبي",
+      "notes": "ملاحظات",
+      "download": "تحميل مستند PDF",
+      "preview": "معاينة PDF",
+      "noPreview": "لا توجد معاينة للمستند متاحة"
     }
   }
 }

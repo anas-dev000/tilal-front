@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Invoices.jsx - FIXED with Modal
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, Eye, DollarSign } from "lucide-react";
 import { invoicesAPI } from "../../services/api";
@@ -36,22 +36,49 @@ const Invoices = () => {
     fetchInvoices();
   }, [filter]);
 
+  const getSafePdfUrl = useCallback((rawUrl) => {
+    if (!rawUrl) return null;
+    let url = rawUrl;
+
+    // If it's a Cloudinary URL
+    if (url.includes('cloudinary.com')) {
+      // 1. If it's an image resource, we can safely append .pdf to transform it
+      if (url.includes('/image/upload/')) {
+        if (!url.toLowerCase().endsWith('.pdf')) {
+          url = `${url}.pdf`;
+        }
+        // Add flags to ensure it displays inline
+        url = url.replace('/upload/', '/upload/f_auto,q_auto/');
+      }
+      // 2. If it's a raw resource, we MUST NOT append .pdf unless it's already there
+    }
+
+    // 3. Append PDF view parameters to fit to width (prevents horizontal scrolling)
+    if (url.toLowerCase().endsWith('.pdf')) {
+      url = `${url}#view=FitH`;
+    }
+
+    return url;
+  }, []);
+
   const handleDownload = async (invoice) => {
     try {
-      if (!invoice.pdfUrl) {
-        alert("PDF not generated yet");
+      const url = getSafePdfUrl(invoice.pdfUrl || invoice.pdfFile?.url);
+      if (!url) {
+        toast.error("PDF not generated yet");
         return;
       }
 
-      const baseUrl =
-        import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "") ||
-        "http://localhost:5001";
-      const pdfUrl = `${baseUrl}/uploads/${invoice.pdfUrl}`;
-
-      window.open(pdfUrl, "_blank");
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.download = `Invoice-${invoice.invoiceNumber || 'file'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to download invoice");
+      toast.error("Failed to download invoice");
     }
   };
 

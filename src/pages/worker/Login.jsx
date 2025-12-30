@@ -22,6 +22,8 @@ const Login = () => {
     if (isAuthenticated && user) {
       if (user.role === "admin") {
         navigate("/admin", { replace: true });
+      } else if (user.role === "accountant") {
+        navigate("/accountant", { replace: true });
       } else if (user.role === "worker") {
         navigate("/worker", { replace: true });
       } else if (user.role === "client") {
@@ -43,6 +45,8 @@ const Login = () => {
           // Route based on role
           if (user.role === "admin") {
             navigate("/admin");
+          } else if (user.role === "accountant") {
+            navigate("/accountant");
           } else if (user.role === "worker") {
             navigate("/worker");
           } else {
@@ -178,6 +182,7 @@ const Login = () => {
           {loginType === "staff" ? (
             <>
               <p className="mb-1">Admin: admin@garden.com / admin123</p>
+              <p className="mb-1">Accountant: accountant@tilal.com / accountant123</p>
               <p>Worker: worker@garden.com / worker123</p>
             </>
           ) : (
