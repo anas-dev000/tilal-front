@@ -1,4 +1,4 @@
-import { Edit, Trash2, Power, Eye } from "lucide-react";
+import { Edit, Trash2, Power, Eye, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Pagination from "../common/Pagination";
@@ -8,6 +8,7 @@ const WorkersTable = ({
   workers,
   onEdit,
   onToggleStatus,
+  onChangePassword,
   onRowClick,
   onDelete,
   pagination,
@@ -64,6 +65,16 @@ const WorkersTable = ({
                   >
                     <Eye className="w-5 h-5" />
                   </Link>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChangePassword(worker);
+                    }}
+                    className="text-orange-600 hover:text-orange-800 transition"
+                    title={t("auth.changePassword")}
+                  >
+                    <Lock className="w-5 h-5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

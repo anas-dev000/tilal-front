@@ -67,7 +67,7 @@ const ClientPortal = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   const handleViewTask = useCallback((task) => {
@@ -87,8 +87,8 @@ const ClientPortal = () => {
 
     try {
       await submitFeedbackMutation.mutateAsync({
-        taskId: selectedTask._id,
-        feedback: formData,
+        id: selectedTask._id,
+        formData: formData,
       });
 
       setSuccessMessage("Feedback submitted successfully!");

@@ -7,6 +7,10 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
+
+  LogOut,
+  Lock,
+  ChevronDown
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -15,6 +19,7 @@ import { notificationsAPI } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
 import NavbarBackButton from "../components/common/NavbarBackButton";
+import ChangePasswordModal from "../components/common/ChangePasswordModal";
 import { useSocket } from "../context/SocketContext";
 
 let pollInterval = null;
@@ -22,9 +27,11 @@ let pollInterval = null;
 const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -170,7 +177,6 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
             )}
           </button>
 
-          <NavbarBackButton className="ml-2 lg:ml-0" icon={BackIcon} />
           <div className="hidden lg:block w-5 h-5 sm:w-6 sm:h-6" />
         </div>
 
@@ -273,9 +279,60 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
               </div>
             )}
           </div>
+          
+          <div className="relative">
+             <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200">
+                 {user?.name?.charAt(0).toUpperCase()}
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+            </button>
+
+            {showProfileMenu && (
+              <div className={`absolute top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 ${isRTL ? "left-0" : "right-0"}`}>
+                <div className="p-3 border-b border-gray-100">
+                  <p className="font-medium text-gray-900 truncate">{user?.name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{t(`roles.${user?.role}`)}</p>
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setIsChangePasswordOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t("auth.changePassword")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      logout();
+                      navigate("/");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {t("common.logout")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <LanguageSwitcher />
         </div>
       </div>
+      
+      <ChangePasswordModal 
+         isOpen={isChangePasswordOpen}
+         onClose={() => setIsChangePasswordOpen(false)}
+      />
+
     </nav>
   );
 };

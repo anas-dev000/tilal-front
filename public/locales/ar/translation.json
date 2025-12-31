@@ -11,6 +11,7 @@
     "reject": "رفض",
     "welcome": "مرحباً",
     "viewOnGoogleMaps": "عرض على خرائط جوجل",
+    "viewDetails": "عرض التفاصيل",
     "login": "تسجيل الدخول",
     "logout": "تسجيل الخروج",
     "save": "حفظ",
@@ -150,7 +151,7 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "clients": "العملاء",
-    "workers": "العمال",
+    "employees": "الموظفين",
     "branches": "الفروع",
     "projects": "المشاريع",
     "tasks": "المهام",
@@ -174,6 +175,7 @@
     "clientDetails": {
       "title": "تفاصيل العميل",
       "contactInformation": "معلومات الاتصال",
+      "contact": "الاتصال",
       "email": "البريد الإلكتروني",
       "phone": "الهاتف",
       "whatsapp": "واتساب",
@@ -297,6 +299,21 @@
       "total": "إجمالي العمال",
       "activateWorker": "تفعيل العامل",
       "deactivateWorker": "إيقاف العامل"
+    },
+    "employees": {
+      "title": "إدارة الموظفين",
+      "addEmployee": "إضافة موظف",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "role": "الوظيفة",
+      "status": "الحالة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "activate": "تفعيل",
+      "deactivate": "إيقاف",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظات..."
     },
     "tasks": {
       "clientFeedback": "تقييم العميل",
@@ -428,6 +445,8 @@
       "completionRate": "معدل الإنجاز"
     },
     "sites": {
+      "location": "الموقع",
+      "contact": "معلومات الاتصال",
       "title": "إدارة المواقع",
       "manageSections": "إدارة الأقسام",
       "sitesDisplayed": "مواقع معروضة",
@@ -643,7 +662,15 @@
     "rememberMe": "تذكرني",
     "forgotPassword": "نسيت كلمة المرور؟",
     "loginSuccess": "تم تسجيل الدخول بنجاح",
-    "loginError": "بيانات الدخول غير صحيحة"
+    "loginError": "بيانات الدخول غير صحيحة",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+    "passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+    "passwordUpdated": "تم تحديث كلمة المرور بنجاح",
+    "passwordUpdateFailed": "فشل تحديث كلمة المرور"
   },
   "status": {
     "task": {
@@ -673,6 +700,8 @@
     "partially-paid": "مدفوع جزئياً",
     "monthly": "شهري",
     "quarterly": "ربع سنوي",
+    "semi_annual": "نصف سنوي",
+    "annual": "سنوي",
     "annually": "سنوي"
   },
   "priority": {
@@ -746,6 +775,14 @@
     }
   },
   "accountant": {
+    "siteInfo": "معلومات الموقع",
+    "paymentCycle": "دورة الدفع",
+    "editCycle": "تعديل دورة الدفع",
+    "selectCycle": "اختر دورة الدفع",
+    "totalPaid": "إجمالي المدفوع",
+    "totalPending": "إجمالي المعلق",
+    "totalOverdue": "إجمالي المتأخر",
+    "totalInvoiced": "إجمالي الفواتير",
     "dashboard": "لوحة تحكم المحاسب",
     "invoiceStats": {
       "title": "إحصائيات الفواتير",
@@ -775,12 +812,15 @@
     "filterByClient": "تصفية حسب العميل",
     "allClients": "جميع العملاء",
     "noSitesFound": "لم يتم العثور على مواقع تطابق معاييرك.",
+
     "cycle": "دورة",
     "nextPayment": "التالي",
     "notSet": "غير محدد",
     "sections": "أقسام",
     "createInvoice": "إنشاء فاتورة جديدة",
     "invoicesManaged": "فاتورة تحت إدارة المحاسبة",
+    "searchInvoiceId": "البحث برقم الفاتورة",
+    "filterBySite": "تصفية حسب الموقع",
     "noInvoicesFound": "لم يتم العثور على فواتير",
     "timeToGenerate": "وقت تحقيق بعض الإيرادات!",
     "invoiceNumber": "رقم الفاتورة",

@@ -1,16 +1,12 @@
 /* eslint-disable no-unused-vars */
-// src/pages/admin/Workers.jsx - REFACTORED WITH REACT QUERY
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Search, Users, UserCheck, UserX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // React Query hooks
-// React Query hooks
 import { 
-  useWorkers, 
-  useCreateUser, 
-  useUpdateUser, 
+  useEmployees, // Updated hook
   useDeleteUser, 
   useToggleUserStatus 
 } from "../../hooks/queries/useUsers";
@@ -18,16 +14,15 @@ import {
 // Components
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
-import WorkerModal from "./WorkerModal";
-import WorkersTable from "../../components/workers/WorkersTable";
+import EmployeeModal from "../../components/employees/EmployeeModal";
+import EmployeesTable from "../../components/employees/EmployeesTable";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
 import AdminChangePasswordModal from "../../components/admin/AdminChangePasswordModal";
 
 const PAGE_SIZE = 10;
 
-const Workers = () => {
+const Employees = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -37,89 +32,104 @@ const Workers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState(null);
-  const [selectedWorkerForPassword, setSelectedWorkerForPassword] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployeeForPassword, setSelectedEmployeeForPassword] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
-    worker: null,
+    employee: null,
     action: "",
   });
 
   // ==================== Data Fetching with React Query ====================
-  const { data: workersData, isLoading, error } = useWorkers({
+  const [selectedRole, setSelectedRole] = useState("all"); // all | worker | accountant
+
+  // ==================== Data Fetching with React Query ====================
+  const { data: employeesData, isLoading, error } = useEmployees({
     page: currentPage,
     limit: PAGE_SIZE,
     search: searchTerm,
     isActive: activeTab === "all" ? undefined : activeTab === "active",
+    // Pass role filter to hook if backend supports it, otherwise filter client-side below
+    role: selectedRole === "all" ? undefined : selectedRole 
   });
 
-  const allWorkers = workersData?.data || [];
-  const totalCount = workersData?.total || 0;
-  const totalPages = workersData?.totalPages || 0;
+  // Client-side filtering if hook returns mixed list (fallback)
+  const allEmployees = useMemo(() => {
+    let users = employeesData?.data || [];
+    if (selectedRole !== "all") {
+      users = users.filter(u => u.role === selectedRole);
+    }
+    return users;
+  }, [employeesData?.data, selectedRole]);
 
-  const createWorkerMutation = useCreateUser();
-  const updateWorkerMutation = useUpdateUser();
-  const deleteWorkerMutation = useDeleteUser();
+  const totalCount = allEmployees.length;
+  // Recalculate pagination for client-side filtered list
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const deleteUserMutation = useDeleteUser();
   const toggleStatusMutation = useToggleUserStatus();
 
   // Handlers
-  const handleRowClick = useCallback((worker) => {
-    navigate(`/admin/workers/${worker._id}`);
+  const handleRowClick = useCallback((employee) => {
+    // Navigate to details based on role, or a generic detail page
+    // For now we kept worker details, we might need a general user detail page
+    // Assuming /admin/workers/:id works for now or redirects correctly
+    navigate(`/admin/workers/${employee._id}`); 
   }, [navigate]);
 
-  const handleEdit = useCallback((worker) => {
-    setSelectedWorker(worker);
+  const handleEdit = useCallback((employee) => {
+    setSelectedEmployee(employee);
     setIsModalOpen(true);
   }, []);
 
-  const handleChangePassword = useCallback((worker) => {
-    setSelectedWorkerForPassword(worker);
+  const handleChangePassword = useCallback((employee) => {
+    setSelectedEmployeeForPassword(employee);
     setIsPasswordModalOpen(true);
   }, []);
 
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
-    setSelectedWorker(null);
+    setSelectedEmployee(null);
   }, []);
 
-  const handleToggleStatus = useCallback((worker) => {
+  const handleToggleStatus = useCallback((employee) => {
     setConfirmModal({
       isOpen: true,
-      worker,
-      action: worker.isActive ? "deactivate" : "activate",
+      employee,
+      action: employee.isActive ? "deactivate" : "activate",
     });
   }, []);
 
-  const handleDelete = useCallback((worker) => {
+  const handleDelete = useCallback((employee) => {
     setConfirmModal({
       isOpen: true,
-      worker,
+      employee,
       action: "delete",
     });
   }, []);
 
   const confirmToggle = useCallback(() => {
-    if (!confirmModal.worker) return;
+    if (!confirmModal.employee) return;
 
-    toggleStatusMutation.mutate(confirmModal.worker._id, {
+    toggleStatusMutation.mutate(confirmModal.employee._id, {
       onSuccess: () => {
-        setConfirmModal({ isOpen: false, worker: null, action: "" });
+        setConfirmModal({ isOpen: false, employee: null, action: "" });
       },
     });
-  }, [confirmModal.worker, toggleStatusMutation]);
+  }, [confirmModal.employee, toggleStatusMutation]);
 
   const confirmDelete = useCallback(() => {
-    if (!confirmModal.worker) return;
+    if (!confirmModal.employee) return;
 
-    deleteWorkerMutation.mutate(confirmModal.worker._id, {
+    deleteUserMutation.mutate(confirmModal.employee._id, {
       onSuccess: () => {
-        setConfirmModal({ isOpen: false, worker: null, action: "" });
+        setConfirmModal({ isOpen: false, employee: null, action: "" });
       },
     });
-  }, [confirmModal.worker, deleteWorkerMutation]);
+  }, [confirmModal.employee, deleteUserMutation]);
 
   const handleConfirmModalClose = useCallback(() => {
-    setConfirmModal({ isOpen: false, worker: null, action: "" });
+    setConfirmModal({ isOpen: false, employee: null, action: "" });
   }, []);
 
   // ==================== Render ====================
@@ -144,16 +154,16 @@ const Workers = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">
-          {t("admin.workers.title")}
+          {t("admin.employees.title")}
         </h1>
         <Button
           onClick={() => {
-            setSelectedWorker(null);
+            setSelectedEmployee(null);
             setIsModalOpen(true);
           }}
           icon={Plus}
         >
-          {t("admin.workers.addWorker")}
+          {t("admin.employees.addEmployee")}
         </Button>
       </div>
 
@@ -175,47 +185,87 @@ const Workers = () => {
               />
             </div>
 
-            <div className="flex border-b border-gray-200">
-              <TabButton
-                active={activeTab === "all"}
-                onClick={() => {
-                  setActiveTab("all");
-                  setCurrentPage(1);
-                }}
-                icon={Users}
-                label={`${t("common.all")} (${totalCount})`}
-                color="blue"
-              />
-              <TabButton
-                active={activeTab === "active"}
-                onClick={() => {
-                  setActiveTab("active");
-                  setCurrentPage(1);
-                }}
-                icon={UserCheck}
-                label={t("admin.workers.active")}
-                color="green"
-              />
-              <TabButton
-                active={activeTab === "inactive"}
-                onClick={() => {
-                  setActiveTab("inactive");
-                  setCurrentPage(1);
-                }}
-                icon={UserX}
-                label={t("admin.workers.inactive")}
-                color="red"
-              />
+            <div className="flex flex-col gap-4">
+              {/* Role Filter */}
+              <div className="flex border-b border-gray-200 w-full sm:w-auto overflow-x-auto">
+                <TabButton
+                  active={selectedRole === "all"}
+                  onClick={() => {
+                    setSelectedRole("all");
+                    setCurrentPage(1);
+                  }}
+                  icon={Users}
+                  label={t("common.all")}
+                  color="blue"
+                />
+                <TabButton
+                  active={selectedRole === "worker"}
+                  onClick={() => {
+                    setSelectedRole("worker");
+                    setCurrentPage(1);
+                  }}
+                  icon={UserCheck}
+                  label={t("roles.worker")}
+                  color="green"
+                />
+                <TabButton
+                  active={selectedRole === "accountant"}
+                  onClick={() => {
+                    setSelectedRole("accountant");
+                    setCurrentPage(1);
+                  }}
+                  icon={UserCheck}
+                  label={t("roles.accountant")}
+                  color="purple"
+                />
+              </div>
+
+              {/* Status Filter (Secondary) */}
+              <div className="flex border-b border-gray-200 w-full sm:w-auto overflow-x-auto">
+                 <TabButton
+                  active={activeTab === "all"}
+                  onClick={() => {
+                    setActiveTab("all");
+                    setCurrentPage(1);
+                  }}
+                  label={t("status.all")}
+                  color="gray"
+                  simple={true}
+                />
+                <TabButton
+                  active={activeTab === "active"}
+                  onClick={() => {
+                    setActiveTab("active");
+                    setCurrentPage(1);
+                  }}
+                  label={t("status.active")}
+                  color="green"
+                  simple={true}
+                />
+                <TabButton
+                  active={activeTab === "inactive"}
+                  onClick={() => {
+                    setActiveTab("inactive");
+                    setCurrentPage(1);
+                  }}
+                  label={t("status.inactive")}
+                  color="red"
+                  simple={true}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Table / Empty State */}
-        {allWorkers.length === 0 ? (
-          <EmptyState t={t} />
+        {allEmployees.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t("common.noData")}</p>
+          </div>
         ) : (
-          <WorkersTable
-            workers={allWorkers}
+          <EmployeesTable
+            employees={allEmployees}
             onEdit={handleEdit}
             onToggleStatus={handleToggleStatus}
             onChangePassword={handleChangePassword}
@@ -233,10 +283,10 @@ const Workers = () => {
       </Card>
 
       {/* Modals */}
-      <WorkerModal
+      <EmployeeModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        worker={selectedWorker}
+        employee={selectedEmployee}
       />
 
       <ConfirmationModal
@@ -279,50 +329,37 @@ const Workers = () => {
         isOpen={isPasswordModalOpen}
         onClose={() => {
           setIsPasswordModalOpen(false);
-          setSelectedWorkerForPassword(null);
+          setSelectedEmployeeForPassword(null);
         }}
-        user={selectedWorkerForPassword}
+        user={selectedEmployeeForPassword}
       />
     </div>
   );
 };
 
 // Memoized TabButton component to prevent re-renders
-const TabButton = memo(({ active, onClick, icon: Icon, label, color }) => {
+const TabButton = ({ active, onClick, icon: Icon, label, color, simple }) => {
   const colorClasses = {
     blue: active ? "border-blue-600 text-blue-600" : "",
     green: active ? "border-green-600 text-green-600" : "",
     red: active ? "border-red-600 text-red-600" : "",
+    purple: active ? "border-purple-600 text-purple-600" : "",
+    gray: active ? "border-gray-600 text-gray-600" : "",
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 ${
+      className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
         active
           ? colorClasses[color]
           : "border-transparent text-gray-600 hover:text-gray-900"
-      }`}
+      } ${simple ? "text-sm" : ""}`}
     >
-      <Icon className="w-4 h-4" />
+      {Icon && <Icon className="w-4 h-4" />}
       {label}
     </button>
   );
-});
+};
 
-TabButton.displayName = 'TabButton';
-
-// Memoized EmptyState component
-const EmptyState = memo(() => {
-  const { t } = useTranslation();
-  return (
-    <div className="text-center py-12">
-      <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-      <p className="text-gray-500">{t("common.noData")}</p>
-    </div>
-  );
-});
-
-EmptyState.displayName = 'EmptyState';
-
-export default Workers;
+export default Employees;

@@ -29,7 +29,7 @@ const Sidebar = ({
   const adminMenuItems = [
     { path: "/admin", icon: LayoutDashboard, label: t("nav.dashboard") },
     { path: "/admin/clients", icon: Users, label: t("nav.clients") },
-    { path: "/admin/workers", icon: Briefcase, label: t("nav.workers") },
+    { path: "/admin/employees", icon: Briefcase, label: t("nav.employees") },
     { path: "/admin/sites", icon: MapPin, label: t("nav.sites") },
     { path: "/admin/tasks", icon: CheckSquare, label: t("nav.tasks") },
     { path: "/admin/inventory", icon: Package, label: t("nav.inventory") },

@@ -29,9 +29,13 @@ const SiteSectionsPage = () => {
   const navigate = useNavigate();
 
   // React Query data fetching
+  // React Query data fetching
   const { data: site, isLoading: siteLoading, isError } = useSite(id);
-  const { data: clients = [] } = useClients();
-  const { data: tasks = [] } = useTasks({ site: id });
+  const { data: clientsData } = useClients();
+  const { data: tasksData } = useTasks({ site: id });
+
+  const clients = clientsData?.data || [];
+  const tasks = tasksData?.data || [];
 
   const isLoading = siteLoading;
 

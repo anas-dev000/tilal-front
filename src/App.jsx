@@ -13,20 +13,27 @@ import Loading from "./components/common/Loading";
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import Clients from "./pages/admin/Clients";
-import Workers from "./pages/admin/Workers";
-import WorkerDetails from "./pages/admin/WorkerDetails";
+import Employees from "./pages/admin/Employees"; // NEW
+// import Workers from "./pages/admin/Workers";
+// import WorkerDetails from "./pages/admin/WorkerDetails";
 import Tasks from "./pages/admin/Tasks";
 import Inventory from "./pages/admin/Inventory";
 import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
 import Sites from "./pages/admin/Sites";
 import SiteSectionsPage from "./pages/admin/SiteSectionsPage";
 import SectionTasksView from "./pages/admin/SectionTasksView";
-import SectionDetail from "./pages/admin/SectionDetail"; //  NEW
+import SectionDetail from "./pages/admin/SectionDetail"; 
 
 // Worker Pages
 import WorkerLogin from "./pages/worker/Login";
 import MyTasks from "./pages/worker/MyTasks";
 import TaskDetail from "./pages/worker/TaskDetail";
+
+// Public & Auth Pages
+import LandingPage from "./pages/LandingPage";
+import ClientLogin from "./pages/client/ClientLogin";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Client Pages
 import ClientPortal from "./pages/client/ClientPortal";
@@ -51,7 +58,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
@@ -65,8 +72,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Login */}
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<WorkerLogin />} />
+      <Route path="/client-login" element={<ClientLogin />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Client Routes */}
       <Route
@@ -110,25 +121,29 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/admin/workers"
+        path="/admin/employees"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
-              <Workers />
+              <Employees />
             </DashboardLayout>
           </ProtectedRoute>
         }
       />
+      {/* Kept workers/:id for details view until we refactor it or confirm it works for employees */}
       <Route
         path="/admin/workers/:id"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
-              <WorkerDetails />
+              {/* @todo We might want to rename WorkerDetails to EmployeeDetails */}
+              {/* <WorkerDetails /> */}
+              <Navigate to="/admin/employees" replace /> 
             </DashboardLayout>
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/tasks"
         element={
@@ -288,7 +303,7 @@ const AppRoutes = () => {
       />
 
       {/* Default Routes */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/unauthorized"
         element={

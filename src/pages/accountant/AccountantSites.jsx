@@ -21,6 +21,7 @@ import PaymentBadge from "../../components/common/PaymentBadge";
 import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
 import { toast } from "sonner";
+import EditCycleModal from "../../components/accountant/EditCycleModal";
 
 const AccountantSites = () => {
   const { t } = useTranslation();
@@ -29,6 +30,9 @@ const AccountantSites = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSiteForEdit, setSelectedSiteForEdit] = useState(null);
+  
+  const navigate = useNavigate();
   
   // Debounced Search
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -176,6 +180,24 @@ const AccountantSites = () => {
                       {t("accountant.nextPayment")}: {site.nextPaymentDate ? new Date(site.nextPaymentDate).toLocaleDateString() : t("accountant.notSet")}
                     </div>
                   </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(`/accountant/sites/${site._id}`)}
+                      className="flex-1 text-xs py-2 h-auto"
+                    >
+                      {t("common.viewDetails")}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setSelectedSiteForEdit(site)}
+                      className="text-xs py-2 h-auto px-2"
+                      title={t("accountant.editCycle")}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -189,6 +211,14 @@ const AccountantSites = () => {
             limit={PAGE_SIZE}
           />
         </div>
+      )}
+
+      {selectedSiteForEdit && (
+        <EditCycleModal
+          isOpen={!!selectedSiteForEdit}
+          onClose={() => setSelectedSiteForEdit(null)}
+          site={selectedSiteForEdit}
+        />
       )}
     </div>
   );

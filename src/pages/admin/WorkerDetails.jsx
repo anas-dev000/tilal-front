@@ -35,9 +35,11 @@ const WorkerDetails = () => {
     error: workerError,
   } = useUser(id);
 
-  const { data: tasks = [], isLoading: isTasksLoading } = useTasks({
+  const { data: tasksData, isLoading: isTasksLoading } = useTasks({
     worker: id,
   });
+  
+  const tasks = tasksData?.data || [];
 
   const updateUserMutation = useUpdateUser();
 

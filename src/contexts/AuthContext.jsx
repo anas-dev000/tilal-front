@@ -22,8 +22,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = () => {
-    const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
+    // Check localStorage (persistent) then sessionStorage (session)
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
 
     if (token && userData) {
       try {
@@ -45,6 +46,8 @@ export const AuthProvider = ({ children }) => {
         console.error("Error parsing user data:", error);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("user");
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -55,15 +58,20 @@ export const AuthProvider = ({ children }) => {
   /**
    *  UNIFIED LOGIN: Works for Admin, Worker, AND Client
    */
-  const login = async (credentials) => {
+  const login = async (credentials, remember = true) => {
     try {
       const response = await api.post("/auth/login", credentials);
 
       if (response.data.success) {
         const { token, user: userData } = response.data.data;
 
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+        if (remember) {
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", JSON.stringify(userData));
+        } else {
+          sessionStorage.setItem("token", token);
+          sessionStorage.setItem("user", JSON.stringify(userData));
+        }
 
         setUser(userData);
         setIsAuthenticated(true);
@@ -87,7 +95,7 @@ export const AuthProvider = ({ children }) => {
   /**
    *  NEW: Client Login (uses same token system)
    */
-  const clientLogin = async (credentials) => {
+  const clientLogin = async (credentials, remember = true) => {
     try {
       const response = await api.post("/clients/login", credentials);
 
@@ -97,8 +105,13 @@ export const AuthProvider = ({ children }) => {
         //  Use 'user' object if provided, otherwise construct from 'client'
         const userData = user || { ...client, role: "client" };
 
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+        if (remember) {
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", JSON.stringify(userData));
+        } else {
+          sessionStorage.setItem("token", token);
+          sessionStorage.setItem("user", JSON.stringify(userData));
+        }
 
         setUser(userData);
         setIsAuthenticated(true);
@@ -126,6 +139,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
   };

@@ -26,8 +26,11 @@ const ClientDetails = () => {
 
   // Data fetching with React Query
   const { data: client, isLoading: clientLoading, error: clientError } = useClient(id);
-  const { data: sites = [], isLoading: sitesLoading } = useSites({ client: id });
-  const { data: tasks = [], isLoading: tasksLoading } = useClientTasks(id);
+  const { data: sitesData, isLoading: sitesLoading } = useSites({ client: id });
+  const { data: tasksData, isLoading: tasksLoading } = useClientTasks(id);
+
+  const sites = sitesData?.data || [];
+  const tasks = tasksData?.data || [];
 
   const isLoading = clientLoading || sitesLoading || tasksLoading;
 

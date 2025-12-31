@@ -1,23 +1,23 @@
 // src/pages/worker/Login.jsx
-import { useState, useEffect } from "react"; // Import useEffect
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
-import { Flower2, Users, UserCircle } from "lucide-react";
+import { Flower2, Lock, Mail } from "lucide-react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 
 const Login = () => {
   const { t } = useTranslation();
-  const { login, clientLogin, isAuthenticated, user } = useAuth(); // Get isAuthenticated and user from useAuth
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [loginType, setLoginType] = useState("staff");
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // NEW: Redirect if already authenticated
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "admin") {
@@ -30,42 +30,28 @@ const Login = () => {
         navigate("/client/dashboard", { replace: true });
       }
     }
-  }, [isAuthenticated, user, navigate]); // Depend on isAuthenticated and user
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      let result;
-      if (loginType === "staff") {
-        result = await login(credentials);
-        if (result.success) {
-          const { user } = result;
-          // Route based on role
-          if (user.role === "admin") {
-            navigate("/admin");
-          } else if (user.role === "accountant") {
-            navigate("/accountant");
-          } else if (user.role === "worker") {
-            navigate("/worker");
-          } else {
-            setError("Invalid user role");
-          }
+      const result = await login(credentials, rememberMe);
+      if (result.success) {
+        const { user } = result;
+        // Route based on role
+        if (user.role === "admin") {
+          navigate("/admin");
+        } else if (user.role === "accountant") {
+          navigate("/accountant");
+        } else if (user.role === "worker") {
+          navigate("/worker");
         } else {
-          setError(result.error);
+          setError("Access Denied: Not a staff account");
         }
       } else {
-        result = await clientLogin(credentials);
-        if (result.success) {
-          if (result.isPasswordTemporary) {
-            navigate("/client/change-password");
-          } else {
-            navigate("/client/dashboard");
-          }
-        } else {
-          setError(result.error);
-        }
+        setError(result.error);
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -76,118 +62,99 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-200 flex items-center justify-center p-4">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-gray-100">
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-            <Flower2 className="w-10 h-10 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-50 rounded-full mb-4 ring-4 ring-primary-50/50">
+            <Flower2 className="w-8 h-8 text-primary-600" />
           </div>
-          <h1 className="text-4xl font-bold text-primary-600 mb-2">
-            🌿 Garden MS
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Welcome Back
           </h1>
-          <p className="text-gray-600">{t("common.login")}</p>
+          <p className="text-gray-500 text-sm">Staff Portal Login</p>
         </div>
-        <div className="flex gap-2 mb-6">
-          <button
-            type="button"
-            onClick={() => {
-              setLoginType("staff");
-              setError("");
-              setCredentials({ email: "", password: "" });
-            }}
-            className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-              loginType === "staff"
-                ? "border-primary-600 bg-primary-50 text-primary-700"
-                : "border-gray-200 text-gray-600 hover:border-gray-300"
-            }`}
-          >
-            <Users className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-sm font-medium">Staff Login</span>
-            <p className="text-xs text-gray-500 mt-1">Admin / Worker</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setLoginType("client");
-              setError("");
-              setCredentials({ email: "", password: "" });
-            }}
-            className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-              loginType === "client"
-                ? "border-primary-600 bg-primary-50 text-primary-700"
-                : "border-gray-200 text-gray-600 hover:border-gray-300"
-            }`}
-          >
-            <UserCircle className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-sm font-medium">Client Login</span>
-            <p className="text-xs text-gray-500 mt-1">Customer Portal</p>
-          </button>
-        </div>
+
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label={t("auth.email")}
-            type="email"
-            value={credentials.email}
-            onChange={(e) =>
-              setCredentials({ ...credentials, email: e.target.value })
-            }
-            placeholder="Enter your email"
-            required
-            autoComplete="email"
-          />
-          <Input
-            label={t("auth.password")}
-            type="password"
-            value={credentials.password}
-            onChange={(e) =>
-              setCredentials({ ...credentials, password: e.target.value })
-            }
-            placeholder="Enter your password"
-            required
-            autoComplete="current-password"
-          />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                value={credentials.email}
+                onChange={(e) =>
+                  setCredentials({ ...credentials, email: e.target.value })
+                }
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
+                placeholder={t("auth.email")} // "Enter your email"
+                required
+                autoComplete="email"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                value={credentials.password}
+                onChange={(e) =>
+                  setCredentials({ ...credentials, password: e.target.value })
+                }
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
+                placeholder={t("auth.password")}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {t("auth.rememberMe")}
+              </span>
+            </label>
+            <Link
+              to="/forgot-password"
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+            >
+              {t("auth.forgotPassword")}
+            </Link>
+          </div>
+
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100">
               {error}
             </div>
           )}
-          {loginType === "staff" && (
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input type="checkbox" className="mr-2" />
-                <span className="text-sm text-gray-600">
-                  {t("auth.rememberMe")}
-                </span>
-              </label>
-              <a
-                href="#"
-                className="text-sm text-primary-600 hover:text-primary-700"
-              >
-                {t("auth.forgotPassword")}
-              </a>
-            </div>
-          )}
-          <Button type="submit" className="w-full" disabled={loading}>
+
+          <Button type="submit" className="w-full py-2.5 text-base font-semibold shadow-md hover:shadow-lg transition-all" disabled={loading}>
             {loading ? t("common.loading") : t("common.login")}
           </Button>
         </form>
-        {/* Demo Credentials */}
-        <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
-          <p className="font-semibold mb-2">Demo Credentials:</p>
-          {loginType === "staff" ? (
-            <>
-              <p className="mb-1">Admin: admin@garden.com / admin123</p>
-              <p className="mb-1">Accountant: accountant@tilal.com / accountant123</p>
-              <p>Worker: worker@garden.com / worker123</p>
-            </>
-          ) : (
-            <p>Client: john.doe@example.com / demo123</p>
-          )}
+        
+        <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+                <Link to="/" className="font-medium text-primary-600 hover:text-primary-500">
+                    Go to Home Page
+                </Link>
+            </p>
         </div>
       </div>
     </div>

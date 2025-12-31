@@ -33,10 +33,12 @@ const SectionDetail = () => {
 
   // Data fetching with React Query
   const { data: site, isLoading: siteLoading } = useSite(siteId);
-  const { data: tasks = [], isLoading: tasksLoading } = useTasks({
+  const { data: tasksData, isLoading: tasksLoading } = useTasks({
     site: siteId,
     section: sectionId,
   });
+
+  const tasks = tasksData?.data || [];
 
   const updateReferenceImageMutation = useUpdateReferenceImage();
 

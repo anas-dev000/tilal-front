@@ -14,7 +14,8 @@ const api = axios.create({
 // ======================== REQUEST INTERCEPTOR ========================
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // Check localStorage first (Remember Me), then sessionStorage (Session only)
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -189,7 +190,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      sessionStorage.removeItem("token"); // Also clear session storage
+      sessionStorage.removeItem("user");
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
@@ -201,6 +204,24 @@ export const authAPI = {
   logout: () => api.post("/auth/logout"),
   getCurrentUser: () => api.get("/auth/me"),
   updatePassword: (data) => api.put("/auth/update-password", data),
+  
+  // Password Reset (MOCKED)
+  forgotPassword: (email) => {
+    console.log("Mocking forgot password request for:", email);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: { success: true, message: "Reset email sent" } });
+      }, 1000);
+    });
+  },
+  resetPassword: (token, password) => {
+    console.log("Mocking reset password for token:", token);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: { success: true, message: "Password reset successful" } });
+      }, 1000);
+    });
+  },
 };
 
 //  Client Auth & API (UNIFIED)

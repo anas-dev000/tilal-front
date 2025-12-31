@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/TaskModal.jsx - FIXED EDIT MODE
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import {
@@ -29,9 +29,9 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
 
   // Data fetching with React Query
   const { data: sitesData } = useSites();
-  const sites = sitesData?.data || [];
+  const sites = useMemo(() => sitesData?.data || [], [sitesData]);
   const { data: workersData } = useWorkers();
-  const workers = workersData?.data || [];
+  const workers = useMemo(() => workersData?.data || [], [workersData]);
 
   const [selectedSite, setSelectedSite] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);

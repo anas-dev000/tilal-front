@@ -4,6 +4,7 @@
     "worker": "Worker",
     "welcome": "Welcome",
     "viewOnGoogleMaps": "View on Google Maps",
+    "viewDetails": "View Details",
     "login": "Login",
     "logout": "Logout",
     "save": "Save",
@@ -102,7 +103,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "clients": "Clients",
-    "workers": "Workers",
+    "employees": "Employees",
     "branches": "Branches",
     "plants": "Plants",
     "projects": "Projects",
@@ -126,6 +127,7 @@
     "clientDetails": {
       "title": "Client Details",
       "contactInformation": "Contact Information",
+      "contact": "Contact",
       "email": "Email",
       "phone": "Phone",
       "whatsapp": "WhatsApp",
@@ -249,6 +251,21 @@
       "total": "Total workers",
       "activateWorker": "Activate Worker",
       "deactivateWorker": "Deactivate Worker"
+    },
+    "employees": {
+      "title": "Employees Management",
+      "addEmployee": "Add Employee",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "role": "Role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "notes": "Notes",
+      "notesPlaceholder": "Add notes..."
     },
     "tasks": {
       "clientFeedback": "Client Feedback",
@@ -380,6 +397,8 @@
       "completionRate": "Completion Rate"
     },
     "sites": {
+      "location": "Location",
+      "contact": "Contact Info",
       "title": "Sites Management",
       "manageSections": "Manage Sections",
       "sitesDisplayed": "sites displayed",
@@ -579,7 +598,15 @@
     "rememberMe": "Remember Me",
     "forgotPassword": "Forgot Password?",
     "loginSuccess": "Login successful",
-    "loginError": "Invalid credentials"
+    "loginError": "Invalid credentials",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordUpdated": "Password updated successfully",
+    "passwordUpdateFailed": "Failed to update password"
   },
   "status": {
     "task": {
@@ -609,6 +636,8 @@
     "partially-paid": "Partially Paid",
     "monthly": "Monthly",
     "quarterly": "Quarterly",
+    "semi_annual": "Semi-Annual",
+    "annual": "Annual",
     "annually": "Annually"
   },
   "priority": {
@@ -730,6 +759,14 @@
     "daysAgo": "d ago"
   },
   "accountant": {
+    "siteInfo": "Site Info",
+    "paymentCycle": "Payment Cycle",
+    "editCycle": "Edit Payment Cycle",
+    "selectCycle": "Select Payment Cycle",
+    "totalPaid": "Total Paid",
+    "totalPending": "Total Pending",
+    "totalOverdue": "Total Overdue",
+    "totalInvoiced": "Total Invoiced",
     "dashboard": "Accountant Dashboard",
     "invoiceStats": {
       "title": "Invoice Statistics",
@@ -759,12 +796,15 @@
     "filterByClient": "Filter by Client",
     "allClients": "All Clients",
     "noSitesFound": "No sites found matching your criteria.",
+
     "cycle": "Cycle",
     "nextPayment": "Next",
     "notSet": "Not set",
     "sections": "Sections",
     "createInvoice": "Create New Invoice",
     "invoicesManaged": "invoices managed by accounting",
+    "searchInvoiceId": "Search by Invoice ID",
+    "filterBySite": "Filter by Site",
     "noInvoicesFound": "No invoices found",
     "timeToGenerate": "Time to generate some revenue!",
     "invoiceNumber": "Invoice #",

@@ -29,6 +29,30 @@ export const useWorkers = (filters = {}) => {
   });
 };
 
+// Get employees (workers + accountants)
+export const useEmployees = (filters = {}) => {
+  return useQuery({
+    queryKey: ['users', 'employees', filters],
+    queryFn: async () => {
+      // Fetch all users
+      const response = await usersAPI.getUsers(filters);
+      const allUsers = response.data.data || [];
+      const total = response.data.total || 0;
+      const totalPages = response.data.totalPages || 0;
+
+      // Filter for workers and accountants client-side if API doesn't support multiple roles
+      // Also strictly exclude 'admin' role as requested
+      const filteredUsers = allUsers.filter(user => user.role !== 'admin');
+      
+      return { 
+        data: filteredUsers, 
+        total: filteredUsers.length, // Update total count to reflect filtered list
+        totalPages: Math.ceil(filteredUsers.length / (filters.limit || 10)) 
+      };
+    },
+  });
+};
+
 // Create user mutation
 export const useCreateUser = () => {
   const queryClient = useQueryClient();

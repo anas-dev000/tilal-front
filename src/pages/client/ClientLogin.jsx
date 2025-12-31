@@ -1,122 +1,153 @@
-// frontend/src/pages/client/ClientLogin.jsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Flower2 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { Flower2, UserCircle, Lock, Mail } from "lucide-react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
-import { clientsAPI } from "../../services/api";
 
 const ClientLogin = () => {
   const { t } = useTranslation();
+  const { clientLogin, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState({
-    email: "", // Changed from username to email
-    password: "",
-  });
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === "client") {
+        navigate("/client/dashboard", { replace: true });
+      } else {
+        // If logged in as staff, maybe redirect to landing or their dashboard?
+        // For now, let's just let them stay or redirect to their respective dash
+        if (user.role === "admin") navigate("/admin");
+        else if (user.role === "accountant") navigate("/accountant");
+        else if (user.role === "worker") navigate("/worker");
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      //  استخدام API الصحيح
-      const response = await clientsAPI.clientLogin({
-        email: credentials.email,
-        password: credentials.password,
-      });
-
-      if (response.data.success) {
-        const { token, client, isPasswordTemporary } = response.data.data;
-
-        // Store token and client data
-        localStorage.setItem("token", token);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ ...client, role: "client" })
-        );
-
-        // Redirect
-        if (isPasswordTemporary) {
+      const result = await clientLogin(credentials, rememberMe);
+      if (result.success) {
+        if (result.isPasswordTemporary) {
           navigate("/client/change-password");
         } else {
           navigate("/client/dashboard");
         }
+      } else {
+        setError(result.error);
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.response?.data?.message || "Invalid email or password");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-primary-50 to-teal-50 flex items-center justify-center p-4">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
-
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-primary-50">
+        {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <Flower2 className="w-10 h-10 text-green-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4 ring-4 ring-primary-50">
+            <UserCircle className="w-8 h-8 text-primary-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {t("client.title")}
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Client Portal
           </h1>
-          <p className="text-gray-600">Access your garden service portal</p>
+          <p className="text-gray-500 text-sm">Access your garden dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Email"
-            type="email"
-            value={credentials.email}
-            onChange={(e) =>
-              setCredentials({ ...credentials, email: e.target.value })
-            }
-            placeholder="Enter your email"
-            required
-          />
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                value={credentials.email}
+                onChange={(e) =>
+                  setCredentials({ ...credentials, email: e.target.value })
+                }
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
+                placeholder={t("auth.email")}
+                required
+                autoComplete="email"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                value={credentials.password}
+                onChange={(e) =>
+                  setCredentials({ ...credentials, password: e.target.value })
+                }
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors"
+                placeholder={t("auth.password")}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
 
-          <Input
-            label={t("auth.password")}
-            type="password"
-            value={credentials.password}
-            onChange={(e) =>
-              setCredentials({ ...credentials, password: e.target.value })
-            }
-            placeholder="Enter your password"
-            required
-          />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {t("auth.rememberMe")}
+              </span>
+            </label>
+            <Link
+              to="/forgot-password"
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+            >
+              {t("auth.forgotPassword")}
+            </Link>
+          </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100">
               {error}
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full py-2.5 text-base font-semibold shadow-md hover:shadow-lg transition-all" disabled={loading}>
             {loading ? t("common.loading") : t("common.login")}
           </Button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Contact administrator for assistance</p>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-          <a
-            href="/login"
-            className="text-sm text-green-600 hover:text-green-700 font-medium"
-          >
-            ← Back to Staff Login
-          </a>
+        
+        <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+                <Link to="/" className="font-medium text-primary-600 hover:text-primary-500">
+                    Go to Home Page
+                </Link>
+            </p>
         </div>
       </div>
     </div>

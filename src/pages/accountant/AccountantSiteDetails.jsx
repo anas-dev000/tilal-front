@@ -11,10 +11,11 @@ import {
   DollarSign, 
   CheckCircle, 
   Clock, 
-  AlertCircle 
+  AlertCircle,
+  Edit2
 } from "lucide-react";
 
-import { useAccountantSite, useInvoices } from "../../hooks/queries/useInvoices";
+import { useAccountantSite, useInvoices, useAccountantUpdateSite } from "../../hooks/queries/useInvoices";
 
 import Loading from "../../components/common/Loading";
 import Card from "../../components/common/Card";
@@ -22,6 +23,7 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import Table from "../../components/common/Table";
 import PaymentBadge from "../../components/common/PaymentBadge";
+import EditCycleModal from "../../components/accountant/EditCycleModal";
 
 const AccountantSiteDetails = () => {
   const { id } = useParams();
@@ -29,6 +31,7 @@ const AccountantSiteDetails = () => {
   const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [isEditCycleModalOpen, setIsEditCycleModalOpen] = useState(false);
   const pageSize = 10;
 
   // Fetch Site Details
@@ -95,14 +98,7 @@ const AccountantSiteDetails = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          icon={ChevronLeft} 
-          onClick={() => navigate('/accountant/sites')}
-        >
-          {t("common.back")}
-        </Button>
+
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{site.name}</h1>
           <p className="text-gray-500 flex items-center gap-2 text-sm">
@@ -188,9 +184,18 @@ const AccountantSiteDetails = () => {
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-sm text-gray-500 mb-2">{t("accountant.paymentCycle")}</p>
                 <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                  <span className="font-bold capitaliz text-gray-700">
-                    {site.paymentCycle}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold capitaliz text-gray-700">
+                      {site.paymentCycle ? t(`status.${site.paymentCycle.toLowerCase()}`) : t("status.monthly")}
+                    </span>
+                    <button 
+                      onClick={() => setIsEditCycleModalOpen(true)}
+                      className="text-gray-400 hover:text-green-600 transition-colors p-1"
+                      title={t("accountant.editCycle")}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <PaymentBadge nextPaymentDate={site.nextPaymentDate} />
                 </div>
               </div>
@@ -209,6 +214,12 @@ const AccountantSiteDetails = () => {
           </Card>
         </div>
       </div>
+
+      <EditCycleModal 
+        isOpen={isEditCycleModalOpen}
+        onClose={() => setIsEditCycleModalOpen(false)}
+        site={site}
+      />
     </div>
   );
 };
