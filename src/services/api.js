@@ -225,6 +225,7 @@ export const usersAPI = {
   createUser: (data) => api.post("/users", data),
   updateUser: (id, data) => api.put(`/users/${id}`, data),
   deleteUser: (id) => api.delete(`/users/${id}`),
+  toggleUserStatus: (id) => api.put(`/users/${id}/toggle-status`),
 };
 
 // 🗑️ Universal Image Deletion API

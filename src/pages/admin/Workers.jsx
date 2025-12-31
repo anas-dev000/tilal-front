@@ -6,7 +6,14 @@ import { Plus, Search, Users, UserCheck, UserX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // React Query hooks
-import { useUsers, useUpdateUser, useDeleteUser } from "../../hooks/queries/useUsers";
+// React Query hooks
+import { 
+  useWorkers, 
+  useCreateUser, 
+  useUpdateUser, 
+  useDeleteUser, 
+  useToggleUserStatus 
+} from "../../hooks/queries/useUsers";
 
 // Components
 import Card from "../../components/common/Card";
@@ -25,7 +32,7 @@ const Workers = () => {
 
   // Local state
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("all"); // all | active | inactive
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -35,60 +42,37 @@ const Workers = () => {
     action: "",
   });
 
-  // React Query hooks
-  const { data: allWorkers = [], isLoading, error } = useUsers({ role: "worker" });
-  const updateUserMutation = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
+  // ==================== Data Fetching with React Query ====================
+  const { data: workersData, isLoading, error } = useWorkers({
+    page: currentPage,
+    limit: PAGE_SIZE,
+    search: searchTerm,
+    isActive: activeTab === "all" ? undefined : activeTab === "active",
+  });
 
-  // Memoized filtered workers
-  const filteredWorkers = useMemo(() => {
-    let filtered = allWorkers;
+  const allWorkers = workersData?.data || [];
+  const totalCount = workersData?.total || 0;
+  const totalPages = workersData?.totalPages || 0;
 
-    // Filter by tab
-    if (activeTab === "active") {
-      filtered = filtered.filter((w) => w.isActive);
-    } else if (activeTab === "inactive") {
-      filtered = filtered.filter((w) => !w.isActive);
-    }
+  const createWorkerMutation = useCreateUser();
+  const updateWorkerMutation = useUpdateUser();
+  const deleteWorkerMutation = useDeleteUser();
+  const toggleStatusMutation = useToggleUserStatus();
 
-    // Filter by search
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (w) =>
-          w.name?.toLowerCase().includes(term) ||
-          w.email?.toLowerCase().includes(term) ||
-          w.phone?.includes(term)
-      );
-    }
-
-    return filtered;
-  }, [allWorkers, activeTab, searchTerm]);
-
-  // Memoized paginated workers
-  const paginatedWorkers = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredWorkers.slice(start, start + PAGE_SIZE);
-  }, [filteredWorkers, currentPage]);
-
-  // Memoized stats
-  const stats = useMemo(() => ({
-    total: allWorkers.length,
-    active: allWorkers.filter((w) => w.isActive).length,
-    inactive: allWorkers.filter((w) => !w.isActive).length,
-  }), [allWorkers]);
-
-  const totalPages = Math.ceil(filteredWorkers.length / PAGE_SIZE);
-
-  // Reset page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, []);
-
-  // Memoized handlers
+  // Handlers
   const handleRowClick = useCallback((worker) => {
     navigate(`/admin/workers/${worker._id}`);
   }, [navigate]);
+
+  const handleEdit = useCallback((worker) => {
+    setSelectedWorker(worker);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedWorker(null);
+  }, []);
 
   const handleToggleStatus = useCallback((worker) => {
     setConfirmModal({
@@ -98,22 +82,6 @@ const Workers = () => {
     });
   }, []);
 
-  const confirmToggle = useCallback(() => {
-    if (!confirmModal.worker) return;
-
-    updateUserMutation.mutate(
-      {
-        id: confirmModal.worker._id,
-        data: { isActive: !confirmModal.worker.isActive },
-      },
-      {
-        onSuccess: () => {
-          setConfirmModal({ isOpen: false, worker: null, action: "" });
-        },
-      }
-    );
-  }, [confirmModal.worker, updateUserMutation]);
-
   const handleDelete = useCallback((worker) => {
     setConfirmModal({
       isOpen: true,
@@ -122,105 +90,124 @@ const Workers = () => {
     });
   }, []);
 
-  const confirmDelete = useCallback(() => {
+  const confirmToggle = useCallback(() => {
     if (!confirmModal.worker) return;
 
-    deleteUserMutation.mutate(confirmModal.worker._id, {
+    toggleStatusMutation.mutate(confirmModal.worker._id, {
       onSuccess: () => {
         setConfirmModal({ isOpen: false, worker: null, action: "" });
       },
     });
-  }, [confirmModal.worker, deleteUserMutation]);
+  }, [confirmModal.worker, toggleStatusMutation]);
 
-  const handleEdit = useCallback((worker) => {
-    setSelectedWorker(worker);
-    setIsModalOpen(true);
-  }, []);
+  const confirmDelete = useCallback(() => {
+    if (!confirmModal.worker) return;
 
-  const handleAddNew = useCallback(() => {
-    setSelectedWorker(null);
-    setIsModalOpen(true);
-  }, []);
-
-  const handleModalClose = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedWorker(null);
-  }, []);
+    deleteWorkerMutation.mutate(confirmModal.worker._id, {
+      onSuccess: () => {
+        setConfirmModal({ isOpen: false, worker: null, action: "" });
+      },
+    });
+  }, [confirmModal.worker, deleteWorkerMutation]);
 
   const handleConfirmModalClose = useCallback(() => {
     setConfirmModal({ isOpen: false, worker: null, action: "" });
   }, []);
 
-  if (isLoading) return <Loading fullScreen />;
-  if (error) return (
-    <div className="text-center py-12 text-red-600">
-      {error.message || "Failed to load workers"}
-    </div>
-  );
+  // ==================== Render ====================
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center">
+        <div className="animate-spin h-8 w-8 mx-auto border-4 border-primary-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        {t("common.errorLoadingData")}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t("admin.workers.title")}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {filteredWorkers.length} {t("admin.workers.displayed")} •{" "}
-            {stats.active} {t("admin.workers.active")} {t("common.of")}{" "}
-            {stats.total} {t("admin.workers.total")}
-          </p>
-        </div>
-        <Button onClick={handleAddNew} icon={Plus}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {t("admin.workers.title")}
+        </h1>
+        <Button
+          onClick={() => {
+            setSelectedWorker(null);
+            setIsModalOpen(true);
+          }}
+          icon={Plus}
+        >
           {t("admin.workers.addWorker")}
         </Button>
       </div>
 
-      {/* Search & Tabs */}
-      <Card>
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <Input
-              placeholder={t("common.searchByNameEmailPhone")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              icon={Search}
-              className="w-full"
-            />
-          </div>
+      <Card className="overflow-hidden">
+        {/* Filters & Search */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                placeholder={t("common.searchByNameEmailPhone")}
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
 
-          <div className="flex gap-2 border-b sm:border-b-0 border-gray-200">
-            <TabButton
-              active={activeTab === "all"}
-              onClick={() => setActiveTab("all")}
-              icon={Users}
-              label={`${t("common.all")} (${stats.total})`}
-              color="blue"
-            />
-            <TabButton
-              active={activeTab === "active"}
-              onClick={() => setActiveTab("active")}
-              icon={UserCheck}
-              label={`${t("admin.workers.active")} (${stats.active})`}
-              color="green"
-            />
-            <TabButton
-              active={activeTab === "inactive"}
-              onClick={() => setActiveTab("inactive")}
-              icon={UserX}
-              label={`${t("admin.workers.inactive")} (${stats.inactive})`}
-              color="red"
-            />
+            <div className="flex border-b border-gray-200">
+              <TabButton
+                active={activeTab === "all"}
+                onClick={() => {
+                  setActiveTab("all");
+                  setCurrentPage(1);
+                }}
+                icon={Users}
+                label={`${t("common.all")} (${totalCount})`}
+                color="blue"
+              />
+              <TabButton
+                active={activeTab === "active"}
+                onClick={() => {
+                  setActiveTab("active");
+                  setCurrentPage(1);
+                }}
+                icon={UserCheck}
+                label={t("admin.workers.active")}
+                color="green"
+              />
+              <TabButton
+                active={activeTab === "inactive"}
+                onClick={() => {
+                  setActiveTab("inactive");
+                  setCurrentPage(1);
+                }}
+                icon={UserX}
+                label={t("admin.workers.inactive")}
+                color="red"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        {filteredWorkers.length === 0 ? (
-          <EmptyState />
+        {/* Table / Empty State */}
+        {allWorkers.length === 0 ? (
+          <EmptyState t={t} />
         ) : (
           <WorkersTable
-            workers={paginatedWorkers}
+            workers={allWorkers}
             onEdit={handleEdit}
             onToggleStatus={handleToggleStatus}
             onDelete={handleDelete}
@@ -228,7 +215,7 @@ const Workers = () => {
             pagination={{
               page: currentPage,
               totalPages,
-              total: filteredWorkers.length,
+              total: totalCount,
               limit: PAGE_SIZE,
             }}
             onPageChange={setCurrentPage}

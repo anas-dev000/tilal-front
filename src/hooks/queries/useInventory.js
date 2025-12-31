@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 export const useInventory = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.inventory.list(filters),
-    queryFn: () => inventoryAPI.getInventory(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => inventoryAPI.getInventory(filters).then(res => res.data),
   });
 };
 

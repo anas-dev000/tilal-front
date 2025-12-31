@@ -29,7 +29,8 @@ const MyTasks = () => {
   const [startingTaskId, setStartingTaskId] = useState(null);
 
   // React Query hooks
-  const { data: tasks = [], isLoading: loading, error } = useTasks();
+  const { data: tasksData, isLoading: loading, error } = useTasks();
+  const tasks = tasksData?.data || [];
   const startTaskMutation = useStartTask();
 
   // Memoized filtered tasks

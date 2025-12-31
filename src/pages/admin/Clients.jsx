@@ -41,60 +41,34 @@ const Clients = () => {
   });
 
   // ==================== Data Fetching with React Query ====================
-  const { data: allClients = [], isLoading, error } = useClients();
+  const { data: clientsData, isLoading, error } = useClients({
+    page: currentPage,
+    limit: PAGE_SIZE,
+    search: searchTerm,
+    status: activeTab === "all" ? "" : activeTab
+  });
+
+  const allClients = clientsData?.data || [];
+  const totalCount = clientsData?.total || 0;
+  const totalPages = clientsData?.totalPages || 0;
 
   const createClientMutation = useCreateClient();
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
   const toggleStatusMutation = useToggleClientStatus();
 
-  // ==================== Memoized Values ====================
-  const filteredClients = useMemo(() => {
-    let filtered = allClients;
-
-    // Filter by status tab
-    if (activeTab === "active") {
-      filtered = filtered.filter((c) => c.status === "active");
-    } else if (activeTab === "inactive") {
-      filtered = filtered.filter((c) => c.status !== "active");
-    }
-
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(term) ||
-          c.email?.toLowerCase().includes(term) ||
-          (c.phone && c.phone.includes(term))
-      );
-    }
-
-    return filtered;
-  }, [allClients, activeTab, searchTerm]);
-
-  const paginatedClients = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredClients.slice(start, start + PAGE_SIZE);
-  }, [filteredClients, currentPage]);
-
+  // Stats are now a bit more complex with server-side pagination.
+  // For now, we'll keep it simple or just show the total from the response.
   const stats = useMemo(
     () => ({
-      total: allClients.length,
-      active: allClients.filter((c) => c.status === "active").length,
+      total: totalCount,
+      active: allClients.filter((c) => c.status === "active").length, // still local but good enough for the current tab
       inactive: allClients.filter((c) => c.status !== "active").length,
     }),
-    [allClients]
+    [allClients, totalCount]
   );
 
-  const totalPages = Math.ceil(filteredClients.length / PAGE_SIZE);
-
-  // Reset page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, []);
-
-  // ==================== Handlers ====================
+  // Handlers
   const handleRowClick = useCallback((client) => {
     navigate(`/admin/clients/${client._id}`);
   }, [navigate]);
@@ -187,9 +161,12 @@ const Clients = () => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-              placeholder={t("common.searchByNameEmailPhone")}
+                placeholder={t("common.searchByNameEmailPhone")}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="pl-10"
               />
             </div>
@@ -197,23 +174,32 @@ const Clients = () => {
             <div className="flex border-b border-gray-200">
               <TabButton
                 active={activeTab === "all"}
-                onClick={() => setActiveTab("all")}
+                onClick={() => {
+                  setActiveTab("all");
+                  setCurrentPage(1);
+                }}
                 icon={Users}
-                label={`${t("common.all")} (${stats.total})`}
+                label={`${t("common.all")} (${totalCount})`}
                 color="blue"
               />
               <TabButton
                 active={activeTab === "active"}
-                onClick={() => setActiveTab("active")}
+                onClick={() => {
+                  setActiveTab("active");
+                  setCurrentPage(1);
+                }}
                 icon={UserCheck}
-                label={`${t("admin.clients.active")} (${stats.active})`}
+                label={`${t("admin.clients.active")}`}
                 color="green"
               />
               <TabButton
                 active={activeTab === "inactive"}
-                onClick={() => setActiveTab("inactive")}
+                onClick={() => {
+                  setActiveTab("inactive");
+                  setCurrentPage(1);
+                }}
                 icon={UserX}
-                label={`${t("admin.clients.inactive")} (${stats.inactive})`}
+                label={`${t("admin.clients.inactive")}`}
                 color="red"
               />
             </div>
@@ -221,14 +207,14 @@ const Clients = () => {
         </div>
 
         {/* Table / Empty State */}
-        {filteredClients.length === 0 ? (
+        {allClients.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500">{t("common.noData")}</p>
           </div>
         ) : (
           <ClientsTable
-            clients={paginatedClients}
+            clients={allClients}
             onEdit={handleEdit}
             onToggleStatus={handleToggleStatus}
             onDelete={handleDelete}
@@ -236,7 +222,7 @@ const Clients = () => {
             pagination={{
               page: currentPage,
               totalPages,
-              total: filteredClients.length,
+              total: totalCount,
               limit: PAGE_SIZE,
             }}
             onPageChange={setCurrentPage}

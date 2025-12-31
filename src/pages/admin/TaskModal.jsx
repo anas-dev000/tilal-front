@@ -28,8 +28,10 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
   const updateTaskMutation = useUpdateTask();
 
   // Data fetching with React Query
-  const { data: sites = [] } = useSites();
-  const { data: workers = [] } = useWorkers();
+  const { data: sitesData } = useSites();
+  const sites = sitesData?.data || [];
+  const { data: workersData } = useWorkers();
+  const workers = workersData?.data || [];
 
   const [selectedSite, setSelectedSite] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
