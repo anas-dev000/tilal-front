@@ -31,10 +31,6 @@ const Tasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // React Query data fetching
-  const { data: allTasks = [], isLoading } = useTasks();
-  const { data: workers = [] } = useWorkers();
-  const { data: sites = [] } = useSites();
   const deleteTaskMutation = useDeleteTask();
 
   // Filters
