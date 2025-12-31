@@ -1,4 +1,4 @@
-// src/hooks/queries/useTasks.js
+// src/hooks/queries/useTasks.js - UPDATED WITH DELETE
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksAPI } from '../../services/api';
 import { queryKeys } from '../../lib/react-query';
@@ -46,9 +46,26 @@ export const useUpdateTask = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
+      toast.success('Task updated successfully');
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to update task');
+    },
+  });
+};
+
+// ✅ NEW: Delete task mutation
+export const useDeleteTask = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => tasksAPI.deleteTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      toast.success('Task deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to delete task');
     },
   });
 };

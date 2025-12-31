@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/Tasks.jsx - REFACTORED WITH REACT QUERY
+// frontend/src/pages/admin/Tasks.jsx - WITH EDIT & DELETE
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,8 @@ import {
   Plus,
   Search,
   Eye,
+  Edit2,
+  Trash2,
   Layers,
   AlertCircle,
   ChevronLeft,
@@ -14,7 +16,7 @@ import {
 import ReactSelect from "react-select";
 
 // React Query hooks
-import { useTasks } from "../../hooks/queries/useTasks";
+import { useTasks, useDeleteTask } from "../../hooks/queries/useTasks";
 import { useWorkers } from "../../hooks/queries/useUsers";
 import { useSites } from "../../hooks/queries/useSites";
 
@@ -23,12 +25,19 @@ import Button from "../../components/common/Button";
 import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
+import { toast } from "sonner";
 
 const Tasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Local state
+  // React Query data fetching
+  const { data: allTasks = [], isLoading } = useTasks();
+  const { data: workers = [] } = useWorkers();
+  const { data: sites = [] } = useSites();
+  const deleteTaskMutation = useDeleteTask();
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -70,6 +79,45 @@ const Tasks = () => {
   const handleRowClick = useCallback((task) => {
     navigate(`/admin/tasks/${task._id}`);
   }, [navigate]);
+
+  // ✅ Handle Edit - Prevent editing completed tasks
+  const handleEdit = useCallback((e, task) => {
+    e.stopPropagation(); // منع فتح صفحة التفاصيل
+    
+    if (task.status === "completed") {
+      toast.error(t("admin.tasks.cannotEditCompleted"));
+      return;
+    }
+    
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  }, [t]);
+
+  // ✅ Handle Delete - Prevent deleting completed tasks
+  const handleDelete = useCallback(
+    async (e, task) => {
+      e.stopPropagation(); // منع فتح صفحة التفاصيل
+
+      if (task.status === "completed") {
+        toast.error(t("admin.tasks.cannotDeleteCompleted"));
+        return;
+      }
+
+      // تأكيد الحذف
+      const confirmed = window.confirm(
+        `${t("common.confirmDelete")} "${task.title}"?`
+      );
+
+      if (!confirmed) return;
+
+      try {
+        await deleteTaskMutation.mutateAsync(task._id);
+      } catch (error) {
+        console.error("Delete error:", error);
+      }
+    },
+    [deleteTaskMutation, t]
+  );
 
   const getStatusColor = useCallback((status) => {
     const colors = {
@@ -334,16 +382,58 @@ const Tasks = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-medium">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(task);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 flex items-center gap-1"
-                        >
-                          <Eye className="w-4 h-4" />
-                          {t("common.view")}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {/* View Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRowClick(task);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                            title={t("common.view")}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          {/* ✅ Edit Button - Disabled if completed */}
+                          <button
+                            onClick={(e) => handleEdit(e, task)}
+                            disabled={task.status === "completed"}
+                            className={`p-1 rounded ${
+                              task.status === "completed"
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-green-600 hover:text-green-900 hover:bg-green-50"
+                            }`}
+                            title={
+                              task.status === "completed"
+                                ? t("admin.tasks.cannotEditCompleted")
+                                : t("common.edit")
+                            }
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+
+                          {/* ✅ Delete Button - Disabled if completed */}
+                          <button
+                            onClick={(e) => handleDelete(e, task)}
+                            disabled={
+                              deleteTaskMutation.isPending ||
+                              task.status === "completed"
+                            }
+                            className={`p-1 rounded ${
+                              task.status === "completed"
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-red-600 hover:text-red-900 hover:bg-red-50"
+                            } disabled:opacity-50`}
+                            title={
+                              task.status === "completed"
+                                ? t("admin.tasks.cannotDeleteCompleted")
+                                : t("common.delete")
+                            }
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

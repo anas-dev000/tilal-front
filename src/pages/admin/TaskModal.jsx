@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/TaskModal.jsx - REFACTORED WITH REACT QUERY + COMPLETE VALIDATIONS
+// frontend/src/pages/admin/TaskModal.jsx - FIXED EDIT MODE
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
@@ -47,28 +47,54 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     setValue,
     formState: { errors },
   } = useForm({
-    defaultValues: task || {},
+    defaultValues: {
+      title: "",
+      description: "",
+      site: "",
+      sections: [],
+      worker: "",
+      scheduledDate: "",
+    },
   });
 
   const watchSite = watch("site");
 
-  // Reset form and local state when modal opens or task/preFillSite changes
+  // ✅ FIXED: Reset form and local state when modal opens
   useEffect(() => {
+    if (!isOpen) return;
+
     if (task) {
+      // 🔧 Edit Mode - Load existing task data
+      console.log("📝 Edit Mode - Loading task:", task);
+
+      // Reset form with task data
       reset({
-        ...task,
+        title: task.title || "",
+        description: task.description || "",
         site: task.site?._id || "",
-        sections: task.sections?.map((s) => s._id) || [],
         worker: task.worker?._id || "",
         scheduledDate: task.scheduledDate
           ? new Date(task.scheduledDate).toISOString().split("T")[0]
           : "",
       });
 
-      setSelectedSections(task.sections?.map((s) => s._id) || []);
-      setSelectedSite(task.site || null);
-      setAvailableSections(task.site?.sections || []);
+      // Set selected site
+      const siteData = task.site;
+      setSelectedSite(siteData);
+      setSelectedClient(siteData?.client?._id || null);
+      setAvailableSections(siteData?.sections || []);
+
+      // ✅ CRITICAL: Set selected sections from task
+      const taskSectionIds = task.sections?.map((s) => 
+        typeof s === 'string' ? s : s._id
+      ) || [];
+      setSelectedSections(taskSectionIds);
+
+      console.log("✅ Loaded sections:", taskSectionIds);
     } else {
+      // 🆕 Create Mode - Fresh form
+      console.log("🆕 Create Mode");
+
       reset({
         title: "",
         description: "",
@@ -81,13 +107,17 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
       setSelectedSections([]);
       setSelectedSite(preFillSite || null);
       setAvailableSections(preFillSite?.sections || []);
+      setSelectedClient(preFillSite?.client?._id || null);
     }
 
     setSubmitAttempted(false);
-  }, [task, preFillSite, reset]);
+  }, [isOpen, task, preFillSite, reset]);
 
-  // Load site details when site ID changes
+  // Load site details when site ID changes (only in create mode)
   useEffect(() => {
+    // Skip if we're in edit mode with existing task
+    if (task) return;
+
     if (!watchSite) {
       setSelectedSite(null);
       setAvailableSections([]);
@@ -99,8 +129,9 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     if (foundSite) {
       setSelectedSite(foundSite);
       setAvailableSections(foundSite.sections || []);
+      setSelectedClient(foundSite.client?._id || null);
     }
-  }, [watchSite, sites]);
+  }, [watchSite, sites, task]);
 
   const toggleSection = useCallback((sectionId) => {
     setSelectedSections((prev) =>
@@ -114,7 +145,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     async (data) => {
       setSubmitAttempted(true);
 
-      // Complete client-side validation (prevents 400 Bad Request)
+      // Complete client-side validation
       if (!data.title?.trim()) {
         toast.error(t("admin.tasks.titleRequired"));
         return;
@@ -141,11 +172,18 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
       }
 
       try {
+        // ✅ FIXED: Prepare payload with sections
         const payload = {
-          ...data,
-          sections: selectedSections,
+          title: data.title.trim(),
+          description: data.description?.trim() || "",
+          site: watchSite,
+          sections: selectedSections, // ✅ This is the key fix
+          worker: data.worker,
+          scheduledDate: data.scheduledDate,
           client: selectedClient || task?.client?._id,
         };
+
+        console.log("📤 Submitting payload:", payload);
 
         if (task) {
           await updateTaskMutation.mutateAsync({
@@ -156,9 +194,10 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
           await createTaskMutation.mutateAsync(payload);
         }
 
-        // Success toast + refetch handled in mutation hooks
+        // Success - close modal
         onClose();
       } catch (err) {
+        console.error("❌ Submit error:", err);
         toast.error(err.response?.data?.message || t("common.errorOccurred"));
       }
     },
@@ -241,18 +280,20 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
             }
             onChange={(option) => {
               const selected = sites.find((s) => s._id === option?.value);
-              const selectedClient = selected ? selected.client._id : null;
               setSelectedSite(selected);
-              setSelectedClient(selectedClient);
+              setSelectedClient(selected?.client?._id || null);
               setValue("site", option?.value || "");
-              setValue("sections", []);
+              
+              // Clear sections when site changes
+              setAvailableSections(selected?.sections || []);
               setSelectedSections([]);
             }}
             options={sites.map((site) => ({
               value: site._id,
               label: `${site.name} - ${site.client?.name || ""}`,
             }))}
-            isClearable
+            isDisabled={!!task} // ✅ Disable site change in edit mode
+            isClearable={!task}
             className="w-full"
           />
 
@@ -380,7 +421,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
               {t("admin.tasks.worker")} *
             </label>
             <ReactSelect
-              placeholder="Select worker (optional)"
+              placeholder="Select worker"
               value={
                 workers.find((w) => w._id === watch("worker"))
                   ? {
