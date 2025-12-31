@@ -22,77 +22,40 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import TaskModal from "./TaskModal";
 import Loading from "../../components/common/Loading";
+import Pagination from "../../components/common/Pagination";
 
 const Tasks = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // React Query data fetching
-  const { data: allTasks = [], isLoading } = useTasks();
-  const { data: workers = [] } = useWorkers();
-  const { data: sites = [] } = useSites();
-
-  // Filters
+  // Local state
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [selectedSite, setSelectedSite] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(null);
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const pageSize = 10;
 
-  // Filtered tasks (client-side filtering + memoization)
-  const filteredTasks = useMemo(() => {
-    let filtered = allTasks;
+  // React Query data fetching with pagination
+  const { data: tasksData, isLoading } = useTasks({
+    page: currentPage,
+    limit: pageSize,
+    search: searchTerm,
+    worker: selectedWorker?.value,
+    site: selectedSite?.value,
+    status: selectedStatus?.value,
+  });
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (task) =>
-          task.title?.toLowerCase().includes(term) ||
-          task.client?.name?.toLowerCase().includes(term) ||
-          task.worker?.name?.toLowerCase().includes(term) ||
-          task.site?.name?.toLowerCase().includes(term)
-      );
-    }
+  const allTasks = tasksData?.data || [];
+  const totalCount = tasksData?.total || 0;
+  const totalPages = tasksData?.totalPages || 0;
 
-    if (selectedWorker) {
-      filtered = filtered.filter(
-        (task) => task.worker?._id === selectedWorker.value
-      );
-    }
-
-    if (selectedSite) {
-      filtered = filtered.filter(
-        (task) => task.site?._id === selectedSite.value
-      );
-    }
-
-    if (selectedStatus) {
-      filtered = filtered.filter(
-        (task) => task.status === selectedStatus.value
-      );
-    }
-
-    return filtered;
-  }, [allTasks, searchTerm, selectedWorker, selectedSite, selectedStatus]);
-
-  // Paginated tasks
-  const paginatedTasks = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredTasks.slice(start, start + pageSize);
-  }, [filteredTasks, currentPage]);
-
-  const totalPages = Math.ceil(filteredTasks.length / pageSize);
-
-  // Reset page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, []);
+  const { data: workersData } = useWorkers();
+  const workers = workersData?.data || [];
+  const { data: sitesData } = useSites(); 
+  const sites = sitesData?.data || [];
 
   const handleAddNew = useCallback(() => {
     setSelectedTask(null);
@@ -137,7 +100,7 @@ const Tasks = () => {
             {t("admin.tasks.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredTasks.length} {t("admin.tasks.found")}
+            {totalCount} {t("admin.tasks.found")}
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -156,7 +119,10 @@ const Tasks = () => {
                 type="text"
                 placeholder={t("admin.tasks.searchPlaceholder")}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -167,7 +133,10 @@ const Tasks = () => {
             <ReactSelect
               placeholder={t("admin.tasks.filterWorker")}
               value={selectedWorker}
-              onChange={setSelectedWorker}
+              onChange={(val) => {
+                setSelectedWorker(val);
+                setCurrentPage(1);
+              }}
               options={[
                 { value: "", label: t("common.all") },
                 ...workers.map((w) => ({ value: w._id, label: w.name })),
@@ -199,7 +168,10 @@ const Tasks = () => {
             <ReactSelect
               placeholder={t("admin.tasks.filterSite")}
               value={selectedSite}
-              onChange={setSelectedSite}
+              onChange={(val) => {
+                setSelectedSite(val);
+                setCurrentPage(1);
+              }}
               options={[
                 { value: "", label: t("common.all") },
                 ...sites.map((s) => ({ value: s._id, label: s.name })),
@@ -231,7 +203,10 @@ const Tasks = () => {
             <ReactSelect
               placeholder={t("admin.tasks.filterStatus")}
               value={selectedStatus}
-              onChange={setSelectedStatus}
+              onChange={(val) => {
+                setSelectedStatus(val);
+                setCurrentPage(1);
+              }}
               options={[
                 { value: "", label: t("common.all") },
                 ...statusOptions,
@@ -262,7 +237,7 @@ const Tasks = () => {
 
       {/* Tasks Table */}
       <Card>
-        {paginatedTasks.length === 0 ? (
+        {allTasks.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-500 text-lg mb-2">
               {t("admin.tasks.noTasks")}
@@ -301,7 +276,7 @@ const Tasks = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedTasks.map((task) => (
+                  {allTasks.map((task) => (
                     <tr
                       key={task._id}
                       onClick={() => handleRowClick(task)}
@@ -376,58 +351,14 @@ const Tasks = () => {
               </table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4">
-                <div className="text-sm text-gray-700">
-                  {t("common.showing")} {(currentPage - 1) * pageSize + 1}{" "}
-                  {t("common.to")}{" "}
-                  {Math.min(currentPage * pageSize, filteredTasks.length)}{" "}
-                  {t("common.of")} {filteredTasks.length} {t("common.results")}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                    icon={ChevronLeft}
-                  >
-                    {t("common.previous")}
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-1 rounded-md text-sm font-medium ${
-                            currentPage === page
-                              ? "bg-primary-600 text-white"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    iconRight={ChevronRight}
-                  >
-                    {t("common.next")}
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalCount={totalCount}
+              limit={pageSize}
+            />
           </>
         )}
       </Card>

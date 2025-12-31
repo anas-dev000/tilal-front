@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 export const useClients = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.clients.list(filters),
-    queryFn: () => clientsAPI.getClients(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => clientsAPI.getClients(filters).then(res => res.data),
   });
 };
 
@@ -23,12 +22,11 @@ export const useClient = (id) => {
 };
 
 // Get client tasks
-export const useClientTasks = (id) => {
+export const useClientTasks = (id, filters = {}) => {
   return useQuery({
-    queryKey: queryKeys.clients.tasks(id),
-    queryFn: () => clientsAPI.getClientTasks(id).then(res => res.data.data),
+    queryKey: queryKeys.clients.tasks(id, filters),
+    queryFn: () => clientsAPI.getClientTasks(id, filters).then(res => res.data),
     enabled: !!id,
-    select: (data) => data || [],
   });
 };
 

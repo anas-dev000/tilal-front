@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 export const useSites = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.sites.list(filters),
-    queryFn: () => sitesAPI.getAllSites(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => sitesAPI.getAllSites(filters).then(res => res.data),
   });
 };
 

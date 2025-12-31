@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 export const useTasks = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.tasks.list(filters),
-    queryFn: () => tasksAPI.getTasks(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => tasksAPI.getTasks(filters).then(res => res.data),
   });
 };
 

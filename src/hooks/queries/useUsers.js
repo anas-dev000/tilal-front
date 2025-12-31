@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 export const useUsers = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.users.list(filters),
-    queryFn: () => usersAPI.getUsers(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => usersAPI.getUsers(filters).then(res => res.data),
   });
 };
 
@@ -23,11 +22,10 @@ export const useUser = (id) => {
 };
 
 // Get workers only
-export const useWorkers = () => {
+export const useWorkers = (filters = {}) => {
   return useQuery({
-    queryKey: queryKeys.users.workers,
-    queryFn: () => usersAPI.getWorkers().then(res => res.data.data),
-    select: (data) => data || [],
+    queryKey: [...queryKeys.users.workers, filters],
+    queryFn: () => usersAPI.getWorkers(filters).then(res => res.data),
   });
 };
 
@@ -76,6 +74,23 @@ export const useDeleteUser = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to delete user');
+    },
+  });
+};
+
+// Toggle user status mutation
+export const useToggleUserStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => usersAPI.toggleUserStatus(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(id) });
+      toast.success('User status updated');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update status');
     },
   });
 };

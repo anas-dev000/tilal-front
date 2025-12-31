@@ -37,61 +37,35 @@ const Inventory = () => {
   const [selectedItem, setSelectedItem] = useState(null);
 
   // React Query data
-  const { data: allItems = [], isLoading } = useInventory();
+  const { data: inventoryData, isLoading } = useInventory({
+    page: currentPage,
+    limit: PAGE_SIZE,
+    search: searchTerm,
+    status: activeTab === "all" ? "" : activeTab
+  });
+
+  const allItems = inventoryData?.data || [];
+  const totalCount = inventoryData?.total || 0;
+  const totalPages = inventoryData?.totalPages || 0;
+
   const deleteItemMutation = useDeleteInventoryItem();
 
-  // Memoized filtered items
-  const filteredItems = useMemo(() => {
-    let filtered = allItems;
-
-    // Filter by tab
-    if (activeTab === "low-stock") {
-      filtered = filtered.filter((item) => {
-        const current = item.quantity?.current || 0;
-        const minimum = item.quantity?.minimum || 0;
-        return current > 0 && current <= minimum;
-      });
-    } else if (activeTab === "out-of-stock") {
-      filtered = filtered.filter((item) => (item.quantity?.current || 0) === 0);
-    } else if (activeTab === "in-stock") {
-      filtered = filtered.filter((item) => {
-        const current = item.quantity?.current || 0;
-        const minimum = item.quantity?.minimum || 0;
-        return current > minimum;
-      });
-    }
-
-    // Filter by search
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          (item.description && item.description.toLowerCase().includes(term))
-      );
-    }
-
-    return filtered;
-  }, [allItems, activeTab, searchTerm]);
-
-  // Memoized paginated items
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    return filteredItems.slice(start, end);
-  }, [filteredItems, currentPage]);
-
-  const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-
   // Reset page when filters change
-  useMemo(() => {
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
     setCurrentPage(1);
-  }, []);
+  };
 
-  // Stats calculation (memoized)
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // Stats calculation (memoized) - this might still need to fetch all or we can use the response if available
+  // For now, let's keep it as is or simplify it
   const stats = useMemo(() => {
     return {
-      total: allItems.length,
+      total: totalCount,
       lowStock: allItems.filter((item) => {
         const current = item.quantity?.current || 0;
         const minimum = item.quantity?.minimum || 0;
@@ -106,7 +80,7 @@ const Inventory = () => {
         return current > minimum;
       }).length,
     };
-  }, [allItems]);
+  }, [allItems, totalCount]);
 
   // Handlers
   const handleDelete = useCallback(
@@ -115,9 +89,7 @@ const Inventory = () => {
 
       try {
         await deleteItemMutation.mutateAsync(id);
-        // toast + list refresh handled inside mutation hook
       } catch (error) {
-        // fallback toast (hook already shows one)
         toast.error(
           error.response?.data?.message || t("common.errorOccurred"),
           { duration: 5000 }
@@ -153,7 +125,7 @@ const Inventory = () => {
             {t("admin.inventory.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredItems.length} {t("admin.inventory.lowStockAlerts")} •{" "}
+            {totalCount} {t("admin.inventory.items")} •{" "}
             {stats.lowStock} low stock • {stats.outOfStock} out of stock
           </p>
         </div>
@@ -162,7 +134,7 @@ const Inventory = () => {
         </Button>
       </div>
 
-      {/* IMPROVED Alert Banner */}
+      {/* Alert Banner */}
       {(stats.lowStock > 0 || stats.outOfStock > 0) && (
         <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
           <div className="flex items-start gap-4">
@@ -212,7 +184,7 @@ const Inventory = () => {
             <Input
               placeholder={t("common.search")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               icon={Search}
               className="w-full"
             />
@@ -220,7 +192,7 @@ const Inventory = () => {
 
           <div className="flex gap-2 border-b sm:border-b-0 border-gray-200 overflow-x-auto">
             <button
-              onClick={() => setActiveTab("all")}
+              onClick={() => handleTabChange("all")}
               className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === "all"
                   ? "border-blue-600 text-blue-600"
@@ -228,10 +200,10 @@ const Inventory = () => {
               }`}
             >
               <Package className="w-4 h-4" />
-              {t("admin.inventory.allTabLabel")} ({stats.total})
+              {t("admin.inventory.allTabLabel")} ({totalCount})
             </button>
             <button
-              onClick={() => setActiveTab("in-stock")}
+              onClick={() => handleTabChange("in-stock")}
               className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === "in-stock"
                   ? "border-green-600 text-green-600"
@@ -239,10 +211,10 @@ const Inventory = () => {
               }`}
             >
               <PackageCheck className="w-4 h-4" />
-              {t("admin.inventory.inStockTabLabel")} ({stats.inStock})
+              {t("admin.inventory.inStockTabLabel")}
             </button>
             <button
-              onClick={() => setActiveTab("low-stock")}
+              onClick={() => handleTabChange("low-stock")}
               className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === "low-stock"
                   ? "border-yellow-600 text-yellow-600"
@@ -250,10 +222,10 @@ const Inventory = () => {
               }`}
             >
               <AlertTriangle className="w-4 h-4" />
-              {t("admin.inventory.lowStockTabLabel")} ({stats.lowStock})
+              {t("admin.inventory.lowStockTabLabel")}
             </button>
             <button
-              onClick={() => setActiveTab("out-of-stock")}
+              onClick={() => handleTabChange("out-of-stock")}
               className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === "out-of-stock"
                   ? "border-red-600 text-red-600"
@@ -261,26 +233,26 @@ const Inventory = () => {
               }`}
             >
               <PackageX className="w-4 h-4" />
-              {t("admin.inventory.outOfStockTabLabel")} ({stats.outOfStock})
+              {t("admin.inventory.outOfStockTabLabel")}
             </button>
           </div>
         </div>
 
         {/* Table */}
-        {filteredItems.length === 0 ? (
+        {allItems.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500">{t("common.noData")}</p>
           </div>
         ) : (
           <InventoryTable
-            items={paginatedItems}
+            items={allItems}
             onEdit={handleEdit}
             onDelete={handleDelete}
             pagination={{
               page: currentPage,
               totalPages,
-              total: filteredItems.length,
+              total: totalCount,
               limit: PAGE_SIZE,
             }}
             onPageChange={setCurrentPage}

@@ -6,6 +6,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import Pagination from "../common/Pagination";
 
 const InventoryTable = ({
   items,
@@ -162,33 +163,14 @@ const InventoryTable = ({
         </tbody>
       </table>
 
-      {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 px-6">
-          <p className="text-sm text-gray-600">
-            {t("common.showing")} {(pagination.page - 1) * pagination.limit + 1}{" "}
-            {t("common.to")}{" "}
-            {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-            {t("common.of")} {pagination.total}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onPageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              {t("common.previous")}
-            </button>
-            <button
-              onClick={() => onPageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              {t("common.next")}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Pagination component */}
+      <Pagination
+        currentPage={pagination.page}
+        totalPages={pagination.totalPages}
+        onPageChange={onPageChange}
+        totalCount={pagination.total}
+        limit={pagination.limit}
+      />
     </div>
   );
 };

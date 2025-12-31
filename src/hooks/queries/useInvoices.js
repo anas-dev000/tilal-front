@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 export const useInvoices = (filters = {}) => {
   return useQuery({
     queryKey: queryKeys.invoices.list(filters),
-    queryFn: () => accountantAPI.getInvoices(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => accountantAPI.getInvoices(filters).then(res => res.data),
   });
 };
 
@@ -95,8 +94,7 @@ export const usePaymentAlerts = () => {
 export const useAccountantSites = (filters = {}) => {
   return useQuery({
     queryKey: ['accountant', 'sites', filters],
-    queryFn: () => accountantAPI.getSites(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => accountantAPI.getSites(filters).then(res => res.data),
   });
 };
 
@@ -104,7 +102,6 @@ export const useAccountantSites = (filters = {}) => {
 export const useAccountantClients = (filters = {}) => {
   return useQuery({
     queryKey: ['accountant', 'clients', filters],
-    queryFn: () => accountantAPI.getClients(filters).then(res => res.data.data),
-    select: (data) => data || [],
+    queryFn: () => accountantAPI.getClients(filters).then(res => res.data),
   });
 };

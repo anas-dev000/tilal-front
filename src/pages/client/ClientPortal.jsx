@@ -29,14 +29,25 @@ import SuccessToast from "../../components/common/SuccessToast";
 import TaskDetailModal from "./modals/TaskDetailModal";
 import FeedbackModal from "./modals/FeedbackModal";
 import MediaModal from "../../components/common/MediaModal";
+import Pagination from "../../components/common/Pagination";
 import { toast } from "sonner";
+
+const PAGE_SIZE = 12;
 
 const ClientPortal = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Use the general useTasks hook - assumes it filters tasks by current authenticated client
-  const { data: tasks = [], isLoading } = useTasks();
+  const { data: tasksData, isLoading } = useTasks({
+    page: currentPage,
+    limit: PAGE_SIZE,
+  });
+
+  const tasks = tasksData?.data || [];
+  const totalCount = tasksData?.total || 0;
+  const totalPages = tasksData?.totalPages || 0;
 
   const submitFeedbackMutation = useSubmitFeedback();
   const markSatisfiedMutation = useMarkSatisfied();
@@ -129,15 +140,17 @@ const ClientPortal = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   }, []);
 
-  // Stats calculation (memoized)
+  // Stats calculation (memoized) - Using totals if backend provides them, 
+  // or just showing totals from current page for dashboard metrics
+  // Usually dashboard stats are handled separately, but let's keep it simple
   const stats = useMemo(() => {
     return {
-      total: tasks.length,
+      total: totalCount,
       completed: tasks.filter((t) => t.status === "completed").length,
       inProgress: tasks.filter((t) => t.status === "in-progress").length,
       pending: tasks.filter((t) => t.status === "pending").length,
     };
-  }, [tasks]);
+  }, [tasks, totalCount]);
 
   if (isLoading) {
     return <Loading fullScreen />;
@@ -249,152 +262,161 @@ const ClientPortal = () => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tasks.map((task) => {
-                const visibleAfterImages =
-                  task.images?.after?.filter((img) => img.isVisibleToClient) ||
-                  [];
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tasks.map((task) => {
+                  const visibleAfterImages =
+                    task.images?.after?.filter((img) => img.isVisibleToClient) ||
+                    [];
 
-                return (
-                  <div
-                    key={task._id}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow flex flex-col h-full overflow-hidden"
-                  >
-                    <div className="flex-1 p-6 space-y-4 min-h-0">
-                      {task.feedback && (
-                        <div
-                          className={`border rounded-lg p-3 ${
-                            task.feedback.isSatisfiedOnly
-                              ? "bg-linear-to-br from-green-50 to-emerald-50 border-green-200"
-                              : "bg-linear-to-br from-yellow-50 to-orange-50 border-yellow-200"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {task.feedback.isSatisfiedOnly ? (
-                                <>
-                                  <ThumbsUp className="w-5 h-5 text-green-600" />
-                                  <span className="text-sm font-semibold text-green-800">
-                                    You're Satisfied ✓
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                                  <span className="text-sm font-semibold text-yellow-800">
-                                    Your Rating
-                                  </span>
-                                </>
+                  return (
+                    <div
+                      key={task._id}
+                      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow flex flex-col h-full overflow-hidden"
+                    >
+                      <div className="flex-1 p-6 space-y-4 min-h-0">
+                        {task.feedback && (
+                          <div
+                            className={`border rounded-lg p-3 ${
+                              task.feedback.isSatisfiedOnly
+                                ? "bg-linear-to-br from-green-50 to-emerald-50 border-green-200"
+                                : "bg-linear-to-br from-yellow-50 to-orange-50 border-yellow-200"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {task.feedback.isSatisfiedOnly ? (
+                                  <>
+                                    <ThumbsUp className="w-5 h-5 text-green-600" />
+                                    <span className="text-sm font-semibold text-green-800">
+                                      You're Satisfied ✓
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
+                                    <span className="text-sm font-semibold text-yellow-800">
+                                      Your Rating
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              {!task.feedback.isSatisfiedOnly && (
+                                <div className="flex items-center gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-5 h-5 ${
+                                        star <= task.feedback.rating
+                                          ? "fill-yellow-500 text-yellow-500"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
                               )}
                             </div>
-                            {!task.feedback.isSatisfiedOnly && (
-                              <div className="flex items-center gap-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-5 h-5 ${
-                                      star <= task.feedback.rating
-                                        ? "fill-yellow-500 text-yellow-500"
-                                        : "text-gray-300"
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      <div className="flex justify-between items-start gap-2">
-                        <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 flex-1">
-                          {task.title}
-                        </h3>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(
-                            task.status
-                          )}`}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-
-                      {task.site && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 p-2 rounded">
-                          <MapPin className="w-4 h-4 text-green-600 shrink-0" />
-                          <span className="truncate">{task.site.name}</span>
-                        </div>
-                      )}
-
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 shrink-0" />
-                          <span>
-                            Scheduled:{" "}
-                            {new Date(task.scheduledDate).toLocaleDateString()}
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 flex-1">
+                            {task.title}
+                          </h3>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(
+                              task.status
+                            )}`}
+                          >
+                            {task.status}
                           </span>
                         </div>
-                        {task.completedAt && (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle className="w-4 h-4 shrink-0" />
+
+                        {task.site && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-green-50 p-2 rounded">
+                            <MapPin className="w-4 h-4 text-green-600 shrink-0" />
+                            <span className="truncate">{task.site.name}</span>
+                          </div>
+                        )}
+
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 shrink-0" />
                             <span>
-                              Completed:{" "}
-                              {new Date(task.completedAt).toLocaleDateString()}
+                              Scheduled:{" "}
+                              {new Date(task.scheduledDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {task.completedAt && (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle className="w-4 h-4 shrink-0" />
+                              <span>
+                                Completed:{" "}
+                                {new Date(task.completedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {visibleAfterImages.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <ImageIcon className="w-4 h-4 shrink-0" />
+                            <span>
+                              {visibleAfterImages.length} media files available
                             </span>
                           </div>
                         )}
                       </div>
 
-                      {visibleAfterImages.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <ImageIcon className="w-4 h-4 shrink-0" />
-                          <span>
-                            {visibleAfterImages.length} media files available
-                          </span>
+                      <div className="border-t border-gray-200 px-6 py-4 mt-auto">
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleViewTask(task)}
+                            icon={Eye}
+                          >
+                            View Details
+                          </Button>
+
+                          {task.status === "completed" &&
+                            !task.feedback?.isSatisfiedOnly &&
+                            !task.feedback?.rating && (
+                              <>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleMarkSatisfied(task._id)}
+                                  icon={ThumbsUp}
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                  Satisfied
+                                </Button>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenFeedbackModal(task)}
+                                  icon={Star}
+                                  className="flex-1 border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+                                >
+                                  Rate
+                                </Button>
+                              </>
+                            )}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="border-t border-gray-200 px-6 py-4 mt-auto">
-                      <div className="flex gap-2 justify-center">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleViewTask(task)}
-                          icon={Eye}
-                        >
-                          View Details
-                        </Button>
-
-                        {task.status === "completed" &&
-                          !task.feedback?.isSatisfiedOnly &&
-                          !task.feedback?.rating && (
-                            <>
-                              <Button
-                                variant="success"
-                                size="sm"
-                                onClick={() => handleMarkSatisfied(task._id)}
-                                icon={ThumbsUp}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                              >
-                                Satisfied
-                              </Button>
-
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenFeedbackModal(task)}
-                                icon={Star}
-                                className="flex-1 border-yellow-500 text-yellow-600 hover:bg-yellow-50"
-                              >
-                                Rate
-                              </Button>
-                            </>
-                          )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalCount={totalCount}
+                limit={PAGE_SIZE}
+              />
             </div>
           )}
         </div>

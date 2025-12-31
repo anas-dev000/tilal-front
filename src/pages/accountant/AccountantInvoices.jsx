@@ -3,6 +3,9 @@ import { useState, memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Download, Eye, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Pagination from "../../components/common/Pagination";
+
+const PAGE_SIZE = 10;
 
 // React Query hooks
 import { useInvoices, useDeleteInvoice } from "../../hooks/queries/useInvoices";
@@ -19,16 +22,32 @@ import { toast } from "sonner";
 const AccountantInvoices = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  // Local State
+  const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   // Fetch data with React Query
-  const { data: invoices = [], isLoading } = useInvoices(filter !== "all" ? { paymentStatus: filter } : {});
+  const { data: invoicesData, isLoading } = useInvoices({
+    page: currentPage,
+    limit: PAGE_SIZE,
+    paymentStatus: filter === "all" ? undefined : filter
+  });
+
+  const invoices = invoicesData?.data || [];
+  const totalCount = invoicesData?.total || 0;
+  const totalPages = invoicesData?.totalPages || 0;
+
   const deleteInvoiceMutation = useDeleteInvoice();
 
   const handleCreateNew = () => {
     navigate("/accountant/invoices/create");
+  };
+
+  const handleFilterChange = (f) => {
+    setFilter(f);
+    setCurrentPage(1);
   };
 
   const getSafePdfUrl = useCallback((invoice) => {
@@ -171,7 +190,7 @@ const AccountantInvoices = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{t("accountant.invoices")}</h1>
-          <p className="text-gray-500 mt-1">{invoices.length} {t("accountant.invoicesManaged")}</p>
+          <p className="text-gray-500 mt-1">{totalCount} {t("accountant.invoicesManaged")}</p>
         </div>
         <Button onClick={handleCreateNew} icon={Plus} variant="primary">
           {t("accountant.createInvoice")}
@@ -184,7 +203,7 @@ const AccountantInvoices = () => {
           {["all", "paid", "pending", "overdue"].map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => handleFilterChange(f)}
               className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 filter === f
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105"
@@ -205,7 +224,16 @@ const AccountantInvoices = () => {
             <p className="text-gray-400">{t("accountant.timeToGenerate")}</p>
           </div>
         ) : (
-          <Table columns={columns} data={invoices} />
+          <div className="space-y-4">
+            <Table columns={columns} data={invoices} />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalCount={totalCount}
+              limit={PAGE_SIZE}
+            />
+          </div>
         )}
       </Card>
 

@@ -20,6 +20,7 @@ import { useClients } from "../../hooks/queries/useClients";
 import Button from "../../components/common/Button";
 import SiteModal from "./SiteModal";
 import Loading from "../../components/common/Loading";
+import Pagination from "../../components/common/Pagination";
 import { toast } from "sonner";
 
 const Sites = () => {
@@ -31,49 +32,40 @@ const Sites = () => {
   const [clientFilter, setClientFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9; // Grid layout usually looks better with multiples of 3
 
   // React Query data
-  const { data: allSites = [], isLoading: sitesLoading } = useSites();
-  const { data: allClients = [], isLoading: clientsLoading } = useClients();
+  const { data: sitesData, isLoading: sitesLoading } = useSites({
+    page: currentPage,
+    limit: pageSize,
+    search: searchTerm,
+    client: clientFilter === "all" ? "" : clientFilter
+  });
+
+  const allSites = sitesData?.data || [];
+  const totalCount = sitesData?.total || 0;
+  const totalPages = sitesData?.totalPages || 0;
+
+  const { data: clientsData, isLoading: clientsLoading } = useClients();
+  const allClients = clientsData?.data || [];
   const deleteSiteMutation = useDeleteSite();
 
   const isLoading = sitesLoading || clientsLoading;
-
-  // Memoized filtered sites (client + search)
-  const filteredSites = useMemo(() => {
-    let filtered = allSites;
-
-    // Filter by client
-    if (clientFilter !== "all") {
-      filtered = filtered.filter((site) => site.client?._id === clientFilter);
-    }
-
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (site) =>
-          site.name.toLowerCase().includes(term) ||
-          site.location?.address?.toLowerCase().includes(term)
-      );
-    }
-
-    return filtered;
-  }, [allSites, clientFilter, searchTerm]);
 
   // Memoized client options for react-select
   const clientOptions = useMemo(
     () => [
       {
         value: "all",
-        label: `${t("admin.sites.allClients")} (${allSites.length})`,
+        label: `${t("admin.sites.allClients")}`,
       },
       ...allClients.map((client) => ({
         value: client._id,
         label: client.name,
       })),
     ],
-    [allClients, allSites.length, t]
+    [allClients, t]
   );
 
   // Handlers
@@ -102,9 +94,7 @@ const Sites = () => {
 
       try {
         await deleteSiteMutation.mutateAsync(id);
-        // toast is already handled inside the mutation hook
       } catch (error) {
-        // Error already handled in mutation → just for extra safety
         console.error("Site deletion error:", error);
         toast.error(t("admin.sites.failedToDelete"), { duration: 5000 });
       }
@@ -142,8 +132,7 @@ const Sites = () => {
             {t("admin.sites.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredSites.length} {t("admin.sites.sitesDisplayed")} •{" "}
-            {allSites.length} {t("admin.sites.total")}
+            {totalCount} {t("admin.sites.total")}
           </p>
         </div>
         <Button onClick={handleAddNew} icon={Plus}>
@@ -151,7 +140,7 @@ const Sites = () => {
         </Button>
       </div>
 
-      {/* Filters - Instant (No API call) */}
+      {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         <div className="flex-1">
           <div className="relative">
@@ -160,7 +149,10 @@ const Sites = () => {
               type="text"
               placeholder={t("admin.sites.searchPlaceholder")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
             />
           </div>
@@ -170,23 +162,17 @@ const Sites = () => {
           <Select
             options={clientOptions}
             value={clientOptions.find((c) => c.value === clientFilter)}
-            onChange={(selected) => setClientFilter(selected.value)}
+            onChange={(selected) => {
+              setClientFilter(selected.value);
+              setCurrentPage(1);
+            }}
             isSearchable
           />
         </div>
       </div>
 
-      {/* Sites Grid */}
-      {filteredSites.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg shadow-sm">
-          <MapPin className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">
-            {t("admin.sites.noSitesFound")}
-          </p>
-        </div>
-      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSites.map((site) => (
+          {allSites.map((site) => (
             <div
               key={site._id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer group h-[500px] flex flex-col"
@@ -299,7 +285,15 @@ const Sites = () => {
             </div>
           ))}
         </div>
-      )}
+        
+        {/* Pagination Component */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalCount={totalCount}
+          limit={pageSize}
+        />
 
       {/* Modal - onSuccess handled inside useCreateSite / useUpdateSite */}
       <SiteModal
