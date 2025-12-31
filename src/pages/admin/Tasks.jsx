@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import ReactSelect from "react-select";
+import useDebounce from "../../hooks/useDebounce";
 
 // React Query hooks
 import { useTasks, useDeleteTask } from "../../hooks/queries/useTasks";
@@ -43,11 +44,14 @@ const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const pageSize = 10;
 
+  // Debounced Search
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
   // React Query data fetching with pagination
-  const { data: tasksData, isLoading } = useTasks({
+  const { data: tasksData, isLoading: tasksLoading } = useTasks({
     page: currentPage,
     limit: pageSize,
-    search: searchTerm,
+    search: debouncedSearch,
     worker: selectedWorker?.value,
     site: selectedSite?.value,
     status: selectedStatus?.value,
@@ -57,9 +61,9 @@ const Tasks = () => {
   const totalCount = tasksData?.total || 0;
   const totalPages = tasksData?.totalPages || 0;
 
-  const { data: workersData } = useWorkers();
+  const { data: workersData, isLoading: workersLoading } = useWorkers();
   const workers = workersData?.data || [];
-  const { data: sitesData } = useSites(); 
+  const { data: sitesData, isLoading: sitesLoading } = useSites(); 
   const sites = sitesData?.data || [];
 
   const handleAddNew = useCallback(() => {
@@ -133,7 +137,11 @@ const Tasks = () => {
     { value: "completed", label: t("status.completed") },
   ];
 
-  if (isLoading) return <Loading fullScreen />;
+  // Only show full loader if tasks are loading AND we have no data (initial load)
+  // OR if workers/sites are loading initially
+  if ((tasksLoading && !tasksData) || workersLoading || sitesLoading) {
+    return <Loading fullScreen />;
+  }
 
   return (
     <div className="space-y-6">

@@ -37,6 +37,7 @@ import AccountantDashboard from "./pages/accountant/AccountantDashboard";
 import AccountantInvoices from "./pages/accountant/AccountantInvoices";
 import CreateInvoice from "./pages/accountant/CreateInvoice";
 import AccountantSites from "./pages/accountant/AccountantSites";
+import AccountantSiteDetails from "./pages/accountant/AccountantSiteDetails";
 
 // Common Components
 import ScrollToTop from "./components/common/ScrollToTop";
@@ -271,6 +272,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["accountant"]}>
             <DashboardLayout>
               <AccountantSites />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/sites/:id"
+        element={
+          <ProtectedRoute allowedRoles={["accountant"]}>
+            <DashboardLayout>
+              <AccountantSiteDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }

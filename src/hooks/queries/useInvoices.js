@@ -98,6 +98,32 @@ export const useAccountantSites = (filters = {}) => {
   });
 };
 
+// Update site mutation (Accountant)
+export const useAccountantUpdateSite = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }) => accountantAPI.updateSite(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['accountant', 'sites'] });
+      queryClient.invalidateQueries({ queryKey: ['accountant', 'site', variables.id] });
+      toast.success('Site updated successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update site');
+    },
+  });
+};
+
+// Get single site (Accountant view)
+export const useAccountantSite = (id) => {
+  return useQuery({
+    queryKey: ['accountant', 'site', id],
+    queryFn: () => accountantAPI.getSite(id).then(res => res.data),
+    enabled: !!id,
+  });
+};
+
 // Get all clients (Accountant view)
 export const useAccountantClients = (filters = {}) => {
   return useQuery({

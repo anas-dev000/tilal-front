@@ -1,17 +1,26 @@
 // src/pages/accountant/AccountantSites.jsx
 import { useState, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, MapPin, Layers, Phone } from "lucide-react";
+import { Search, MapPin, Layers, Phone, Calendar, Edit2, ChevronRight } from "lucide-react";
 import Select from "react-select";
 import Pagination from "../../components/common/Pagination";
+import { useNavigate } from "react-router-dom";
+import useDebounce from "../../hooks/useDebounce"; // Import debounce hook
 
 const PAGE_SIZE = 9; // 3x3 grid
 
 // React Query hooks
-import { useAccountantSites, useAccountantClients } from "../../hooks/queries/useInvoices";
+import { 
+  useAccountantSites, 
+  useAccountantClients,
+  useAccountantUpdateSite 
+} from "../../hooks/queries/useInvoices";
 
 import Loading from "../../components/common/Loading";
 import PaymentBadge from "../../components/common/PaymentBadge";
+import Modal from "../../components/common/Modal";
+import Button from "../../components/common/Button";
+import { toast } from "sonner";
 
 const AccountantSites = () => {
   const { t } = useTranslation();
@@ -20,12 +29,15 @@ const AccountantSites = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Debounced Search
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   // React Query data
   const { data: sitesData, isLoading: sitesLoading } = useAccountantSites({
     page: currentPage,
     limit: PAGE_SIZE,
-    search: searchTerm,
+    search: debouncedSearch, // Use debounced value
     client: clientFilter === "all" ? undefined : clientFilter
   });
 
@@ -36,7 +48,7 @@ const AccountantSites = () => {
   const totalCount = sitesData?.total || 0;
   const totalPages = sitesData?.totalPages || 0;
 
-  const isLoading = sitesLoading || clientsLoading;
+
 
   const handleClientFilterChange = (selected) => {
     setClientFilter(selected.value);
@@ -48,47 +60,27 @@ const AccountantSites = () => {
     setCurrentPage(1);
   };
 
-  // Memoized client options for react-select
-  const clientOptions = useMemo(
-    () => [
-      {
-        value: "all",
-        label: `${t("accountant.allClients")} (${allClients.length})`,
-      },
-      ...allClients.map((client) => ({
-        value: client._id,
-        label: client.name,
-      })),
-    ],
-    [allClients, t]
-  );
+  const clientOptions = useMemo(() => [
+    { value: "all", label: t("accountant.filterByClient") }, // Using existing key for 'All' or generic
+    ...allClients.map(c => ({ value: c._id, label: c.name }))
+  ], [allClients, t]);
 
-  if (isLoading) {
+  // Only show full screen loading on initial load of sites or clients
+  if ((sitesLoading && !sitesData) || clientsLoading) {
     return <Loading fullScreen />;
   }
 
   return (
-    <div className="space-y-6 text-gray-900">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t("accountant.sitesTitle")}</h1>
-          <p className="text-gray-500 mt-1">
-            {totalCount} {t("accountant.sitesSubtitle")}
-          </p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-stretch md:items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 rtl:left-4 rtl:right-auto" />
+    <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-gray-50/50">
+      <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-center">
+        <div className="w-full md:w-96 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder={t("accountant.searchSites")}
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
+            placeholder={t("common.search")}
             value={searchTerm}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50/50 transition-all placeholder:text-gray-400"
           />
         </div>
         <div className="w-full md:w-72">
@@ -107,8 +99,10 @@ const AccountantSites = () => {
                 padding: '0.25rem',
                 borderColor: '#e5e7eb',
                 backgroundColor: '#f9fafb99'
-              })
+              }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 })
             }}
+            menuPortalTarget={document.body}
           />
         </div>
       </div>

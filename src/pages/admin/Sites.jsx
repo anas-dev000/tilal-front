@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
+import useDebounce from "../../hooks/useDebounce";
 
 // React Query hooks
 import { useSites, useDeleteSite } from "../../hooks/queries/useSites";
@@ -35,11 +36,14 @@ const Sites = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 9; // Grid layout usually looks better with multiples of 3
 
+  // Debounced Search
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
   // React Query data
   const { data: sitesData, isLoading: sitesLoading } = useSites({
     page: currentPage,
     limit: pageSize,
-    search: searchTerm,
+    search: debouncedSearch,
     client: clientFilter === "all" ? "" : clientFilter
   });
 
@@ -50,8 +54,6 @@ const Sites = () => {
   const { data: clientsData, isLoading: clientsLoading } = useClients();
   const allClients = clientsData?.data || [];
   const deleteSiteMutation = useDeleteSite();
-
-  const isLoading = sitesLoading || clientsLoading;
 
   // Memoized client options for react-select
   const clientOptions = useMemo(
@@ -118,7 +120,8 @@ const Sites = () => {
     return colors[type] || "bg-gray-100 text-gray-800";
   }, []);
 
-  if (isLoading) {
+  // Only show full loader if sites are loading AND we have no data, OR if clients are loading initially
+  if ((sitesLoading && !sitesData) || clientsLoading) {
     return <Loading fullScreen />;
   }
 

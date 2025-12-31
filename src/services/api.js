@@ -200,6 +200,7 @@ export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
   logout: () => api.post("/auth/logout"),
   getCurrentUser: () => api.get("/auth/me"),
+  updatePassword: (data) => api.put("/auth/update-password", data),
 };
 
 //  Client Auth & API (UNIFIED)
@@ -364,9 +365,10 @@ export const accountantAPI = {
   getInvoiceStats: () => api.get("/accountant/invoices/stats"),
   getPaymentAlerts: () => api.get("/accountant/invoices/payment-alerts"),
   
-  // Sites (read-only for accountants)
+  // Sites
   getSites: (params) => api.get("/accountant/sites", { params }),
   getSite: (id) => api.get(`/accountant/sites/${id}`),
+  updateSite: (id, data) => api.put(`/accountant/sites/${id}`, data),
 
   // Clients (read-only for accountants)
   getClients: (params) => api.get("/accountant/clients", { params }),

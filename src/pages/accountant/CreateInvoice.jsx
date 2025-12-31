@@ -30,7 +30,8 @@ const CreateInvoice = () => {
   const navigate = useNavigate();
   const createInvoiceMutation = useCreateInvoice();
 
-  const { data: sites = [], isLoading: sitesLoading } = useAccountantSites();
+  const { data: sitesData, isLoading: sitesLoading } = useAccountantSites();
+  const sites = sitesData?.data || [];
 
   const fileInputRef = useRef(null);
 
@@ -118,6 +119,13 @@ const CreateInvoice = () => {
     if (!formData.total) return toast.error(t("accountant.create.error")); // General error for now
     if (!pdfFile) return toast.error(t("accountant.create.uploadPDF"));
 
+    // Date Validation
+    if (formData.dueDate && formData.issueDate) {
+      if (new Date(formData.dueDate) < new Date(formData.issueDate)) {
+        return toast.error(t("accountant.create.dueDateError"));
+      }
+    }
+
     const data = new FormData();
     data.append("invoiceNumber", formData.invoiceNumber);
     data.append("site", formData.site.value);
@@ -163,9 +171,10 @@ const CreateInvoice = () => {
                 <Input
                   label={t("accountant.invoiceNumber")}
                   value={formData.invoiceNumber}
-                  readOnly
-                  className="bg-gray-50 font-mono"
+                  onChange={(e) => setFormData({...formData, invoiceNumber: e.target.value})}
+                  className="bg-white font-mono border-gray-300 focus:border-blue-500"
                   icon={FileText}
+                  required
                 />
                 <Input
                   label={`${t("accountant.amount")} (SAR)`}
