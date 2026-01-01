@@ -17,6 +17,7 @@ import {
 // Components
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
+import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Input from "../../components/common/Input";
 import ClientModal from "./ClientModal";
 import ConfirmationModal from "../../components/workers/ConfirmationModal";
@@ -125,7 +126,25 @@ const Clients = () => {
 
   // ==================== Render ====================
   if (isLoading) {
-    return <div className="py-12 text-center"><div className="animate-spin h-8 w-8 mx-auto border-4 border-primary-500 border-t-transparent rounded-full"></div></div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="200px" height="40px" />
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <Card>
+          <div className="p-6 border-b border-gray-200 flex justify-between gap-4">
+             <Skeleton variant="rectangle" width="300px" height="40px" />
+             <div className="flex gap-4">
+               <Skeleton variant="rectangle" width="80px" height="40px" />
+               <Skeleton variant="rectangle" width="80px" height="40px" />
+               <Skeleton variant="rectangle" width="80px" height="40px" />
+             </div>
+          </div>
+          <TableSkeleton rows={10} />
+        </Card>
+      </div>
+    );
   }
 
   if (error) {

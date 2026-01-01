@@ -24,6 +24,7 @@ import {
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import SuccessToast from "../../components/common/SuccessToast";
 import TaskDetailModal from "./modals/TaskDetailModal";
@@ -153,7 +154,31 @@ const ClientPortal = () => {
   }, [tasks, totalCount]);
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="min-h-screen bg-green-50/50 p-8 space-y-8">
+        <div className="flex justify-between items-center mb-8">
+           <Skeleton variant="rectangle" width="200px" height="60px" />
+           <div className="flex gap-4">
+             <Skeleton variant="circle" width="40px" height="40px" />
+             <Skeleton variant="rectangle" width="100px" height="40px" />
+           </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="space-y-4">
+          <Skeleton variant="text" width="150px" height="32px" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

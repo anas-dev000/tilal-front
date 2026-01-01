@@ -22,6 +22,7 @@ import Table from "../../components/common/Table";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Badge from "../../components/common/Badge";
+import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Modal from "../../components/common/Modal";
 import { toast } from "sonner";
 import Input from "../../components/common/Input";
@@ -225,7 +226,25 @@ const AccountantInvoices = () => {
   ];
 
   if ((isLoading && !invoicesData) || clientsLoading || sitesLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="200px" height="40px" />
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+            <Skeleton variant="rectangle" height="40px" />
+            <Skeleton variant="rectangle" height="40px" />
+            <Skeleton variant="rectangle" height="40px" />
+            <Skeleton variant="rectangle" height="40px" />
+          </div>
+        </Card>
+        <Card>
+          <TableSkeleton rows={10} />
+        </Card>
+      </div>
+    );
   }
 
   return (

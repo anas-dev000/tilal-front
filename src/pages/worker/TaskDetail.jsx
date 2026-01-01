@@ -18,6 +18,7 @@ import {
   Loader2,
   Video,
   Play,
+  Mic,
 } from "lucide-react";
 
 // React Query hooks
@@ -28,12 +29,12 @@ import {
   useCompleteTask,
   useUpdateTask,
 } from "../../hooks/queries/useTasks";
-import { useInventory } from "../../hooks/queries/useInventory";
 
 import DeleteImageButton from "../../components/common/DeleteImageButton";
 import MediaModal from "../../components/common/MediaModal";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 
 const TaskDetail = () => {
@@ -42,7 +43,6 @@ const TaskDetail = () => {
   const navigate = useNavigate();
 
   const { data: task, isLoading: taskLoading } = useTask(id);
-  const { data: inventory = [] } = useInventory();
 
   const uploadImagesMutation = useUploadTaskImages();
   const startTaskMutation = useStartTask();
@@ -50,8 +50,6 @@ const TaskDetail = () => {
   const updateTaskMutation = useUpdateTask();
 
   const [uploadingImages, setUploadingImages] = useState({});
-  const [selectedMaterials, setSelectedMaterials] = useState([]);
-  const [showAddMaterial, setShowAddMaterial] = useState(false);
   const [previewsByRef, setPreviewsByRef] = useState({});
   const [referenceImages, setReferenceImages] = useState([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -111,17 +109,6 @@ const TaskDetail = () => {
   useEffect(() => {
     if (task) {
       initializeQTNStructure(task);
-      if (task.materials) {
-        setSelectedMaterials(
-          task.materials.map((m) => ({
-            item: m.item?._id || m.item,
-            name: m.name || m.item?.name,
-            quantity: m.quantity,
-            unit: m.unit || m.item?.unit,
-            confirmed: m.confirmed || false,
-          }))
-        );
-      }
     }
   }, [task, initializeQTNStructure]);
 
@@ -210,69 +197,7 @@ const TaskDetail = () => {
     [uploadingImages]
   );
 
-  const handleAddMaterial = useCallback(
-    (item) => {
-      if (selectedMaterials.find((m) => m.item === item._id)) {
-        toast.warning("Material already added");
-        return;
-      }
-      setSelectedMaterials((prev) => [
-        ...prev,
-        {
-          item: item._id,
-          name: item.name,
-          quantity: 1,
-          unit: item.unit,
-          confirmed: false,
-        },
-      ]);
-      setShowAddMaterial(false);
-      toast.success(`${item.name} added`);
-    },
-    [selectedMaterials]
-  );
-
-  const handleUpdateMaterialQuantity = useCallback((index, change) => {
-    setSelectedMaterials((prev) => {
-      const updated = [...prev];
-      updated[index].quantity = Math.max(1, updated[index].quantity + change);
-      return updated;
-    });
-  }, []);
-
-  const handleRemoveMaterial = useCallback(
-    (index) => {
-      const materialName = selectedMaterials[index].name;
-      setSelectedMaterials((prev) => prev.filter((_, i) => i !== index));
-      toast.success(`${materialName} removed`);
-    },
-    [selectedMaterials]
-  );
-
-  const handleConfirmMaterials = useCallback(async () => {
-    try {
-      await updateTaskMutation.mutateAsync({
-        id,
-        data: {
-          materials: selectedMaterials.map((m) => ({
-            ...m,
-            confirmed: true,
-            confirmedAt: new Date(),
-          })),
-        },
-      });
-      toast.success("Materials confirmed successfully!");
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to confirm materials"
-      );
-    }
-  }, [id, selectedMaterials, updateTaskMutation]);
-
-  const materialsConfirmed = useMemo(
-    () => selectedMaterials.every((m) => m.confirmed),
-    [selectedMaterials]
-  );
+  const materialsConfirmed = true;
 
   const handleStartTask = useCallback(async () => {
     try {
@@ -334,11 +259,6 @@ const TaskDetail = () => {
         `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`,
         { duration: 5000 }
       );
-      return;
-    }
-
-    if (!materialsConfirmed) {
-      toast.warning("Please confirm all materials before finishing the task");
       return;
     }
 
@@ -431,7 +351,22 @@ const TaskDetail = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   }, []);
 
-  if (taskLoading) return <Loading fullScreen />;
+  if (taskLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!task)
     return (
       <div className="text-center py-12 text-gray-500">Task not found</div>
@@ -493,6 +428,29 @@ const TaskDetail = () => {
                 </strong>
               </div>
             </div>
+            
+            {/* Voice Recording Section - Improved Design */}
+            {task.voiceRecording?.url && (
+              <div className="mt-6 bg-linear-to-r from-blue-50 to-indigo-50 border-s-4 border-blue-500 rounded-lg p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-blue-600 p-2 rounded-full">
+                    <Mic className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-blue-900">
+                      {t("worker.voiceInstructions") || "Voice Instructions"}
+                    </h3>
+                    <p className="text-xs text-blue-700">Listen to voice instructions for this task</p>
+                  </div>
+                </div>
+                <audio
+                  controls
+                  src={task.voiceRecording.url}
+                  className="w-full h-10"
+                  preload="metadata"
+                />
+              </div>
+            )}
           </Card>
 
           {/* Reference Guide */}
@@ -898,112 +856,6 @@ const TaskDetail = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Materials Card */}
-          <Card title={t("worker.materials")}>
-            <div className="space-y-4">
-              {selectedMaterials.length === 0 ? (
-                <p className="text-center text-gray-500 py-6">
-                  {t("worker.noMaterialsAdded")}
-                </p>
-              ) : (
-                selectedMaterials.map((m, idx) => (
-                  <div key={idx} className="bg-gray-50 p-4 rounded-xl border">
-                    <div className="flex justify-between items-center mb-3">
-                      <p className="font-semibold">{m.name}</p>
-                      {m.confirmed && (
-                        <span className="text-green-600 font-bold">
-                          ✓ Confirmed
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        disabled={task.status === "completed" || m.confirmed}
-                        onClick={() => handleUpdateMaterialQuantity(idx, -1)}
-                        className="p-2 border rounded disabled:opacity-50"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="font-bold text-lg">
-                        {m.quantity} {m.unit}
-                      </span>
-                      <button
-                        disabled={task.status === "completed" || m.confirmed}
-                        onClick={() => handleUpdateMaterialQuantity(idx, 1)}
-                        className="p-2 border rounded disabled:opacity-50"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                      {task.status !== "completed" && (
-                        <button
-                          onClick={() => {
-                            if (window.confirm("Remove this material?")) {
-                              handleRemoveMaterial(idx);
-                            }
-                          }}
-                          className="ml-auto text-red-600 hover:text-red-700"
-                        >
-                          <X className="w-6 h-6" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-
-              {task.status !== "completed" && (
-                <>
-                  {!showAddMaterial ? (
-                    <button
-                      onClick={() => setShowAddMaterial(true)}
-                      className="w-full py-3 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition"
-                    >
-                      <Plus className="w-5 h-5" />
-                      {t("worker.addMaterial")}
-                    </button>
-                  ) : (
-                    <div>
-                      <select
-                        onChange={(e) => {
-                          const item = inventory.find(
-                            (i) => i._id === e.target.value
-                          );
-                          if (item) handleAddMaterial(item);
-                        }}
-                        className="w-full p-3 border rounded mb-2"
-                      >
-                        <option value="">{t("worker.selectMaterial")}</option>
-                        {inventory.map((item) => (
-                          <option key={item._id} value={item._id}>
-                            {item.name} ({item.quantity.current}{" "}
-                            {t("common.available")})
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => setShowAddMaterial(false)}
-                        className="text-sm text-gray-500 hover:text-gray-700"
-                      >
-                        {t("common.cancel")}
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedMaterials.length > 0 && !materialsConfirmed && (
-                    <Button
-                      onClick={handleConfirmMaterials}
-                      variant="success"
-                      className="w-full mt-4"
-                    >
-                      {t("worker.confirmAllMaterials")} (
-                      {selectedMaterials.length})
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
-
           {/* Task Action Buttons */}
           {task.status === "assigned" && (
             <Card title={t("worker.startTask")}>

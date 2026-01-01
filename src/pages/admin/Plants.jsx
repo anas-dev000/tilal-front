@@ -15,6 +15,8 @@ import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
+import { toast } from "sonner";
 
 const Plants = () => {
   const { t, i18n } = useTranslation();
@@ -196,7 +198,7 @@ const Plants = () => {
       handleCloseModal();
     } catch (error) {
       console.error("Error saving plant:", error);
-      alert(error.response?.data?.message || "Failed to save plant");
+      toast.error(error.response?.data?.message || t("admin.plants.errorSaving") || "Failed to save plant");
     }
   };
 
@@ -207,7 +209,7 @@ const Plants = () => {
         fetchPlants();
       } catch (error) {
         console.error("Error deleting plant:", error);
-        alert(error.response?.data?.message || "Failed to delete plant");
+        toast.error(error.response?.data?.message || t("admin.plants.errorDeleting") || "Failed to delete plant");
       }
     }
   };
@@ -271,9 +273,15 @@ const Plants = () => {
 
       {/* Plants Grid */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t("common.loading")}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
       ) : filteredPlants.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow-sm">

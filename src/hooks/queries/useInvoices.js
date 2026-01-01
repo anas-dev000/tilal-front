@@ -163,3 +163,21 @@ export const useAdminUpdateInvoice = () => {
     },
   });
 };
+
+// Get invoice statistics (Admin view)
+export const useAdminInvoiceStats = () => {
+  return useQuery({
+    queryKey: ['admin', 'invoices', 'stats'],
+    queryFn: () => invoicesAPI.getInvoiceStats().then(res => res.data?.data || res.data),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Get payment alerts (Admin view)
+export const useAdminPaymentAlerts = () => {
+  return useQuery({
+    queryKey: ['admin', 'invoices', 'payment-alerts'],
+    queryFn: () => invoicesAPI.getPaymentAlerts().then(res => res.data?.data || res.data),
+    staleTime: 2 * 60 * 1000,
+  });
+};

@@ -20,6 +20,7 @@ import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
 import SiteModal from "./SiteModal";
 import TaskModal from "./TaskModal";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import { toast } from "sonner";
 
@@ -83,7 +84,27 @@ const SiteSectionsPage = () => {
   }, []);
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <Skeleton variant="rectangle" height="256px" />
+          <div className="p-6 space-y-4">
+             <Skeleton variant="text" width="300px" height="48px" />
+             <Skeleton variant="text" width="200px" />
+             <div className="grid grid-cols-4 gap-4 pt-4 border-t">
+               <Skeleton variant="rectangle" height="60px" />
+               <Skeleton variant="rectangle" height="60px" />
+               <Skeleton variant="rectangle" height="60px" />
+               <Skeleton variant="rectangle" height="60px" />
+             </div>
+          </div>
+        </div>
+        <CardSkeleton />
+      </div>
+    );
   }
 
   if (isError || !site) {

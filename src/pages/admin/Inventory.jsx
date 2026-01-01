@@ -18,6 +18,7 @@ import {
 
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
+import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import InventoryModal from "./InventoryModal";
@@ -114,7 +115,31 @@ const Inventory = () => {
     setSelectedItem(null);
   }, []);
 
-  if (isLoading) return <Loading fullScreen />;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton variant="text" width="200px" height="40px" />
+            <Skeleton variant="text" width="250px" />
+          </div>
+          <Skeleton variant="rectangle" width="100px" height="40px" />
+        </div>
+        <Skeleton variant="rectangle" height="120px" />
+        <Card>
+          <div className="flex justify-between gap-4 p-6 border-b">
+            <Skeleton variant="rectangle" width="300px" height="40px" />
+            <div className="flex gap-4">
+              <Skeleton variant="rectangle" width="80px" height="40px" />
+              <Skeleton variant="rectangle" width="80px" height="40px" />
+              <Skeleton variant="rectangle" width="80px" height="40px" />
+            </div>
+          </div>
+          <TableSkeleton rows={10} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

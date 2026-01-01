@@ -12,11 +12,12 @@ import {
 // React Query hooks
 import { useDashboardStats } from "../../hooks/queries/useReports";
 import { useLowStockItems } from "../../hooks/queries/useInventory";
-import { useInvoiceStats, usePaymentAlerts } from "../../hooks/queries/useInvoices";
+import { useAdminInvoiceStats, useAdminPaymentAlerts } from "../../hooks/queries/useInvoices";
 
 import StatCard from "../../components/common/StatCard";
 import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import InvoiceStats from "../../components/admin/InvoiceStats";
 import PaymentAlerts from "../../components/admin/PaymentAlerts";
 
@@ -27,8 +28,8 @@ const Dashboard = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: lowStockItems = [], isLoading: inventoryLoading } =
     useLowStockItems();
-  const { data: invoiceStats, isLoading: invoiceStatsLoading } = useInvoiceStats();
-  const { data: paymentAlerts, isLoading: alertsLoading } = usePaymentAlerts();
+  const { data: invoiceStats, isLoading: invoiceStatsLoading } = useAdminInvoiceStats();
+  const { data: paymentAlerts, isLoading: alertsLoading } = useAdminPaymentAlerts();
 
   const isLoading = statsLoading || inventoryLoading || invoiceStatsLoading || alertsLoading;
 
@@ -36,7 +37,24 @@ const Dashboard = () => {
   const hasLowStock = useMemo(() => lowStockItems.length > 0, [lowStockItems]);
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <Skeleton variant="text" width="200px" height="36px" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <CardSkeleton />
+          </div>
+          <CardSkeleton />
+        </div>
+        <CardSkeleton />
+      </div>
+    );
   }
 
   return (

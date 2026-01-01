@@ -22,34 +22,51 @@ const InvoiceStats = ({ stats, monthlyBreakdown }) => {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Monthly Stats */}
+        <StatCard
+          title={t("accountant.invoiceStats.monthlyPaid")}
+          value={`SAR ${(monthly?.paidAmount || 0).toLocaleString()}`}
+          icon={DollarSign}
+          color="green"
+          subtitle={`${monthly?.paidCount || 0} ${t("status.paid")}`}
+        />
+        <StatCard
+          title={t("accountant.invoiceStats.monthlyUnpaid")}
+          value={`SAR ${((monthly?.totalAmount || 0) - (monthly?.paidAmount || 0)).toLocaleString()}`}
+          icon={DollarSign}
+          color="red"
+          subtitle={`${(monthly?.totalCount || 0) - (monthly?.paidCount || 0)} ${t("status.unpaid")}`}
+        />
         <StatCard
           title={t("accountant.invoiceStats.thisMonth")}
           value={monthly?.totalCount || 0}
           icon={Calendar}
           color="blue"
-          subtitle={`${monthly?.paidCount ||0} ${t("status.paid")}, ${monthly?.pendingCount || 0} ${t("status.pending")}`}
+          subtitle={t("accountant.invoiceStats.count")}
         />
+
+        {/* Yearly Stats */}
         <StatCard
-          title={t("accountant.invoiceStats.monthlyRevenue")}
-          value={`SAR ${(monthly?.totalAmount || 0).toLocaleString()}`}
+          title={t("accountant.invoiceStats.yearlyPaid")}
+          value={`SAR ${(yearly?.paidAmount || 0).toLocaleString()}`}
           icon={DollarSign}
           color="green"
-          subtitle={`${monthly?.paidAmount?.toLocaleString() || 0} ${t("accountant.invoiceStats.collected")}`}
+          subtitle={`${yearly?.paidCount || 0} ${t("status.paid")}`}
+        />
+        <StatCard
+          title={t("accountant.invoiceStats.yearlyUnpaid")}
+          value={`SAR ${((yearly?.totalAmount || 0) - (yearly?.paidAmount || 0)).toLocaleString()}`}
+          icon={DollarSign}
+          color="red"
+          subtitle={`${(yearly?.totalCount || 0) - (yearly?.paidCount || 0)} ${t("status.unpaid")}`}
         />
         <StatCard
           title={t("accountant.invoiceStats.thisYear")}
           value={yearly?.totalCount || 0}
           icon={TrendingUp}
           color="primary"
-          subtitle={`${yearly?.paidCount || 0} ${t("status.paid")}`}
-        />
-        <StatCard
-          title={t("accountant.invoiceStats.yearlyRevenue")}
-          value={`SAR ${(yearly?.totalAmount || 0).toLocaleString()}`}
-          icon={DollarSign}
-          color="yellow"
-          subtitle={`${yearly?.paidAmount?.toLocaleString() || 0} ${t("accountant.invoiceStats.collected")}`}
+          subtitle={t("accountant.invoiceStats.count")}
         />
       </div>
 

@@ -11,6 +11,7 @@ import { useTasks } from "../../hooks/queries/useTasks";
 
 // Components
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import WorkerStatsGrid from "../../components/workers/WorkerStatsGrid";
 import WorkerTaskList from "../../components/workers/WorkerTaskList";
 import WorkerModal from "./WorkerModal";
@@ -99,7 +100,28 @@ const WorkerDetails = () => {
 
   // ==================== Render ====================
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="300px" height="48px" />
+          <div className="flex gap-2">
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CardSkeleton className="lg:col-span-1" />
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+            <CardSkeleton />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (workerError || !worker) {

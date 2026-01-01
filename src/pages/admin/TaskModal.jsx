@@ -18,6 +18,7 @@ import { useCreateTask, useUpdateTask } from "../../hooks/queries/useTasks";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import VoiceRecorder from "../../components/common/VoiceRecorder";
 import ReactSelect from "react-select";
 import { toast } from "sonner";
 
@@ -38,6 +39,8 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
   const [availableSections, setAvailableSections] = useState([]);
   const [selectedSections, setSelectedSections] = useState([]);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [voiceRecording, setVoiceRecording] = useState(null);
+  const [existingVoiceUrl, setExistingVoiceUrl] = useState(null);
 
   const {
     register,
@@ -54,6 +57,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
       sections: [],
       worker: "",
       scheduledDate: "",
+      visibleToClient: true,
     },
   });
 
@@ -76,6 +80,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
         scheduledDate: task.scheduledDate
           ? new Date(task.scheduledDate).toISOString().split("T")[0]
           : "",
+        visibleToClient: task.visibleToClient !== undefined ? task.visibleToClient : true,
       });
 
       // Set selected site
@@ -89,6 +94,9 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
         typeof s === 'string' ? s : s._id
       ) || [];
       setSelectedSections(taskSectionIds);
+      
+      // Load existing voice recording
+      setExistingVoiceUrl(task.voiceRecording?.url || null);
 
       console.log("✅ Loaded sections:", taskSectionIds);
     } else {
@@ -102,12 +110,15 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
         sections: [],
         worker: "",
         scheduledDate: "",
+        visibleToClient: true,
       });
 
       setSelectedSections([]);
       setSelectedSite(preFillSite || null);
       setAvailableSections(preFillSite?.sections || []);
       setSelectedClient(preFillSite?.client?._id || null);
+      setVoiceRecording(null);
+      setExistingVoiceUrl(null);
     }
 
     setSubmitAttempted(false);
@@ -172,26 +183,36 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
       }
 
       try {
-        // ✅ FIXED: Prepare payload with sections
-        const payload = {
-          title: data.title.trim(),
-          description: data.description?.trim() || "",
-          site: watchSite,
-          sections: selectedSections, // ✅ This is the key fix
-          worker: data.worker,
-          scheduledDate: data.scheduledDate,
-          client: selectedClient || task?.client?._id,
-        };
+        // ✅ FIXED: Prepare payload with sections and voice recording
+        const formData = new FormData();
+        formData.append('title', data.title.trim());
+        formData.append('description', data.description?.trim() || "");
+        formData.append('site', watchSite);
+        formData.append('worker', data.worker);
+        formData.append('scheduledDate', data.scheduledDate);
+        formData.append('client', selectedClient || task?.client?._id);
+        formData.append('visibleToClient', data.visibleToClient);
+        
+        // Add sections as JSON array
+        formData.append('sections', JSON.stringify(selectedSections));
+        
+        // Add voice recording if exists
+        if (voiceRecording) {
+          formData.append('voiceRecording', voiceRecording, 'voice-recording.webm');
+        } else if (!existingVoiceUrl && task?.voiceRecording?.url) {
+          // Send flag to delete existing recording if it was removed
+          formData.append('deleteVoiceRecording', 'true');
+        }
 
-        console.log("📤 Submitting payload:", payload);
+        console.log("📤 Submitting with voice recording action:", voiceRecording ? 'New Recording' : (!existingVoiceUrl && task?.voiceRecording?.url ? 'Delete Recording' : 'No Change'));
 
         if (task) {
           await updateTaskMutation.mutateAsync({
             id: task._id,
-            data: payload,
+            data: formData,
           });
         } else {
-          await createTaskMutation.mutateAsync(payload);
+          await createTaskMutation.mutateAsync(formData);
         }
 
         // Success - close modal
@@ -458,6 +479,45 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
               error={errors.scheduledDate?.message}
             />
           </div>
+        </div>
+
+        {/* Voice Recording Section */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Voice Instructions (Optional)
+          </label>
+          <VoiceRecorder
+            onRecordingComplete={(blob) => setVoiceRecording(blob)}
+            existingRecording={existingVoiceUrl}
+            onDelete={() => {
+              setVoiceRecording(null);
+              setExistingVoiceUrl(null);
+            }}
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Record voice instructions for the worker (optional)
+          </p>
+        </div>
+
+        {/* Client Visibility Toggle */}
+        <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${watch("visibleToClient") ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+              <ImageIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">{t("admin.tasks.visibleToClient")}</p>
+              <p className="text-sm text-gray-500">Decide if the client can see this task in their portal</p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              {...register("visibleToClient")}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
         </div>
 
         {/* Info Message */}

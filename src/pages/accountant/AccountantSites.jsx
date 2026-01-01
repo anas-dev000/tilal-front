@@ -16,10 +16,9 @@ import {
   useAccountantUpdateSite 
 } from "../../hooks/queries/useInvoices";
 
-import Loading from "../../components/common/Loading";
-import PaymentBadge from "../../components/common/PaymentBadge";
-import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
+import Loading from "../../components/common/Loading";
 import { toast } from "sonner";
 import EditCycleModal from "../../components/accountant/EditCycleModal";
 
@@ -71,7 +70,22 @@ const AccountantSites = () => {
 
   // Only show full screen loading on initial load of sites or clients
   if ((sitesLoading && !sitesData) || clientsLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="p-6 max-w-[1600px] mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <Skeleton variant="rectangle" className="w-full md:w-96" height="48px" />
+          <Skeleton variant="rectangle" className="w-full md:w-72" height="48px" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (

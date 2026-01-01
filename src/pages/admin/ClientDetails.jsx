@@ -8,6 +8,7 @@ import {
   Home,
   CreditCard,
   Edit,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useCallback, memo } from "react";
@@ -18,6 +19,7 @@ import { useSites } from "../../hooks/queries/useSites";
 
 import Loading from "../../components/common/Loading";
 import ClientStatsGrid from "../../components/client/ClientStatsGrid";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import ClientSitesList from "../../components/client/ClientSitesList";
 
 const ClientDetails = () => {
@@ -61,7 +63,32 @@ const ClientDetails = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   }, []);
 
-  if (isLoading) return <Loading fullScreen />;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="300px" height="48px" />
+          <div className="flex gap-2">
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CardSkeleton className="lg:col-span-1" />
+          <div className="lg:col-span-2 space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (clientError || !client)
     return (
@@ -97,6 +124,13 @@ const ClientDetails = () => {
             {client.status === "inactive" && "⏸ Inactive"}
             {client.status === "suspended" && " Suspended"}
           </span>
+          <Link
+            to={`/admin/clients/${client._id}/invoices`}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 shadow-sm"
+          >
+            <DollarSign className="w-4 h-4" />
+            {t("accountant.invoices")}
+          </Link>
           {/* 
           <Link
             to={`/admin/clients?edit=${client._id}`}

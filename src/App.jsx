@@ -39,6 +39,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 // Client Pages
 import ClientPortal from "./pages/client/ClientPortal";
 import ClientDetails from "./pages/admin/ClientDetails";
+import ClientInvoices from "./pages/admin/ClientInvoices";
 
 // Accountant Pages
 import AccountantDashboard from "./pages/accountant/AccountantDashboard";
@@ -117,6 +118,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <ClientDetails />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/clients/:id/invoices"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <ClientInvoices />
             </DashboardLayout>
           </ProtectedRoute>
         }

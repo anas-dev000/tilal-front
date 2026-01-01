@@ -20,6 +20,7 @@ import { useTasks, useStartTask } from "../../hooks/queries/useTasks";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 
 const MyTasks = () => {
   const { t } = useTranslation();
@@ -164,7 +165,27 @@ const MyTasks = () => {
     [navigate]
   );
 
-  if (loading) return <Loading fullScreen />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton variant="text" width="200px" height="40px" />
+          <Skeleton variant="text" width="300px" />
+        </div>
+        <CardSkeleton />
+        <div className="flex gap-2 justify-center">
+          <Skeleton variant="rectangle" width="80px" height="32px" />
+          <Skeleton variant="rectangle" width="80px" height="32px" />
+          <Skeleton variant="rectangle" width="80px" height="32px" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

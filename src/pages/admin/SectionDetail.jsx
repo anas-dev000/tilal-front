@@ -24,6 +24,7 @@ import { useUpdateReferenceImage } from "../../hooks/queries/useSites"; // Assum
 import Loading from "../../components/common/Loading";
 import Button from "../../components/common/Button";
 import EditImageModal from "../../components/admin/EditImageModal";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import MediaModal from "../../components/common/MediaModal";
 
 const SectionDetail = () => {
@@ -173,7 +174,26 @@ const SectionDetail = () => {
   }, [section, t]);
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+           <Skeleton variant="text" width="300px" height="48px" />
+           <Skeleton variant="text" width="200px" height="32px" />
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+             <Skeleton variant="rectangle" height="100px" />
+             <Skeleton variant="rectangle" height="100px" />
+             <Skeleton variant="rectangle" height="100px" />
+             <Skeleton variant="rectangle" height="100px" />
+           </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Skeleton variant="rectangle" height="300px" />
+          <Skeleton variant="rectangle" height="300px" />
+          <Skeleton variant="rectangle" height="300px" />
+          <Skeleton variant="rectangle" height="300px" />
+        </div>
+      </div>
+    );
   }
 
   if (!section || !site) {

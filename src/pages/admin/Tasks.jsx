@@ -24,6 +24,7 @@ import { useSites } from "../../hooks/queries/useSites";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import TaskModal from "./TaskModal";
+import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
 import { toast } from "sonner";
@@ -140,7 +141,25 @@ const Tasks = () => {
   // Only show full loader if tasks are loading AND we have no data (initial load)
   // OR if workers/sites are loading initially
   if ((tasksLoading && !tasksData) || workersLoading || sitesLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="200px" height="40px" />
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+            <Skeleton variant="rectangle" height="48px" />
+            <Skeleton variant="rectangle" height="48px" />
+            <Skeleton variant="rectangle" height="48px" />
+            <Skeleton variant="rectangle" height="48px" />
+          </div>
+        </Card>
+        <Card>
+          <TableSkeleton rows={10} />
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -18,6 +18,7 @@ import {
 import { useAccountantSite, useInvoices, useAccountantUpdateSite } from "../../hooks/queries/useInvoices";
 
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
@@ -59,7 +60,27 @@ const AccountantSiteDetails = () => {
     }, { total: 0, paid: 0, pending: 0, overdue: 0 });
   }, [invoices]);
 
-  if (siteLoading || invoicesLoading) return <Loading fullScreen />;
+  if (siteLoading || invoicesLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton variant="text" width="200px" height="40px" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CardSkeleton className="lg:col-span-1" />
+          <Card className="lg:col-span-2 p-6">
+            <TableSkeleton rows={8} />
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (!site) return <div className="p-8 text-center">{t("common.notFound")}</div>;
 

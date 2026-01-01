@@ -14,6 +14,7 @@ import {
 import { useTasks } from "../../hooks/queries/useTasks";
 
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 
 const SectionTasksView = () => {
   const { t } = useTranslation();
@@ -41,7 +42,26 @@ const SectionTasksView = () => {
       }`;
   }, []);
 
-  if (isLoading) return <Loading fullScreen />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+           <div className="space-y-2">
+             <Skeleton variant="text" width="300px" height="48px" />
+             <Skeleton variant="text" width="200px" />
+           </div>
+           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+             <CardSkeleton />
+             <CardSkeleton />
+             <CardSkeleton />
+             <CardSkeleton />
+             <CardSkeleton />
+             <CardSkeleton />
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

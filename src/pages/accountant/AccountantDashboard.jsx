@@ -3,6 +3,7 @@ import React, { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 import Loading from "../../components/common/Loading";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import InvoiceStats from "../../components/admin/InvoiceStats";
 import PaymentAlerts from "../../components/admin/PaymentAlerts";
 import ChangePasswordModal from "../../components/common/ChangePasswordModal";
@@ -19,7 +20,18 @@ const AccountantDashboard = () => {
   const isLoading = invoiceStatsLoading || alertsLoading;
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <Skeleton variant="text" width="200px" height="40px" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <CardSkeleton />
+      </div>
+    );
   }
 
   return (

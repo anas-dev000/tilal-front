@@ -11,6 +11,9 @@ import {
   MessageSquare,
   ThumbsUp,
   Play,
+  Mic,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // React Query hooks
@@ -19,6 +22,7 @@ import { useTask, useUpdateTask } from "../../hooks/queries/useTasks";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
+import { TaskDetailSkeleton } from "../../components/common/Skeleton";
 import MediaModal from "../../components/common/MediaModal";
 import { toast } from "sonner";
 
@@ -172,7 +176,7 @@ const AdminTaskDetail = () => {
   }, []);
 
   if (isLoading) {
-    return <Loading fullScreen />;
+    return <TaskDetailSkeleton />;
   }
 
   if (isError || !task) {
@@ -222,6 +226,29 @@ const AdminTaskDetail = () => {
             </span>
           </div>
         </div>
+
+        {/* Voice Recording Section - Moved for better visibility */}
+        {task.voiceRecording?.url && (
+          <div className="mt-6 bg-linear-to-r from-blue-50 to-indigo-50 border-s-4 border-blue-500 rounded-lg p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-blue-600 p-2 rounded-full">
+                <Mic className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-blue-900">
+                  {t("admin.tasks.voiceInstructions") || "Voice Instructions"}
+                </h3>
+                <p className="text-xs text-blue-700">Play instructions from the creator</p>
+              </div>
+            </div>
+            <audio
+              controls
+              src={task.voiceRecording.url}
+              className="w-full h-10"
+              preload="metadata"
+            />
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -787,6 +814,22 @@ const AdminTaskDetail = () => {
                   </p>
                 </div>
               )}
+              <div className="pt-2 border-t mt-2">
+                <p className="text-gray-500 mb-1">{t("admin.tasks.visibleToClient")}</p>
+                <div className={`flex items-center gap-2 font-semibold ${task.visibleToClient !== false ? 'text-blue-600' : 'text-amber-600'}`}>
+                  {task.visibleToClient !== false ? (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      <span>Visible to Client</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                      <span>Hidden from Client</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </Card>
 

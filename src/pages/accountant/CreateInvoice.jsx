@@ -23,6 +23,7 @@ import { useAccountantSites, useCreateInvoice } from "../../hooks/queries/useInv
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 
 const CreateInvoice = () => {
@@ -145,7 +146,24 @@ const CreateInvoice = () => {
     }
   };
 
-  if (sitesLoading) return <Loading fullScreen />;
+  if (sitesLoading) {
+    return (
+      <div className="min-h-screen pb-12 space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton variant="rectangle" width="100px" height="36px" />
+          <Skeleton variant="text" width="200px" height="36px" />
+        </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+           <div className="w-full lg:w-[45%] space-y-6">
+             <CardSkeleton />
+           </div>
+           <div className="w-full lg:w-[55%] min-h-[500px]">
+             <Skeleton variant="rectangle" className="w-full h-full" height="600px" />
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-12 space-y-6">

@@ -303,8 +303,14 @@ export const sitesAPI = {
 export const tasksAPI = {
   getTasks: (params) => api.get("/tasks", { params }),
   getTask: (id) => api.get(`/tasks/${id}`),
-  createTask: (data) => api.post("/tasks", data),
-  updateTask: (id, data) => api.put(`/tasks/${id}`, data),
+  createTask: (formData) =>
+    api.post("/tasks", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  updateTask: (id, formData) =>
+    api.put(`/tasks/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   deleteTask: (id) => api.delete(`/tasks/${id}`),
   startTask: (id, data) => api.post(`/tasks/${id}/start`, data),
   completeTask: (id, data) => api.post(`/tasks/${id}/complete`, data),
@@ -428,6 +434,7 @@ export const invoicesAPI = {
   deleteInvoice: (id) => api.delete(`/invoices/${id}`),
   updatePaymentStatus: (id, data) => api.put(`/invoices/${id}/payment-status`, data),
   getInvoiceStats: () => api.get("/invoices/stats"),
+  getPaymentAlerts: () => api.get("/invoices/payment-alerts"),
 };
 
 export default api;

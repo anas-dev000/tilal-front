@@ -26,6 +26,7 @@ import {
 import Card from "../../components/common/Card";
 import StatCard from "../../components/common/StatCard";
 import Button from "../../components/common/Button";
+import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import { reportsAPI } from "../../services/api";
 
@@ -63,7 +64,33 @@ const Reports = () => {
   };
 
   if (loading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton variant="text" width="200px" height="40px" />
+            <Skeleton variant="text" width="250px" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+            <Skeleton variant="rectangle" width="100px" height="40px" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton variant="rectangle" height="350px" />
+          <Skeleton variant="rectangle" height="350px" />
+        </div>
+        <CardSkeleton />
+      </div>
+    );
   }
 
   // Chart Colors

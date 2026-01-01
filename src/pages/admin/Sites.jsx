@@ -20,6 +20,7 @@ import { useClients } from "../../hooks/queries/useClients";
 
 import Button from "../../components/common/Button";
 import SiteModal from "./SiteModal";
+import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
 import { toast } from "sonner";
@@ -122,7 +123,29 @@ const Sites = () => {
 
   // Only show full loader if sites are loading AND we have no data, OR if clients are loading initially
   if ((sitesLoading && !sitesData) || clientsLoading) {
-    return <Loading fullScreen />;
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton variant="text" width="200px" height="40px" />
+            <Skeleton variant="text" width="100px" />
+          </div>
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm flex gap-4">
+          <Skeleton variant="rectangle" className="flex-1" height="40px" />
+          <Skeleton variant="rectangle" width="256px" height="40px" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (

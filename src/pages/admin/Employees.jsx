@@ -14,6 +14,7 @@ import {
 // Components
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
+import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import EmployeeModal from "../../components/employees/EmployeeModal";
 import EmployeesTable from "../../components/employees/EmployeesTable";
@@ -135,8 +136,22 @@ const Employees = () => {
   // ==================== Render ====================
   if (isLoading) {
     return (
-      <div className="py-12 text-center">
-        <div className="animate-spin h-8 w-8 mx-auto border-4 border-primary-500 border-t-transparent rounded-full"></div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton variant="text" width="200px" height="40px" />
+          <Skeleton variant="rectangle" width="120px" height="40px" />
+        </div>
+        <Card>
+          <div className="p-6 border-b space-y-4">
+             <Skeleton variant="rectangle" height="40px" />
+             <div className="flex gap-4">
+               <Skeleton variant="rectangle" width="100px" height="32px" />
+               <Skeleton variant="rectangle" width="100px" height="32px" />
+               <Skeleton variant="rectangle" width="100px" height="32px" />
+             </div>
+          </div>
+          <TableSkeleton rows={8} />
+        </Card>
       </div>
     );
   }
