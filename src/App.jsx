@@ -14,6 +14,7 @@ import Loading from "./components/common/Loading";
 import AdminDashboard from "./pages/admin/Dashboard";
 import Clients from "./pages/admin/Clients";
 import Employees from "./pages/admin/Employees"; // NEW
+import Invoices from "./pages/admin/Invoices";
 // import Workers from "./pages/admin/Workers";
 // import WorkerDetails from "./pages/admin/WorkerDetails";
 import Tasks from "./pages/admin/Tasks";
@@ -126,6 +127,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
               <Employees />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/invoices"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <Invoices />
             </DashboardLayout>
           </ProtectedRoute>
         }

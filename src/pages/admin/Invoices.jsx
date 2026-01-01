@@ -1,175 +1,228 @@
-// frontend/src/pages/admin/Invoices.jsx - FIXED with Modal
-import { useState, useEffect, useCallback } from "react";
+// src/pages/admin/Invoices.jsx
+import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, Eye, DollarSign } from "lucide-react";
-import { invoicesAPI } from "../../services/api";
+import { Plus, Eye, DollarSign, Search, CheckCircle, FileText, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Pagination from "../../components/common/Pagination";
+import Select from "react-select";
+import useDebounce from "../../hooks/useDebounce";
 import Card from "../../components/common/Card";
 import Table from "../../components/common/Table";
 import Button from "../../components/common/Button";
-import InvoiceDetailModal from "./InvoiceDetailModal";
 import Loading from "../../components/common/Loading";
+import Badge from "../../components/common/Badge";
+import Modal from "../../components/common/Modal";
+import { toast } from "sonner";
+import InvoiceDetailModal from "./InvoiceDetailModal";
+
+// API & Hooks
+import { 
+  useAdminInvoices, 
+  useAdminUpdateInvoice 
+} from "../../hooks/queries/useInvoices";
+import { useClients } from "../../hooks/queries/useClients";
+import { useSites } from "../../hooks/queries/useSites";
+
+const PAGE_SIZE = 10;
 
 const Invoices = () => {
   const { t } = useTranslation();
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const navigate = useNavigate();
 
-  //  NEW: Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Local State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paymentStatus, setPaymentStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedSite, setSelectedSite] = useState(null);
+  
+  // Modals
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        setLoading(true);
-        const params = filter !== "all" ? { paymentStatus: filter } : {};
-        const response = await invoicesAPI.getInvoices(params);
-        setInvoices(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Debounce Search
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-    fetchInvoices();
-  }, [filter]);
+  // Fetch Filter Data
+  const { data: clientsData, isLoading: clientsLoading } = useClients();
+  const clients = clientsData?.data || [];
+  
+  const { data: sitesData, isLoading: sitesLoading } = useSites();
+  const sites = sitesData?.data || [];
 
-  const getSafePdfUrl = useCallback((rawUrl) => {
-    if (!rawUrl) return null;
-    let url = rawUrl;
+  // Filter Options
+  const clientOptions = useMemo(() => [
+    { value: "", label: t("common.allClients") || "All Clients" },
+    ...clients.map(c => ({ value: c._id, label: c.name }))
+  ], [clients, t]);
 
-    // If it's a Cloudinary URL
+  const siteOptions = useMemo(() => [
+    { value: "", label: t("common.allSites") || "All Sites" },
+    ...sites.map(s => ({ value: s._id, label: s.name }))
+  ], [sites, t]);
+
+  // Fetch Invoices
+  const { data: invoicesData, isLoading, refetch } = useAdminInvoices({
+    page: currentPage,
+    limit: PAGE_SIZE,
+    paymentStatus: paymentStatus === "all" ? undefined : paymentStatus,
+    search: debouncedSearch,
+    client: selectedClient?.value,
+    site: selectedSite?.value
+  });
+
+  const invoices = invoicesData?.data || [];
+  const totalCount = invoicesData?.total || 0;
+  const totalPages = invoicesData?.totalPages || 0;
+
+  const updateInvoiceMutation = useAdminUpdateInvoice();
+
+  const handleStatusFilterChange = (f) => {
+    setPaymentStatus(f);
+    setCurrentPage(1);
+  };
+
+  const getSafePdfUrl = useCallback((invoice) => {
+    let url = invoice.pdfFile?.url || invoice.pdfUrl;
+    if (!url) return null;
+
     if (url.includes('cloudinary.com')) {
-      // 1. If it's an image resource, we can safely append .pdf to transform it
       if (url.includes('/image/upload/')) {
         if (!url.toLowerCase().endsWith('.pdf')) {
           url = `${url}.pdf`;
         }
-        // Add flags to ensure it displays inline
         url = url.replace('/upload/', '/upload/f_auto,q_auto/');
       }
-      // 2. If it's a raw resource, we MUST NOT append .pdf unless it's already there
     }
 
-    // 3. Append PDF view parameters to fit to width (prevents horizontal scrolling)
     if (url.toLowerCase().endsWith('.pdf')) {
       url = `${url}#view=FitH`;
     }
-
+    
     return url;
   }, []);
 
-  const handleDownload = async (invoice) => {
-    try {
-      const url = getSafePdfUrl(invoice.pdfUrl || invoice.pdfFile?.url);
-      if (!url) {
-        toast.error("PDF not generated yet");
-        return;
-      }
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.download = `Invoice-${invoice.invoiceNumber || 'file'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Failed to download invoice");
+  const handleViewPdf = (invoice) => {
+    const url = getSafePdfUrl(invoice);
+    if (url) {
+      setPdfUrl(url);
+      setIsPdfModalOpen(true);
+    } else {
+      toast.error("PDF not available for this invoice");
     }
   };
 
-  //  NEW: Open Modal
-  const handleView = (invoice) => {
+  const handleDownloadPdf = (invoice) => {
+    const url = getSafePdfUrl(invoice);
+    if (!url) {
+      toast.error("PDF not available");
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.download = `Invoice-${invoice.invoiceNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleViewDetails = (invoice) => {
     setSelectedInvoice(invoice);
-    setIsModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedInvoice(null);
-  };
-
-  const handleSuccess = async () => {
-    try {
-      setLoading(true);
-      const params = filter !== "all" ? { paymentStatus: filter } : {};
-      const response = await invoicesAPI.getInvoices(params);
-      setInvoices(response.data.data || []);
-    } catch (error) {
-      console.error("Error fetching invoices:", error);
-    } finally {
-      setLoading(false);
+  const handleMarkAsPaid = async (invoice) => {
+    if (window.confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?`)) {
+      try {
+        const formData = new FormData();
+        formData.append('paymentStatus', 'paid');
+        formData.append('paidAt', new Date().toISOString());
+        // For simple update, native usage of hook which might expect object or FormData
+        // references say updateInvoice takes { id, data }
+        
+        await updateInvoiceMutation.mutateAsync({
+          id: invoice._id,
+          data: { paymentStatus: 'paid', paidAt: new Date() } // Sending JSON as safe bet if API supports it, or FormData
+        });
+        toast.success(t("accountant.markedAsPaid"));
+      } catch (err) {
+        console.error("Update failed", err);
+      }
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      paid: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      "partially-paid": "bg-blue-100 text-blue-800",
-      overdue: "bg-red-100 text-red-800",
-      cancelled: "bg-gray-100 text-gray-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+  const statusVariants = {
+    paid: "success",
+    pending: "warning",
+    "partially-paid": "info",
+    overdue: "danger",
+    cancelled: "neutral",
   };
 
   const columns = [
-    { header: t("admin.invoices.invoiceNumber"), accessor: "invoiceNumber" },
-    {
-      header: t("admin.invoices.client"),
-      render: (row) => row.client?.name || "Not Found",
+    { 
+      header: t("accountant.invoiceNumber") || "Invoice #", 
+      accessor: "invoiceNumber",
+      className: "font-mono font-medium text-blue-600"
     },
     {
-      header: t("admin.invoices.amount"),
-      render: (row) => `$${(row.total || 0).toFixed(2)}`,
-    },
-    {
-      header: t("admin.invoices.date"),
-      render: (row) => new Date(row.createdAt).toLocaleDateString(),
-    },
-    {
-      header: t("admin.invoices.status"),
+      header: t("accountant.clientSite") || "Client / Site",
       render: (row) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-            row.paymentStatus
-          )}`}
-        >
-          {row.paymentStatus}
+        <div>
+          <p className="font-medium text-gray-900">{row.client?.name || "N/A"}</p>
+          <p className="text-xs text-gray-500">{row.site?.name || "General Invoice"}</p>
+        </div>
+      ),
+    },
+    {
+      header: t("accountant.amount") || "Amount",
+      render: (row) => (
+        <span className="font-bold text-gray-900">
+          SAR {(row.total || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      header: "Actions",
+      header: t("accountant.date") || "Date",
+      render: (row) => new Date(row.createdAt).toLocaleDateString(),
+    },
+    {
+      header: t("accountant.status") || "Status",
       render: (row) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Eye}
-            onClick={() => handleView(row)}
-          >
-            {t("admin.invoices.view")}
-          </Button>
+        <Badge variant={statusVariants[row.paymentStatus] || "neutral"}>
+          {t(`status.${row.paymentStatus.toLowerCase()}`) || row.paymentStatus}
+        </Badge>
+      ),
+    },
+    {
+      header: t("accountant.actions") || "Actions",
+      render: (row) => (
+        <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
-            icon={Download}
-            onClick={() => handleDownload(row)}
-            disabled={!row.pdfUrl}
-          >
-            PDF
-          </Button>
+            icon={Eye}
+            onClick={() => handleViewDetails(row)}
+            title="View Details"
+          />
+          
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={FileText}
+            onClick={() => handleViewPdf(row)}
+            disabled={!(row.pdfFile?.url || row.pdfUrl)}
+            title="View PDF"
+          />
         </div>
       ),
     },
   ];
 
-  if (loading) {
+  if ((isLoading && !invoicesData) || clientsLoading || sitesLoading) {
     return <Loading fullScreen />;
   }
 
@@ -177,65 +230,137 @@ const Invoices = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            {t("admin.invoices.title")}
-          </h1>
-          <p className="text-gray-600 mt-1">{invoices.length} invoices found</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("admin.invoices.title") || "Invoices"}</h1>
+          <p className="text-gray-500 mt-1">{totalCount} invoices found</p>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          variant={filter === "all" ? "primary" : "secondary"}
-          onClick={() => setFilter("all")}
-        >
-          All ({invoices.length})
-        </Button>
-        <Button
-          variant={filter === "paid" ? "primary" : "secondary"}
-          onClick={() => setFilter("paid")}
-        >
-          Paid
-        </Button>
-        <Button
-          variant={filter === "pending" ? "primary" : "secondary"}
-          onClick={() => setFilter("pending")}
-        >
-          Pending
-        </Button>
-        <Button
-          variant={filter === "partially-paid" ? "primary" : "secondary"}
-          onClick={() => setFilter("partially-paid")}
-        >
-          Partially Paid
-        </Button>
-        <Button
-          variant={filter === "overdue" ? "primary" : "secondary"}
-          onClick={() => setFilter("overdue")}
-        >
-          Overdue
-        </Button>
-      </div>
+      {/* Filters Section */}
+      <Card className="p-4 bg-gray-50/50 border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Search by ID */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Invoice #</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 rtl:right-3 rtl:left-auto" />
+              <input
+                type="text"
+                placeholder="Search ID..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Client Filter */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Client</label>
+            <Select
+              options={clientOptions}
+              value={selectedClient}
+              onChange={(opt) => {
+                setSelectedClient(opt);
+                setCurrentPage(1);
+              }}
+              placeholder="Filter by Client"
+              isClearable
+              className="text-sm"
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+            />
+          </div>
+
+          {/* Site Filter */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Site</label>
+            <Select
+              options={siteOptions}
+              value={selectedSite}
+              onChange={(opt) => {
+                setSelectedSite(opt);
+                setCurrentPage(1);
+              }}
+              placeholder="Filter by Site"
+              isClearable
+              className="text-sm"
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Status</label>
+            <Select
+              options={[
+                { value: "all", label: "All Statuses" },
+                { value: "paid", label: "Paid" },
+                { value: "pending", label: "Pending" },
+                { value: "overdue", label: "Overdue" }
+              ]}
+              value={{ value: paymentStatus, label: paymentStatus === 'all' ? 'All Statuses' : paymentStatus }}
+              onChange={(opt) => handleStatusFilterChange(opt.value)}
+              placeholder="Filter by Status"
+              className="text-sm"
+              isSearchable={false}
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+            />
+          </div>
+        </div>
+      </Card>
 
       <Card>
         {invoices.length === 0 ? (
-          <div className="text-center py-12">
-            <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">{t("common.noData")}</p>
+          <div className="text-center py-16">
+            <DollarSign className="w-20 h-20 text-gray-200 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg font-medium">No invoices found</p>
           </div>
         ) : (
-          <Table columns={columns} data={invoices} />
+          <div className="space-y-4">
+            <Table columns={columns} data={invoices} />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalCount={totalCount}
+              limit={PAGE_SIZE}
+            />
+          </div>
         )}
       </Card>
 
-      {/*  NEW: Invoice Detail Modal */}
+      {/* Invoice Detail Modal (Editable) */}
       <InvoiceDetailModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
         invoice={selectedInvoice}
-        onSuccess={handleSuccess}
+        onSuccess={() => refetch()}
       />
+
+      {/* PDF View Modal (Read Only) */}
+      <Modal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        title="Invoice PDF"
+        size="4xl"
+      >
+        <div className="h-[80vh] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+           {pdfUrl ? (
+             <iframe
+               src={pdfUrl}
+               className="w-full h-full border-none"
+               title="PDF Viewer"
+             />
+           ) : (
+             <p className="text-gray-500">No PDF available</p>
+           )}
+        </div>
+      </Modal>
     </div>
   );
 };

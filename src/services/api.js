@@ -419,4 +419,15 @@ export const getLocalizedText = (multiLangObj, language = "en") => {
   return multiLangObj[language] || multiLangObj.en || multiLangObj.ar || "";
 };
 
+//  Invoices API (For Admin)
+export const invoicesAPI = {
+  getInvoices: (params) => api.get("/invoices", { params }),
+  getInvoice: (id) => api.get(`/invoices/${id}`),
+  createInvoice: (data) => api.post("/invoices", data),
+  updateInvoice: (id, data) => api.put(`/invoices/${id}`, data),
+  deleteInvoice: (id) => api.delete(`/invoices/${id}`),
+  updatePaymentStatus: (id, data) => api.put(`/invoices/${id}/payment-status`, data),
+  getInvoiceStats: () => api.get("/invoices/stats"),
+};
+
 export default api;

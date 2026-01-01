@@ -1,8 +1,13 @@
 // src/hooks/queries/useInvoices.js - ACCOUNTANT ONLY
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { accountantAPI } from '../../services/api';
+import { accountantAPI, invoicesAPI } from '../../services/api';
 import { queryKeys } from '../../lib/react-query';
 import { toast } from 'sonner';
+
+// ... (existing code until usage of useAccountantSite) ...
+// (I need to be careful with range)
+
+// I will target the top for import and the bottom for restoration.
 
 // Get all invoices with filters
 export const useInvoices = (filters = {}) => {
@@ -129,5 +134,32 @@ export const useAccountantClients = (filters = {}) => {
   return useQuery({
     queryKey: ['accountant', 'clients', filters],
     queryFn: () => accountantAPI.getClients(filters).then(res => res.data),
+  });
+};
+
+// --- Admin Hooks ---
+
+// Get all invoices (Admin view)
+export const useAdminInvoices = (filters = {}) => {
+  return useQuery({
+    queryKey: ['admin', 'invoices', filters],
+    queryFn: () => invoicesAPI.getInvoices(filters).then(res => res.data),
+  });
+};
+
+// Update invoice mutation (Admin)
+export const useAdminUpdateInvoice = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }) => invoicesAPI.updateInvoice(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'invoices'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(variables.id) });
+      toast.success('Invoice updated successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update invoice');
+    },
   });
 };
