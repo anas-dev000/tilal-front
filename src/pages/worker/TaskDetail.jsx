@@ -32,6 +32,7 @@ import {
 
 import DeleteImageButton from "../../components/common/DeleteImageButton";
 import MediaModal from "../../components/common/MediaModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
@@ -55,6 +56,7 @@ const TaskDetail = () => {
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedMediaType, setSelectedMediaType] = useState("image");
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: "", message: "", onConfirm: null });
 
   const initializeQTNStructure = useCallback((taskData) => {
     if (!taskData?.referenceImages || taskData.referenceImages.length === 0) {
@@ -200,56 +202,59 @@ const TaskDetail = () => {
   const materialsConfirmed = true;
 
   const handleStartTask = useCallback(async () => {
-    try {
-      const getLocation = () =>
-        new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("Geolocation not supported"));
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: Infinity,
-          });
-        });
-
-      let position;
-      try {
-        position = await getLocation();
-      } catch (locationError) {
-        if (locationError.code === 1) {
-          toast.error(
-            "Location access denied. Please enable location access in your browser settings and try again.",
-            { duration: 6000 }
-          );
-          return;
-        } else if (locationError.code === 2) {
-          const confirm = window.confirm(
-            "Unable to get your location. Do you want to start the task without saving location?"
-          );
-          if (!confirm) return;
-        } else {
-          toast.error(
-            "An error occurred while getting location. Please try again."
-          );
+    const getLocation = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation not supported"));
           return;
         }
-      }
-
-      await startTaskMutation.mutateAsync({
-        id,
-        data: position
-          ? {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            }
-          : {},
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: Infinity,
+        });
       });
 
-      toast.success("Task started successfully!");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to start task");
+    const startWithPosition = async (position = null) => {
+      try {
+        await startTaskMutation.mutateAsync({
+          id,
+          data: position
+            ? {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              }
+            : {},
+        });
+        toast.success("Task started successfully!");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to start task");
+      }
+    };
+
+    try {
+      const position = await getLocation();
+      await startWithPosition(position);
+    } catch (locationError) {
+      if (locationError.code === 1) {
+        toast.error(
+          "Location access denied. Please enable location access in your browser settings and try again.",
+          { duration: 6000 }
+        );
+        return;
+      } else if (locationError.code === 2) {
+        setConfirmConfig({
+          isOpen: true,
+          title: "Location Unreachable",
+          message: "Unable to get your location. Do you want to start the task without saving location?",
+          onConfirm: () => {
+            startWithPosition(null);
+            setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          }
+        });
+      } else {
+        toast.error("An error occurred while getting location. Please try again.");
+      }
     }
   }, [id, startTaskMutation]);
 
@@ -267,45 +272,54 @@ const TaskDetail = () => {
       return;
     }
 
-    try {
-      const getLocation = () =>
-        new Promise((resolve, reject) => {
-          if (!navigator.geolocation) reject(new Error("Not supported"));
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: Infinity,
-          });
+    const getLocation = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) reject(new Error("Not supported"));
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: Infinity,
         });
-
-      let position;
-      try {
-        position = await getLocation();
-      } catch (err) {
-        if (err.code === 1) {
-          toast.error("Location access denied.", { duration: 4000 });
-          return;
-        }
-        const confirm = window.confirm("Complete without location?");
-        if (!confirm) return;
-      }
-
-      await completeTaskMutation.mutateAsync({
-        id,
-        data: {
-          location: position
-            ? {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              }
-            : {},
-        },
       });
 
-      toast.success("Task completed successfully! 🎉", { duration: 4000 });
-      setTimeout(() => navigate("/worker/tasks"), 1000);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to complete task");
+    const completeWithPosition = async (position = null) => {
+      try {
+        await completeTaskMutation.mutateAsync({
+          id,
+          data: {
+            location: position
+              ? {
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                }
+              : {},
+          },
+        });
+
+        toast.success("Task completed successfully! 🎉", { duration: 4000 });
+        setTimeout(() => navigate("/worker/tasks"), 1000);
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to complete task");
+      }
+    };
+
+    try {
+      const position = await getLocation();
+      await completeWithPosition(position);
+    } catch (err) {
+      if (err.code === 1) {
+        toast.error("Location access denied.", { duration: 4000 });
+        return;
+      }
+      setConfirmConfig({
+        isOpen: true,
+        title: "Location Unreachable",
+        message: "Complete without location?",
+        onConfirm: () => {
+          completeWithPosition(null);
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        }
+      });
     }
   }, [
     id,
@@ -400,6 +414,16 @@ const TaskDetail = () => {
             selectedMediaType === "video" ? "videoTitle" : "imageTitle"
           }`
         )}
+      />
+
+      {/* Choice Modal (Replacing window.confirm) */}
+      <ConfirmationModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={t("common.confirm")}
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

@@ -15,6 +15,7 @@ import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Modal from "../../components/common/Modal";
 import { toast } from "sonner";
 import InvoiceDetailModal from "./InvoiceDetailModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 // API & Hooks
 import { 
@@ -42,6 +43,8 @@ const Invoices = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [showPaidConfirm, setShowPaidConfirm] = useState(false);
+  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState(null);
 
   // Debounce Search
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -135,24 +138,30 @@ const Invoices = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleMarkAsPaid = async (invoice) => {
-    if (window.confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?`)) {
-      try {
-        const formData = new FormData();
-        formData.append('paymentStatus', 'paid');
-        formData.append('paidAt', new Date().toISOString());
-        // For simple update, native usage of hook which might expect object or FormData
-        // references say updateInvoice takes { id, data }
-        
-        await updateInvoiceMutation.mutateAsync({
-          id: invoice._id,
-          data: { paymentStatus: 'paid', paidAt: new Date() } // Sending JSON as safe bet if API supports it, or FormData
-        });
-        toast.success(t("accountant.markedAsPaid"));
-      } catch (err) {
-        console.error("Update failed", err);
-      }
+  const handleMarkAsPaid = (invoice) => {
+    setInvoiceToMarkPaid(invoice);
+    setShowPaidConfirm(true);
+  };
+
+  const confirmMarkAsPaid = async () => {
+    if (!invoiceToMarkPaid) return;
+
+    try {
+      await updateInvoiceMutation.mutateAsync({
+        id: invoiceToMarkPaid._id,
+        data: { paymentStatus: 'paid', paidAt: new Date() }
+      });
+      toast.success(t("accountant.markedAsPaid"));
+      setShowPaidConfirm(false);
+      setInvoiceToMarkPaid(null);
+    } catch (err) {
+      console.error("Update failed", err);
     }
+  };
+
+  const cancelPaidConfirm = () => {
+    setShowPaidConfirm(false);
+    setInvoiceToMarkPaid(null);
   };
 
   const statusVariants = {
@@ -378,8 +387,18 @@ const Invoices = () => {
            ) : (
              <p className="text-gray-500">No PDF available</p>
            )}
-        </div>
+         </div>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={showPaidConfirm}
+        onClose={cancelPaidConfirm}
+        onConfirm={confirmMarkAsPaid}
+        title={t("accountant.markAsPaid") || "Mark as Paid"}
+        message={`Mark invoice ${invoiceToMarkPaid?.invoiceNumber} as PAID?`}
+        confirmText={t("common.confirm") || "Confirm"}
+        confirmVariant="success"
+      />
     </div>
   );
 };

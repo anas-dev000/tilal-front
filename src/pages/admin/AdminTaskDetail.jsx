@@ -331,7 +331,7 @@ const AdminTaskDetail = () => {
                       src={task.feedback.image}
                       alt="Feedback evidence"
                       className="w-full max-h-80 object-contain rounded-lg border-2 border-white shadow-lg cursor-pointer hover:opacity-90"
-                      onClick={() => window.open(task.feedback.image, "_blank")}
+                      onClick={() => handleMediaClick({ url: task.feedback.image, mediaType: "image" }, t("admin.tasks.clientFeedback"))}
                     />
                   </div>
                 )}
@@ -618,7 +618,7 @@ const AdminTaskDetail = () => {
                                       </div>
 
                                       {/* Toggle Visibility */}
-                                      <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                         <label className="flex items-center gap-2 text-xs cursor-pointer">
                                           <input
                                             type="checkbox"

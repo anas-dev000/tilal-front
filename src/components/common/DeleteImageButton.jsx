@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 // React Query hook
 import { useDeleteImage } from "../../hooks/queries/useDeleteImage";
+import ConfirmationModal from "./ConfirmationModal";
 
 /**
  * Reusable Delete Image Button Component
@@ -32,21 +33,16 @@ const DeleteImageButton = ({
   confirmMessage,
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const [showConfirm, setShowConfirm] = useState(false);
   const deleteImageMutation = useDeleteImage();
 
-  const handleDelete = async (e) => {
-    e.stopPropagation(); // Prevent triggering parent click events
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    setShowConfirm(true);
+  };
 
-    const message =
-      confirmMessage ||
-      `Are you sure you want to delete this ${
-        imageData.mediaType === "video" ? "video" : "image"
-      }? This action cannot be undone.`;
-
-    const confirmed = window.confirm(message);
-    if (!confirmed) return;
-
+  const handleConfirmDelete = async () => {
+    setShowConfirm(false);
     setIsDeleting(true);
 
     try {
@@ -108,32 +104,48 @@ const DeleteImageButton = ({
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleDelete}
-      disabled={isDeleting || deleteImageMutation.isPending}
-      className={`
-        absolute ${positionClasses[position]}
-        bg-red-600 hover:bg-red-700 
-        text-white rounded-full 
-        shadow-lg 
-        transition-all duration-200 
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${showOnHover ? "opacity-0 group-hover:opacity-100" : "opacity-100"}
-        ${sizeClasses[size]}
-        hover:scale-110
-        z-10
-      `}
-      title={`Delete ${imageData.mediaType === "video" ? "video" : "image"}`}
-    >
-      {isDeleting || deleteImageMutation.isPending ? (
-        <div
-          className={`${iconSizes[size]} border-2 border-white border-t-transparent rounded-full animate-spin`}
-        />
-      ) : (
-        <Trash2 className={iconSizes[size]} />
-      )}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleDeleteClick}
+        disabled={isDeleting || deleteImageMutation.isPending}
+        className={`
+          absolute ${positionClasses[position]}
+          bg-red-600 hover:bg-red-700 
+          text-white rounded-full 
+          shadow-lg 
+          transition-all duration-200 
+          disabled:opacity-50 disabled:cursor-not-allowed
+          ${showOnHover ? "opacity-100 md:opacity-0 md:group-hover:opacity-100" : "opacity-100"}
+          ${sizeClasses[size]}
+          hover:scale-110
+          z-10
+        `}
+        title={`Delete ${imageData.mediaType === "video" ? "video" : "image"}`}
+      >
+        {isDeleting || deleteImageMutation.isPending ? (
+          <div
+            className={`${iconSizes[size]} border-2 border-white border-t-transparent rounded-full animate-spin`}
+          />
+        ) : (
+          <Trash2 className={iconSizes[size]} />
+        )}
+      </button>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirm Deletion"
+        message={
+          confirmMessage ||
+          `Are you sure you want to delete this ${
+            imageData.mediaType === "video" ? "video" : "image"
+          }?`
+        }
+        confirmText="Delete"
+      />
+    </>
   );
 };
 

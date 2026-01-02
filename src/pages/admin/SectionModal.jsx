@@ -21,6 +21,7 @@ import {
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import MediaModal from "../../components/common/MediaModal";
 import { toast } from "sonner";
 import { t } from "i18next";
 
@@ -65,6 +66,10 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [mediaToDelete, setMediaToDelete] = useState(null);
   const [mediaIndexToDelete, setMediaIndexToDelete] = useState(null);
+
+  // Media preview state
+  const [previewMedia, setPreviewMedia] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const {
     register,
@@ -130,6 +135,11 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
     setMediaToDelete(media);
     setMediaIndexToDelete(mediaIndex);
     setShowConfirm(true);
+  };
+
+  const handlePreviewMedia = (media) => {
+    setPreviewMedia(media);
+    setIsPreviewOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -333,7 +343,7 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
                         <video
                           src={media.url}
                           className="w-full h-20 object-cover rounded border cursor-pointer"
-                          onClick={() => window.open(media.url, "_blank")}
+                          onClick={() => handlePreviewMedia(media)}
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
                           <Play className="w-6 h-6 text-white fill-white" />
@@ -344,7 +354,7 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
                         src={media.url}
                         alt={`Reference ${idx + 1}`}
                         className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                        onClick={() => window.open(media.url, "_blank")}
+                        onClick={() => handlePreviewMedia(media)}
                       />
                     )}
 
@@ -364,7 +374,7 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
                       type="button"
                       onClick={() => requestDeleteExistingMedia(media, idx)}
                       disabled={isDeletingThis}
-                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       title={`Delete ${isVideo ? "video" : "image"}`}
                     >
                       {isDeletingThis ? (
@@ -453,7 +463,7 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
                     <button
                       type="button"
                       onClick={() => removeNewMedia(idx)}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-lg"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -521,6 +531,17 @@ const SectionModal = ({ isOpen, onClose, site, section }) => {
               : t("common.image"),
         })}
       />
+
+      {/* Media Preview Modal */}
+      {previewMedia && (
+        <MediaModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          mediaUrl={previewMedia.url}
+          mediaType={previewMedia.mediaType}
+          title={previewMedia.caption || t("admin.sections.sectionModal.referenceImages")}
+        />
+      )}
     </Modal>
   );
 };

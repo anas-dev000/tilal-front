@@ -16,6 +16,7 @@ import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const Plants = () => {
@@ -29,6 +30,8 @@ const Plants = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlant, setEditingPlant] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [plantToDeleteId, setPlantToDeleteId] = useState(null);
 
   const [formData, setFormData] = useState({
     name: { ar: "", en: "", bn: "" },
@@ -202,16 +205,32 @@ const Plants = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(t("common.confirmDelete"))) {
-      try {
-        await plantsAPI.deletePlant(id);
-        fetchPlants();
-      } catch (error) {
-        console.error("Error deleting plant:", error);
-        toast.error(error.response?.data?.message || t("admin.plants.errorDeleting") || "Failed to delete plant");
-      }
+  const handleDelete = (id) => {
+    setPlantToDeleteId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!plantToDeleteId) return;
+
+    try {
+      await plantsAPI.deletePlant(plantToDeleteId);
+      setShowDeleteConfirm(false);
+      setPlantToDeleteId(null);
+      fetchPlants();
+    } catch (error) {
+      console.error("Error deleting plant:", error);
+      toast.error(
+        error.response?.data?.message ||
+          t("admin.plants.errorDeleting") ||
+          "Failed to delete plant"
+      );
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setPlantToDeleteId(null);
   };
 
   const filteredPlants = plants.filter((plant) => {
@@ -603,6 +622,15 @@ const Plants = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t("common.confirmDelete")}
+        message={t("common.confirmDelete")}
+        confirmText={t("common.delete")}
+      />
     </div>
   );
 };

@@ -20,7 +20,7 @@ import Button from "../../components/common/Button";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Input from "../../components/common/Input";
 import ClientModal from "./ClientModal";
-import ConfirmationModal from "../../components/workers/ConfirmationModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import ClientsTable from "../../components/client/ClientsTable";
 
 const PAGE_SIZE = 10;

@@ -18,7 +18,7 @@ import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import EmployeeModal from "../../components/employees/EmployeeModal";
 import EmployeesTable from "../../components/employees/EmployeesTable";
-import ConfirmationModal from "../../components/workers/ConfirmationModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import AdminChangePasswordModal from "../../components/admin/AdminChangePasswordModal";
 
 const PAGE_SIZE = 10;
@@ -72,10 +72,7 @@ const Employees = () => {
 
   // Handlers
   const handleRowClick = useCallback((employee) => {
-    // Navigate to details based on role, or a generic detail page
-    // For now we kept worker details, we might need a general user detail page
-    // Assuming /admin/workers/:id works for now or redirects correctly
-    navigate(`/admin/workers/${employee._id}`); 
+    navigate(`/admin/employees/${employee._id}`); 
   }, [navigate]);
 
   const handleEdit = useCallback((employee) => {

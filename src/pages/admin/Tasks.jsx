@@ -24,6 +24,7 @@ import { useSites } from "../../hooks/queries/useSites";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import TaskModal from "./TaskModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
@@ -43,6 +44,8 @@ const Tasks = () => {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const pageSize = 10;
 
   // Debounced Search
@@ -96,7 +99,7 @@ const Tasks = () => {
 
   // ✅ Handle Delete - Prevent deleting completed tasks
   const handleDelete = useCallback(
-    async (e, task) => {
+    (e, task) => {
       e.stopPropagation(); // منع فتح صفحة التفاصيل
 
       if (task.status === "completed") {
@@ -104,21 +107,28 @@ const Tasks = () => {
         return;
       }
 
-      // تأكيد الحذف
-      const confirmed = window.confirm(
-        `${t("common.confirmDelete")} "${task.title}"?`
-      );
-
-      if (!confirmed) return;
-
-      try {
-        await deleteTaskMutation.mutateAsync(task._id);
-      } catch (error) {
-        console.error("Delete error:", error);
-      }
+      setTaskToDelete(task);
+      setShowDeleteConfirm(true);
     },
-    [deleteTaskMutation, t]
+    [t]
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!taskToDelete) return;
+
+    try {
+      await deleteTaskMutation.mutateAsync(taskToDelete._id);
+      setShowDeleteConfirm(false);
+      setTaskToDelete(null);
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  }, [deleteTaskMutation, taskToDelete]);
+
+  const cancelDelete = useCallback(() => {
+    setShowDeleteConfirm(false);
+    setTaskToDelete(null);
+  }, []);
 
   const getStatusColor = useCallback((status) => {
     const colors = {
@@ -481,6 +491,15 @@ const Tasks = () => {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         task={selectedTask}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t("common.confirmDelete")}
+        message={`${t("common.confirmDelete")} "${taskToDelete?.title}"?`}
+        confirmText={t("common.delete")}
       />
     </div>
   );

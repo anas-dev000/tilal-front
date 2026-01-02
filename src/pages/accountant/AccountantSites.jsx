@@ -152,7 +152,7 @@ const AccountantSites = () => {
                   <div className="absolute top-3 right-3 z-10">
                      <PaymentBadge nextPaymentDate={site.nextPaymentDate} />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col">

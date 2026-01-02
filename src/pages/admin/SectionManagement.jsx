@@ -21,6 +21,7 @@ import { useDeleteSection } from "../../hooks/queries/useSites"; // ← add this
 
 import Button from "../../components/common/Button";
 import SectionModal from "./SectionModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const SectionManagement = ({ site, onUpdate }) => {
@@ -31,6 +32,8 @@ const SectionManagement = ({ site, onUpdate }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sectionIdToDelete, setSectionIdToDelete] = useState(null);
 
   const handleAddSection = useCallback(() => {
     setSelectedSection(null);
@@ -43,25 +46,36 @@ const SectionManagement = ({ site, onUpdate }) => {
   }, []);
 
   const handleDeleteSection = useCallback(
-    async (sectionId) => {
-      if (!window.confirm(t("admin.sections.deleteConfirmation"))) return;
-
-      try {
-        await deleteSectionMutation.mutateAsync({
-          siteId: site._id,
-          sectionId,
-        });
-        // Success toast + parent refresh handled in mutation + onUpdate
-        onUpdate();
-      } catch (error) {
-        console.error("Delete section error:", error);
-        toast.error(t("admin.sections.failedToDelete"), {
-          duration: 5000,
-        });
-      }
+    (sectionId) => {
+      setSectionIdToDelete(sectionId);
+      setShowDeleteConfirm(true);
     },
-    [site._id, deleteSectionMutation, onUpdate, t]
+    []
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!sectionIdToDelete) return;
+
+    try {
+      await deleteSectionMutation.mutateAsync({
+        siteId: site._id,
+        sectionId: sectionIdToDelete,
+      });
+      setShowDeleteConfirm(false);
+      setSectionIdToDelete(null);
+      onUpdate();
+    } catch (error) {
+      console.error("Delete section error:", error);
+      toast.error(t("admin.sections.failedToDelete"), {
+        duration: 5000,
+      });
+    }
+  }, [site._id, deleteSectionMutation, onUpdate, sectionIdToDelete, t]);
+
+  const cancelDelete = useCallback(() => {
+    setShowDeleteConfirm(false);
+    setSectionIdToDelete(null);
+  }, []);
 
   const handleSectionClick = useCallback(
     (sectionId) => {
@@ -315,6 +329,15 @@ const SectionManagement = ({ site, onUpdate }) => {
         site={site}
         section={selectedSection}
         onSuccess={onUpdate}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t("common.confirmDelete")}
+        message={t("admin.sections.deleteConfirmation")}
+        confirmText={t("common.delete")}
       />
     </div>
   );

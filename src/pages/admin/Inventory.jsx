@@ -23,6 +23,7 @@ import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import InventoryModal from "./InventoryModal";
 import InventoryTable from "../../components/admin/InventoryTable";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
@@ -36,6 +37,8 @@ const Inventory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemIdToDelete, setItemIdToDelete] = useState(null);
 
   // React Query data
   const { data: inventoryData, isLoading } = useInventory({
@@ -85,20 +88,32 @@ const Inventory = () => {
 
   // Handlers
   const handleDelete = useCallback(
-    async (id) => {
-      if (!window.confirm(t("common.confirmDelete"))) return;
-
-      try {
-        await deleteItemMutation.mutateAsync(id);
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || t("common.errorOccurred"),
-          { duration: 5000 }
-        );
-      }
+    (id) => {
+      setItemIdToDelete(id);
+      setShowDeleteConfirm(true);
     },
-    [deleteItemMutation, t]
+    []
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!itemIdToDelete) return;
+
+    try {
+      await deleteItemMutation.mutateAsync(itemIdToDelete);
+      setShowDeleteConfirm(false);
+      setItemIdToDelete(null);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || t("common.errorOccurred"),
+        { duration: 5000 }
+      );
+    }
+  }, [deleteItemMutation, itemIdToDelete, t]);
+
+  const cancelDelete = useCallback(() => {
+    setShowDeleteConfirm(false);
+    setItemIdToDelete(null);
+  }, []);
 
   const handleAddNew = useCallback(() => {
     setSelectedItem(null);
@@ -291,6 +306,15 @@ const Inventory = () => {
         onClose={handleModalClose}
         item={selectedItem}
         // onSuccess no longer needed → invalidation is in hooks
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t("common.confirmDelete")}
+        message={t("common.confirmDelete")}
+        confirmText={t("common.delete")}
       />
     </div>
   );

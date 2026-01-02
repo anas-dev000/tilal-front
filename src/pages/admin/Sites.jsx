@@ -23,6 +23,7 @@ import SiteModal from "./SiteModal";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const Sites = () => {
@@ -35,6 +36,8 @@ const Sites = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [siteIdToDelete, setSiteIdToDelete] = useState(null);
   const pageSize = 9; // Grid layout usually looks better with multiples of 3
 
   // Debounced Search
@@ -91,19 +94,31 @@ const Sites = () => {
   }, []);
 
   const handleDelete = useCallback(
-    async (e, id) => {
+    (e, id) => {
       e.stopPropagation();
-      if (!window.confirm(t("admin.sites.deleteConfirmation"))) return;
-
-      try {
-        await deleteSiteMutation.mutateAsync(id);
-      } catch (error) {
-        console.error("Site deletion error:", error);
-        toast.error(t("admin.sites.failedToDelete"), { duration: 5000 });
-      }
+      setSiteIdToDelete(id);
+      setShowDeleteConfirm(true);
     },
-    [deleteSiteMutation, t]
+    []
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!siteIdToDelete) return;
+
+    try {
+      await deleteSiteMutation.mutateAsync(siteIdToDelete);
+      setShowDeleteConfirm(false);
+      setSiteIdToDelete(null);
+    } catch (error) {
+      console.error("Site deletion error:", error);
+      toast.error(t("admin.sites.failedToDelete"), { duration: 5000 });
+    }
+  }, [deleteSiteMutation, siteIdToDelete, t]);
+
+  const cancelDelete = useCallback(() => {
+    setShowDeleteConfirm(false);
+    setSiteIdToDelete(null);
+  }, []);
 
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
@@ -219,7 +234,7 @@ const Sites = () => {
                 )}
 
                 <div className="absolute inset-0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg px-4 py-2 flex items-center gap-2">
+                  <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white rounded-lg px-4 py-2 flex items-center gap-2">
                     <Layers className="w-5 h-5 text-primary-600" />
                     <span className="font-semibold text-gray-900">
                       {t("admin.sites.manageSections")}
@@ -328,6 +343,15 @@ const Sites = () => {
         site={selectedSite}
         clients={allClients}
         // onSuccess no longer needed → invalidation is handled in hooks
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t("common.confirmDelete")}
+        message={t("admin.sites.deleteConfirmation")}
+        confirmText={t("common.delete")}
       />
     </div>
   );

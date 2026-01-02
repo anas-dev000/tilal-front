@@ -23,7 +23,7 @@ import Loading from "../../components/common/Loading";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import WorkerModal from "./WorkerModal";
 import WorkersTable from "../../components/workers/WorkersTable";
-import ConfirmationModal from "../../components/workers/ConfirmationModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import AdminChangePasswordModal from "../../components/admin/AdminChangePasswordModal";
 
 const PAGE_SIZE = 10;

@@ -31,6 +31,7 @@ import TaskDetailModal from "./modals/TaskDetailModal";
 import FeedbackModal from "./modals/FeedbackModal";
 import MediaModal from "../../components/common/MediaModal";
 import Pagination from "../../components/common/Pagination";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 12;
@@ -65,6 +66,8 @@ const ClientPortal = () => {
   // Toast State
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showSatisfiedConfirm, setShowSatisfiedConfirm] = useState(false);
+  const [satisfiedTaskId, setSatisfiedTaskId] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -102,25 +105,31 @@ const ClientPortal = () => {
     }
   }, [selectedTask?._id, submitFeedbackMutation]);
 
-  const handleMarkSatisfied = useCallback(async (taskId) => {
-    if (
-      !window.confirm(
-        "Are you satisfied with this work? This will mark the task as completed with 5 stars."
-      )
-    ) {
-      return;
-    }
+  const handleMarkSatisfied = useCallback((taskId) => {
+    setSatisfiedTaskId(taskId);
+    setShowSatisfiedConfirm(true);
+  }, []);
+
+  const confirmSatisfied = useCallback(async () => {
+    if (!satisfiedTaskId) return;
 
     try {
-      await markSatisfiedMutation.mutateAsync(taskId);
+      await markSatisfiedMutation.mutateAsync(satisfiedTaskId);
 
       setSuccessMessage("Thank you! Task marked as satisfied ✓");
       setShowSuccessToast(true);
+      setShowSatisfiedConfirm(false);
+      setSatisfiedTaskId(null);
     } catch (error) {
       console.error("Error marking satisfied:", error);
       toast.error("Failed to mark task as satisfied", { duration: 5000 });
     }
-  }, [markSatisfiedMutation]);
+  }, [markSatisfiedMutation, satisfiedTaskId]);
+
+  const cancelSatisfiedConfirm = useCallback(() => {
+    setShowSatisfiedConfirm(false);
+    setSatisfiedTaskId(null);
+  }, []);
 
   // Handle media click
   const handleMediaClick = useCallback(
@@ -484,6 +493,17 @@ const ClientPortal = () => {
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}
         title={selectedMediaTitle}
+      />
+
+      {/* Satisfied Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showSatisfiedConfirm}
+        onClose={cancelSatisfiedConfirm}
+        onConfirm={confirmSatisfied}
+        title="Mark as Satisfied"
+        message="Are you satisfied with this work? This will mark the task as completed with 5 stars."
+        confirmText="Yes, I'm satisfied"
+        confirmVariant="success"
       />
 
       {/* Success Toast */}

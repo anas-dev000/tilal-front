@@ -21,6 +21,7 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const MyTasks = () => {
   const { t } = useTranslation();
@@ -28,6 +29,8 @@ const MyTasks = () => {
 
   const [filter, setFilter] = useState("all");
   const [startingTaskId, setStartingTaskId] = useState(null);
+  const [showLocationConfirm, setShowLocationConfirm] = useState(false);
+  const [taskToStartWithoutLocation, setTaskToStartWithoutLocation] = useState(null);
 
   // React Query hooks
   const { data: tasksData, isLoading: loading, error } = useTasks();
@@ -60,10 +63,9 @@ const MyTasks = () => {
     [tasks]
   );
 
-  // Stable callback for starting task
   const handleStartTask = useCallback(
     async (taskId, e) => {
-      e.stopPropagation();
+      if (e) e.stopPropagation();
       setStartingTaskId(taskId);
 
       const getLocation = () =>
@@ -79,6 +81,22 @@ const MyTasks = () => {
           });
         });
 
+      const startWithoutLocation = async (id) => {
+        try {
+          await startTaskMutation.mutateAsync({
+            id,
+            data: {},
+          });
+          toast.error("Task started (location not saved)!", {
+            duration: 5000,
+          });
+        } catch (err) {
+          toast.error("Failed to start task.");
+        } finally {
+          setStartingTaskId(null);
+        }
+      };
+
       try {
         const position = await getLocation();
         await startTaskMutation.mutateAsync({
@@ -89,34 +107,53 @@ const MyTasks = () => {
           },
         });
         toast.success("تم فتح المهمة", { duration: 8000 });
+        setStartingTaskId(null);
       } catch (locationError) {
         if (locationError.code === 1) {
           toast.error(
             "Location access denied. Please enable location in your browser settings.",
             { duration: 5000 }
           );
+          setStartingTaskId(null);
         } else if (locationError.code === 2) {
-          const confirm = window.confirm(
-            "Unable to get location. Start task without location?"
-          );
-          if (confirm) {
-            await startTaskMutation.mutateAsync({
-              id: taskId,
-              data: {},
-            });
-            toast.error("Task started (location not saved)!", {
-              duration: 5000,
-            });
-          }
+          setTaskToStartWithoutLocation(taskId);
+          setShowLocationConfirm(true);
         } else {
           toast.error("Location error. Please try again.", { duration: 5000 });
+          setStartingTaskId(null);
         }
-      } finally {
-        setStartingTaskId(null);
       }
     },
     [startTaskMutation]
   );
+
+  const confirmStartWithoutLocation = useCallback(async () => {
+    if (!taskToStartWithoutLocation) return;
+    
+    // We need to re-define the logic or call handleStartTask differently
+    // Actually, we can just call the mutation directly here
+    try {
+      await startTaskMutation.mutateAsync({
+        id: taskToStartWithoutLocation,
+        data: {},
+      });
+      toast.error("Task started (location not saved)!", {
+        duration: 5000,
+      });
+    } catch (err) {
+      toast.error("Failed to start task.");
+    } finally {
+      setShowLocationConfirm(false);
+      setTaskToStartWithoutLocation(null);
+      setStartingTaskId(null);
+    }
+  }, [startTaskMutation, taskToStartWithoutLocation]);
+
+  const cancelLocationConfirm = useCallback(() => {
+    setShowLocationConfirm(false);
+    setTaskToStartWithoutLocation(null);
+    setStartingTaskId(null);
+  }, []);
 
   // Memoized status color getter
   const getStatusColor = useCallback((status) => {
@@ -410,6 +447,15 @@ const MyTasks = () => {
           </Card>
         ))}
       </div>
+
+      <ConfirmationModal
+        isOpen={showLocationConfirm}
+        onClose={cancelLocationConfirm}
+        onConfirm={confirmStartWithoutLocation}
+        title="Location Unreachable"
+        message="Unable to get location. Start task without location?"
+        confirmText={t("common.confirm")}
+      />
 
       {filteredTasks.length === 0 && <EmptyState filter={filter} />}
     </div>

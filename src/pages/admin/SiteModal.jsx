@@ -23,6 +23,7 @@ import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import ImageUpload from "../../components/common/ImageUpload";
 import ReactSelect from "react-select";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 
 const SiteModal = ({ isOpen, onClose, site, clients }) => {
@@ -33,6 +34,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
   const deleteImageMutation = useDeleteImage();
 
   const [deletingCover, setDeletingCover] = useState(false);
+  const [showDeleteCoverConfirm, setShowDeleteCoverConfirm] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -111,14 +113,13 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
   };
 
   // DELETE COVER IMAGE
-  const handleDeleteCoverImage = async () => {
+  const handleDeleteCoverImage = () => {
     if (!site?.coverImage?.cloudinaryId) return;
+    setShowDeleteCoverConfirm(true);
+  };
 
-    const confirmed = window.confirm(
-      t("admin.sites.siteModal.deleteCoverConfirm")
-    );
-    if (!confirmed) return;
-
+  const confirmDeleteCover = async () => {
+    setShowDeleteCoverConfirm(false);
     setDeletingCover(true);
     try {
       await deleteImageMutation.mutateAsync({
@@ -138,6 +139,10 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
     } finally {
       setDeletingCover(false);
     }
+  };
+
+  const cancelDeleteCover = () => {
+    setShowDeleteCoverConfirm(false);
   };
 
   const handleSubmit = async (e) => {
@@ -239,7 +244,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
                 type="button"
                 onClick={handleDeleteCoverImage}
                 disabled={deletingCover}
-                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed z-10"
                 title="Delete cover image"
               >
                 {deletingCover ? (
@@ -488,6 +493,15 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
           </Button>
         </div>
       </form>
+
+      <ConfirmationModal
+        isOpen={showDeleteCoverConfirm}
+        onClose={cancelDeleteCover}
+        onConfirm={confirmDeleteCover}
+        title={t("common.confirmDelete")}
+        message={t("admin.sites.siteModal.deleteCoverConfirm")}
+        confirmText={t("common.delete")}
+      />
     </Modal>
   );
 };

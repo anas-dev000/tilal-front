@@ -15,8 +15,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import Clients from "./pages/admin/Clients";
 import Employees from "./pages/admin/Employees"; // NEW
 import Invoices from "./pages/admin/Invoices";
-// import Workers from "./pages/admin/Workers";
-// import WorkerDetails from "./pages/admin/WorkerDetails";
+import EmployeeDetails from "./pages/admin/EmployeeDetails";
 import Tasks from "./pages/admin/Tasks";
 import Inventory from "./pages/admin/Inventory";
 import AdminTaskDetail from "./pages/admin/AdminTaskDetail";
@@ -158,9 +157,17 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout>
-              {/* @todo We might want to rename WorkerDetails to EmployeeDetails */}
-              {/* <WorkerDetails /> */}
-              <Navigate to="/admin/employees" replace /> 
+              <EmployeeDetails />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/employees/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout>
+              <EmployeeDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }

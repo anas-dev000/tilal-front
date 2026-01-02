@@ -345,7 +345,7 @@ const CreateInvoice = () => {
                 </button>
               </div>
 
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 text-white text-xs rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 text-white text-xs rounded-full backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 {pdfFile.name} ({(pdfFile.size / 1024 / 1024).toFixed(2)} MB)
               </div>
             </div>
