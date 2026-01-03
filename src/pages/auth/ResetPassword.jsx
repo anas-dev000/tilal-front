@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { authAPI } from "../../services/api";
 import { Flower2, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import Button from "../../components/common/Button";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 
 const ResetPassword = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get("token");
+  const { token } = useParams();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

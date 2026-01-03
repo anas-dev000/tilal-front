@@ -103,23 +103,19 @@ const Sidebar = ({
         </div>
 
         {/* User Info */}
-        <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-              <span className="text-green-600 font-semibold text-base sm:text-lg">
-                {user?.name?.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                {user?.name}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500 capitalize truncate">
-                {t(`roles.${user?.role}`)}
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-col items-center justify-center p-6 border-b border-white/10">
+        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-3 shadow-lg">
+          <img src="/logo.png" alt="KTC Logo" className="w-12 h-12 object-contain" />
         </div>
+        <div className="text-center animate-fade-in">
+          <h1 className="text-xl font-bold text-white tracking-wide">
+            KTC
+          </h1>
+          <p className="text-xs text-primary-100 font-medium mt-1">
+            Kingdom Telal Company
+          </p>
+        </div>
+      </div>
 
         {/* Menu Items */}
         <nav className="flex-1 overflow-y-auto p-3 sm:p-4">

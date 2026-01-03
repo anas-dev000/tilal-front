@@ -121,7 +121,7 @@ const LandingPage = () => {
             <span className="text-xl font-bold text-gray-500">Garden MS</span>
           </div>
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} Garden Management System. All rights reserved.
+            © {new Date().getFullYear()} Kingdom Telal Company (KTC). All rights reserved.
           </p>
         </div>
       </footer>

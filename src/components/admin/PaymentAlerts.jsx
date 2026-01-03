@@ -44,7 +44,7 @@ const PaymentAlerts = ({ alerts }) => {
                           <span className="truncate">{site.client?.name || t("common.notFound")}</span>
                         </p>
                         <p className="text-[10px] text-gray-400 mt-2 font-black uppercase">
-                          {t("accountant.paymentAlerts.cycle")}: {site.paymentCycle ? t(`status.${site.paymentCycle.toLowerCase()}`) : t("status.monthly")}
+                          {t("accountant.paymentAlerts.cycle")}: {site.paymentCycle} {t("common.months")}
                         </p>
                       </div>
                       <Badge variant="danger" className="shrink-0 p-2 sm:px-3 text-[10px] sm:text-xs">
@@ -78,7 +78,7 @@ const PaymentAlerts = ({ alerts }) => {
                           <span className="truncate">{site.client?.name || t("common.notFound")}</span>
                         </p>
                         <p className="text-[10px] text-gray-400 mt-2 font-black uppercase">
-                          {t("accountant.paymentAlerts.cycle")}: {site.paymentCycle}
+                          {t("accountant.paymentAlerts.cycle")}: {site.paymentCycle} {t("common.months")}
                         </p>
                       </div>
                       <Badge variant="warning" className="shrink-0 p-2 sm:px-3 text-[10px] sm:text-xs">

@@ -78,7 +78,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<WorkerLogin />} />
       <Route path="/client-login" element={<ClientLogin />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       {/* Client Routes */}
       <Route

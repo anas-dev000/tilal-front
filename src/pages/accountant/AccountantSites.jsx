@@ -21,6 +21,7 @@ import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import { toast } from "sonner";
 import EditCycleModal from "../../components/accountant/EditCycleModal";
+import PaymentBadge from "../../components/common/PaymentBadge";
 
 const AccountantSites = () => {
   const { t } = useTranslation();
@@ -180,7 +181,7 @@ const AccountantSites = () => {
                     <div>
                       <p className="text-gray-400 mb-0.5">{t("accountant.cycle")}</p>
                       <p className="font-bold text-gray-700 capitalize">
-                        {site.paymentCycle ? t(`status.${site.paymentCycle.toLowerCase()}`) : t("status.monthly")}
+                        {site.paymentCycle || 1} {t("common.months", "Months")}
                       </p>
                     </div>
                   </div>
