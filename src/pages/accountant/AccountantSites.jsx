@@ -1,7 +1,15 @@
 // src/pages/accountant/AccountantSites.jsx
 import { useState, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, MapPin, Layers, Phone, Calendar, Edit2, ChevronRight } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Layers,
+  Phone,
+  Calendar,
+  Edit2,
+  ChevronRight,
+} from "lucide-react";
 import Select from "react-select";
 import Pagination from "../../components/common/Pagination";
 import { useNavigate } from "react-router-dom";
@@ -10,16 +18,13 @@ import useDebounce from "../../hooks/useDebounce"; // Import debounce hook
 const PAGE_SIZE = 9; // 3x3 grid
 
 // React Query hooks
-import { 
-  useAccountantSites, 
+import {
+  useAccountantSites,
   useAccountantClients,
-  useAccountantUpdateSite 
 } from "../../hooks/queries/useInvoices";
 
 import Button from "../../components/common/Button";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
-import Loading from "../../components/common/Loading";
-import { toast } from "sonner";
 import EditCycleModal from "../../components/accountant/EditCycleModal";
 import PaymentBadge from "../../components/common/PaymentBadge";
 
@@ -31,9 +36,9 @@ const AccountantSites = () => {
   const [clientFilter, setClientFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSiteForEdit, setSelectedSiteForEdit] = useState(null);
-  
+
   const navigate = useNavigate();
-  
+
   // Debounced Search
   const debouncedSearch = useDebounce(searchTerm, 500);
 
@@ -42,17 +47,15 @@ const AccountantSites = () => {
     page: currentPage,
     limit: PAGE_SIZE,
     search: debouncedSearch, // Use debounced value
-    client: clientFilter === "all" ? undefined : clientFilter
+    client: clientFilter === "all" ? undefined : clientFilter,
   });
 
-  const { data: clientsData, isLoading: clientsLoading } = useAccountantClients();
-  const allClients = clientsData?.data || [];
+  const { data: clientsData, isLoading: clientsLoading } =
+    useAccountantClients();
 
   const allSites = sitesData?.data || [];
   const totalCount = sitesData?.total || 0;
   const totalPages = sitesData?.totalPages || 0;
-
-
 
   const handleClientFilterChange = (selected) => {
     setClientFilter(selected.value);
@@ -64,18 +67,29 @@ const AccountantSites = () => {
     setCurrentPage(1);
   };
 
-  const clientOptions = useMemo(() => [
-    { value: "all", label: t("accountant.filterByClient") }, // Using existing key for 'All' or generic
-    ...allClients.map(c => ({ value: c._id, label: c.name }))
-  ], [allClients, t]);
+  const clientOptions = useMemo(() => {
+    const allClients = clientsData?.data || [];
+    return [
+      { value: "all", label: t("accountant.filterByClient") }, // Using existing key for 'All' or generic
+      ...allClients.map((c) => ({ value: c._id, label: c.name })),
+    ];
+  }, [clientsData?.data, t]);
 
   // Only show full screen loading on initial load of sites or clients
   if ((sitesLoading && !sitesData) || clientsLoading) {
     return (
       <div className="p-6 max-w-[1600px] mx-auto space-y-8">
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          <Skeleton variant="rectangle" className="w-full md:w-96" height="48px" />
-          <Skeleton variant="rectangle" className="w-full md:w-72" height="48px" />
+          <Skeleton
+            variant="rectangle"
+            className="w-full md:w-96"
+            height="48px"
+          />
+          <Skeleton
+            variant="rectangle"
+            className="w-full md:w-72"
+            height="48px"
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CardSkeleton />
@@ -114,12 +128,12 @@ const AccountantSites = () => {
             styles={{
               control: (base) => ({
                 ...base,
-                borderRadius: '0.75rem',
-                padding: '0.25rem',
-                borderColor: '#e5e7eb',
-                backgroundColor: '#f9fafb99'
+                borderRadius: "0.75rem",
+                padding: "0.25rem",
+                borderColor: "#e5e7eb",
+                backgroundColor: "#f9fafb99",
               }),
-              menuPortal: (base) => ({ ...base, zIndex: 9999 })
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
             }}
             menuPortalTarget={document.body}
           />
@@ -142,29 +156,37 @@ const AccountantSites = () => {
                 {/* Cover Image Placeholder or Real */}
                 <div className="h-44 bg-gray-50 flex items-center justify-center relative overflow-hidden">
                   {site.coverImage?.url ? (
-                    <img src={site.coverImage.url} alt={site.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img
+                      src={site.coverImage.url}
+                      alt={site.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
                   ) : (
                     <div className="bg-green-50 w-full h-full flex items-center justify-center">
                       <MapPin className="w-12 h-12 text-green-200" />
                     </div>
                   )}
-                  
+
                   {/* Payment Badge */}
                   <div className="absolute top-3 right-3 z-10">
-                     <PaymentBadge nextPaymentDate={site.nextPaymentDate} />
+                    <PaymentBadge nextPaymentDate={site.nextPaymentDate} />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-xl text-gray-900 truncate leading-tight">{site.name}</h3>
+                    <h3 className="font-bold text-xl text-gray-900 truncate leading-tight">
+                      {site.name}
+                    </h3>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <p className="text-sm text-gray-500 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-green-500 shrink-0" />
-                      <span className="truncate">{site.location?.city} - {site.location?.address}</span>
+                      <span className="truncate">
+                        {site.location?.city} - {site.location?.address}
+                      </span>
                     </p>
 
                     <p className="text-sm text-gray-500 flex items-center gap-2">
@@ -175,13 +197,21 @@ const AccountantSites = () => {
 
                   <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm bg-gray-50/50 p-3 rounded-xl border border-gray-100 mb-4">
                     <div>
-                      <p className="text-gray-400 mb-0.5">{t("accountant.modal.client")}</p>
-                      <p className="font-bold text-gray-700 truncate">{site.client?.name || "N/A"}</p>
+                      <p className="text-gray-400 mb-0.5">
+                        {t("accountant.modal.client")}
+                      </p>
+                      <p className="font-bold text-gray-700 truncate">
+                        {site.client?.name || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 mb-0.5">{t("accountant.cycle")}</p>
+                      <p className="text-gray-400 mb-0.5">
+                        {t("accountant.cycle")}
+                      </p>
                       <p className="font-bold text-gray-700 capitalize">
-                        {site.paymentCycle || 1} {t("common.months", "Months")}
+                        {site.paymentCycle
+                          ? t(`status.${site.paymentCycle.toLowerCase()}`)
+                          : t("status.monthly")}
                       </p>
                     </div>
                   </div>
@@ -192,20 +222,23 @@ const AccountantSites = () => {
                       {site.sections?.length || 0} {t("accountant.sections")}
                     </div>
                     <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
-                      {t("accountant.nextPayment")}: {site.nextPaymentDate ? new Date(site.nextPaymentDate).toLocaleDateString() : t("accountant.notSet")}
+                      {t("accountant.nextPayment")}:{" "}
+                      {site.nextPaymentDate
+                        ? new Date(site.nextPaymentDate).toLocaleDateString()
+                        : t("accountant.notSet")}
                     </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-gray-100 flex gap-3">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => navigate(`/accountant/sites/${site._id}`)}
                       className="flex-1 text-xs py-2 h-auto"
                     >
                       {t("common.viewDetails")}
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       onClick={() => setSelectedSiteForEdit(site)}
                       className="text-xs py-2 h-auto px-2"
                       title={t("accountant.editCycle")}
