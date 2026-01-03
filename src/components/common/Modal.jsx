@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   // Prevent body scroll when modal is open
@@ -31,13 +32,13 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto"
+      className="fixed inset-0 z-[9999] overflow-y-auto"
       style={{ pointerEvents: "auto" }}
     >
       <div
-        className="fixed inset-0 bg-gray-900/20 backdrop-blur-[2px] transition-opacity"
+        className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
         onClick={handleOverlayClick}
         aria-hidden="true"
         style={{ pointerEvents: "auto" }}
@@ -70,7 +71,8 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
