@@ -7,10 +7,10 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
-
   LogOut,
   Lock,
-  ChevronDown
+  ChevronDown,
+  User
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -18,22 +18,26 @@ import { useAuth } from "../contexts/AuthContext";
 import { notificationsAPI } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
-import NavbarBackButton from "../components/common/NavbarBackButton";
 import ChangePasswordModal from "../components/common/ChangePasswordModal";
 import { useSocket } from "../context/SocketContext";
-
-let pollInterval = null;
+import useClickOutside from "../hooks/useClickOutside";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Click Outside Hook
+  const notificationsRef = useClickOutside(() => setShowNotifications(false));
+  const profileRef = useClickOutside(() => setShowProfileMenu(false));
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -147,184 +151,230 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
     return `${Math.floor(seconds / 86400)}${t("navbar.daysAgo")}`;
   };
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  // Dropdown Animation Variants
+  const dropdownVariants = {
+    hidden: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.2 } },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25 } },
+    exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.2 } }
+  };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-      <div className="px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-40 transition-all duration-300">
+      <div className="px-4 md:px-6 py-3 flex items-center justify-between">
+        
+        {/* Left Section: Menu Toggle */}
+        <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+            className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100/80 hover:text-gray-900 transition-all shrink-0 active:scale-95"
           >
-            <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+            <Menu className="w-6 h-6" />
           </button>
 
           <button
             onClick={onDesktopToggle}
-            className="hidden lg:flex p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0 items-center"
+            className="hidden lg:flex p-2 rounded-xl text-gray-500 hover:bg-gray-100/80 hover:text-gray-900 transition-all shrink-0 active:scale-95"
           >
             {isRTL ? (
-              isDesktopSidebarOpen ? (
-                <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-              ) : (
-                <ChevronsLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-              )
+              isDesktopSidebarOpen ? <ChevronsRight className="w-5 h-5" /> : <ChevronsLeft className="w-5 h-5" />
             ) : isDesktopSidebarOpen ? (
               ""
             ) : (
-              <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+              <ChevronsRight className="w-5 h-5" />
             )}
           </button>
-
-          <div className="hidden lg:block w-5 h-5 sm:w-6 sm:h-6" />
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="relative">
+        {/* Right Section: Actions */}
+        <div className="flex items-center gap-3 sm:gap-5">
+          
+          <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100/80 hover:text-gray-900 transition-all shrink-0 active:scale-95 hidden sm:flex"
+              title={t("common.back", "Back")}
+          >
+             <ArrowLeft className="w-5 h-5" />
+          </button>
+          
+          <LanguageSwitcher />
+
+          {/* Notifications */}
+          <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+              className={`relative p-2.5 rounded-xl transition-all duration-200 active:scale-95 border border-transparent
+                ${showNotifications ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}
+              `}
             >
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+              <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+                <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
               )}
             </button>
-            {showNotifications && (
-              <div
-                className={`absolute ${
-                  isRTL ? "left-0" : "right-0"
-                } mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-w-[calc(100vw-2rem)]`}
-              >
-                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                    {t("navbar.notifications")}
-                  </h3>
-                  <button
-                    onClick={() => setShowNotifications(false)}
-                    className="text-gray-400 hover:text-gray-600 shrink-0"
-                  >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                </div>
-                <div className="max-h-80 sm:max-h-96 overflow-y-auto notification-scroll">
-                  {notifications.length === 0 ? (
-                    <div className="p-6 text-center text-gray-500">
-                      <Bell className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-                      <p className="text-xs sm:text-sm">
-                        {t("navbar.noNotifications")}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  variants={dropdownVariants}
+                  className={`absolute top-full mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden ${isRTL ? "left-0" : "right-0"}`}
+                >
+                  <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-gray-50/50">
+                    <h3 className="font-bold text-gray-800 text-sm">
+                      {t("navbar.notifications")}
+                    </h3>
+                    <div className="flex items-center gap-2">
                       {unreadCount > 0 && (
-                        <div className="p-2 border-b border-gray-100">
-                          <button
+                         <button
                             onClick={markAllAsRead}
-                            className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 w-full text-center py-1"
+                            className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                           >
                             {t("navbar.markAllAsRead")}
                           </button>
-                        </div>
                       )}
-                      {notifications.map((n) => (
-                        <div
-                          key={n._id}
-                          className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                            !n.read ? "bg-blue-50" : ""
-                          }`}
-                          onClick={() => handleNotificationClick(n)}
-                        >
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <span className="text-xl sm:text-2xl shrink-0">
-                              {n.type === 'invoice-generated' ? '📄' : 
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="max-h-[28rem] overflow-y-auto custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center flex flex-col items-center justify-center text-gray-400">
+                        <div className="bg-gray-50 p-4 rounded-full mb-3">
+                          <Bell className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <p className="text-sm font-medium">{t("navbar.noNotifications")}</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {notifications.map((n) => (
+                          <div
+                            key={n._id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-4 ${!n.read ? "bg-emerald-50/30" : ""}`}
+                          >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                n.type === 'invoice-generated' ? 'bg-blue-100 text-blue-600' : 
+                                n.type === 'task-assigned' ? 'bg-purple-100 text-purple-600' : 
+                                n.type === 'task-completed' ? 'bg-green-100 text-green-600' : 
+                                n.type === 'low-stock' ? 'bg-orange-100 text-orange-600' : 
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                              {n.type === 'invoice-generated' ? <DollarSignSymbol className="w-5 h-5"/> : 
                                n.type === 'task-assigned' ? '📋' : 
                                n.type === 'task-completed' ? '✅' : 
-                               n.type === 'low-stock' ? '⚠️' : 
-                               n.type === 'feedback-received' ? '⭐' : '🔔'}
-                            </span>
+                               n.type === 'low-stock' ? '⚠️' : '🔔'}
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
-                                {n.subject}
-                              </p>
-                              <p className="text-[10px] sm:text-xs text-gray-600 mb-1">
-                                {n.message}
-                              </p>
-                              <p className="text-[10px] sm:text-xs text-gray-400">
-                                {getTimeAgo(n.createdAt)}
-                              </p>
+                               <div className="flex justify-between items-start mb-1">
+                                  <p className={`text-sm font-semibold truncate ${!n.read ? "text-gray-900" : "text-gray-700"}`}>
+                                    {n.subject}
+                                  </p>
+                                  <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
+                                    {getTimeAgo(n.createdAt)}
+                                  </span>
+                               </div>
+                               <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                 {n.message}
+                               </p>
                             </div>
                             {!n.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-2" />
+                              <div className="self-center">
+                                <span className="block w-2 h-2 bg-emerald-500 rounded-full" />
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-                {notifications.length > 0 && (
-                  <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
-                    <button
-                      onClick={() => setShowNotifications(false)}
-                      className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 py-1"
-                    >
-                      {t("navbar.viewAllNotifications")}
-                    </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                  
+                  {notifications.length > 0 && (
+                     <div className="p-3 bg-gray-50/50 border-t border-gray-100 text-center">
+                        <button 
+                          onClick={() => setShowNotifications(false)}
+                          className="text-xs font-semibold text-gray-500 hover:text-emerald-600 transition-colors"
+                        >
+                           {t("navbar.viewAllNotifications")}
+                        </button>
+                     </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           
-          <div className="relative">
+          {/* User Profile */}
+          <div className="relative" ref={profileRef}>
              <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`flex items-center gap-3 p-1 pr-3 rounded-full border transition-all duration-200 active:scale-95
+                   ${showProfileMenu ? "border-emerald-200 bg-emerald-50/50 ring-2 ring-emerald-100" : "border-gray-200 hover:bg-gray-50 hover:border-gray-300 bg-white"}
+              `}
             >
-              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold shadow-md">
                  {user?.name?.charAt(0).toUpperCase()}
               </div>
-              <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+              <div className="hidden md:flex flex-col items-start pr-1">
+                 <span className="text-xs font-bold text-gray-700 leading-none mb-0.5 max-w-[80px] truncate">{user?.name}</span>
+                 <span className="text-[10px] text-gray-400 font-medium uppercase">{t(`roles.${user?.role}`)}</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${showProfileMenu ? "rotate-180" : ""}`} />
             </button>
 
-            {showProfileMenu && (
-              <div className={`absolute top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 ${isRTL ? "left-0" : "right-0"}`}>
-                <div className="p-3 border-b border-gray-100">
-                  <p className="font-medium text-gray-900 truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{t(`roles.${user?.role}`)}</p>
-                </div>
-                <div className="p-1">
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setIsChangePasswordOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    <Lock className="w-4 h-4" />
-                    {t("auth.changePassword")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      logout();
-                      navigate("/");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {t("common.logout")}
-                  </button>
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  variants={dropdownVariants}
+                  className={`absolute top-full mt-3 w-56 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden ${isRTL ? "left-0" : "right-0"}`}
+                >
+                  <div className="p-4 bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+                    <p className="font-bold text-gray-900 truncate">{user?.name}</p>
+                    <p className="text-xs text-emerald-600 font-medium mt-0.5">{user?.email}</p>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setIsChangePasswordOpen(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      {t("auth.changePassword")}
+                    </button>
+                    
+                    <div className="h-px bg-gray-100 my-1 mx-2" />
+                    
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout();
+                        navigate("/");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-all group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-red-50 text-red-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                         <LogOut className="w-4 h-4" />
+                      </div>
+                      {t("common.logout")}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <LanguageSwitcher />
         </div>
       </div>
       
@@ -336,5 +386,12 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
     </nav>
   );
 };
+
+// Helper component for the Dollar Sign in notifications to avoid icon conflict if needed, 
+// though we can just use Lucide's. 
+// Using a simple text for now or import it from lucide if not imported.
+const DollarSignSymbol = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+);
 
 export default Navbar;

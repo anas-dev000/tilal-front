@@ -12,14 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
 const LandingPage = () => {
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const leafSizes = [
     "w-4 h-4",
@@ -46,63 +39,7 @@ const LandingPage = () => {
 
   return (
     <>
-      {/* Loading Screen */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50"
-          >
-            <div className="text-center">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                className="flex flex-col items-center gap-8"
-              >
-                <motion.img
-                  src="/logo.PNG"
-                  alt="Tilal Logo"
-                  className="h-28 w-28 rounded-xl object-contain bg-white shadow-2xl"
-                  animate={{ y: [0, -25, 0] }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-                <motion.span
-                  className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  Tilal
-                </motion.span>
-                <motion.div
-                  className="w-80 h-1.5 bg-gray-200 rounded-full overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
-                    initial={{ x: "-100%" }}
-                    animate={{ x: "100%" }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                </motion.div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 font-sans text-gray-900 overflow-x-hidden relative">
         {/* Animated Background */}
@@ -319,9 +256,9 @@ const LandingPage = () => {
           <p className="text-gray-400 text-sm">
             © {new Date().getFullYear()} Kingdom Telal Company (KTC). All rights reserved.
           </p>
-        </div>
       </footer>
     </div>
+    </>
   );
 };
 

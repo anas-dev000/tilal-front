@@ -210,7 +210,9 @@ const AccountantSites = () => {
                       </p>
                       <p className="font-bold text-gray-700 capitalize">
                         {site.paymentCycle
-                          ? t(`status.${site.paymentCycle.toLowerCase()}`)
+                          ? (typeof site.paymentCycle === 'string' 
+                              ? t(`status.${site.paymentCycle.toLowerCase()}`)
+                              : `${site.paymentCycle} ${t('common.months', 'Months')}`)
                           : t("status.monthly")}
                       </p>
                     </div>
