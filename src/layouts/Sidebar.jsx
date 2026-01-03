@@ -118,7 +118,7 @@ const Sidebar = ({
           <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50/30">
              <div className="flex items-center gap-3">
               <div className="bg-white p-1 rounded-xl shadow-sm">
-                 <img src="/logo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
+                 <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">

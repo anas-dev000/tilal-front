@@ -70,7 +70,7 @@ const Login = () => {
         {/* Logo & Title */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg mx-auto ring-4 ring-primary-50">
-            <img src="/logo.PNG" alt="KTC" className="w-20 h-20 object-contain" />
+            <img src="/logo.png" alt="KTC" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
             Kingdom Telal Company

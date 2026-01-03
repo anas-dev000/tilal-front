@@ -93,7 +93,7 @@ const LandingPage = () => {
             <div className="flex justify-between h-20 items-center">
               <div className="flex items-center gap-4">
                 <motion.img
-                  src="/logo.PNG"
+                  src="/logo.png"
                   alt="Tilal Logo"
                   className="h-12 w-12 rounded-lg object-contain bg-white shadow-md"
                   whileHover={{ scale: 1.15, rotate: 15 }}
@@ -240,7 +240,7 @@ const LandingPage = () => {
               whileHover={{ scale: 1.1 }}
             >
               <img
-                src="/logo.PNG"
+                src="/logo.png"
                 alt="Tilal Logo"
                 className="h-12 w-12 rounded-lg object-contain shadow-lg"
               />
