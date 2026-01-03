@@ -187,7 +187,7 @@ api.interceptors.response.use(
 
     console.groupEnd();
 
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes("/login")) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       sessionStorage.removeItem("token"); // Also clear session storage
@@ -206,22 +206,9 @@ export const authAPI = {
   updatePassword: (data) => api.put("/auth/update-password", data),
   
   // Password Reset (MOCKED)
-  forgotPassword: (email) => {
-    console.log("Mocking forgot password request for:", email);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ data: { success: true, message: "Reset email sent" } });
-      }, 1000);
-    });
-  },
-  resetPassword: (token, password) => {
-    console.log("Mocking reset password for token:", token);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ data: { success: true, message: "Password reset successful" } });
-      }, 1000);
-    });
-  },
+  // Password Reset (REAL)
+  forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
+  resetPassword: (token, password) => api.put(`/auth/reset-password/${token}`, { password }),
 };
 
 //  Client Auth & API (UNIFIED)

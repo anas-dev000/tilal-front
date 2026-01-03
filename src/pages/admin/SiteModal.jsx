@@ -48,7 +48,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
       googleMapsLink: "",
     },
     notes: "",
-    paymentCycle: "monthly",
+    paymentCycle: 1,
     lastPaymentDate: "",
     nextPaymentDate: "",
   });
@@ -72,7 +72,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
           googleMapsLink: site.location?.googleMapsLink || "",
         },
         notes: site.notes || "",
-        paymentCycle: site.paymentCycle || "monthly",
+        paymentCycle: site.paymentCycle || 1,
         lastPaymentDate: site.lastPaymentDate ? new Date(site.lastPaymentDate).toISOString().split('T')[0] : "",
         nextPaymentDate: site.nextPaymentDate ? new Date(site.nextPaymentDate).toISOString().split('T')[0] : "",
       });
@@ -86,7 +86,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
         description: "",
         location: { address: "", city: "", googleMapsLink: "" },
         notes: "",
-        paymentCycle: "monthly",
+        paymentCycle: 1,
         lastPaymentDate: "",
         nextPaymentDate: "",
       });
@@ -176,7 +176,7 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
       );
 
       // Payment Cycle Information
-      formDataToSend.append("paymentCycle", formData.paymentCycle || "monthly");
+      formDataToSend.append("paymentCycle", formData.paymentCycle || 1);
       if (formData.lastPaymentDate) {
         formDataToSend.append("lastPaymentDate", formData.lastPaymentDate);
       }
@@ -329,28 +329,17 @@ const SiteModal = ({ isOpen, onClose, site, clients }) => {
         />
 
         {/* Payment Cycle */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Payment Cycle
-          </label>
-          <Select
-            value={[
-              { value: "monthly", label: "Monthly" },
-              { value: "quarterly", label: "Quarterly" },
-              { value: "semi-annually", label: "Semi-Annually" },
-              { value: "annually", label: "Annually" },
-            ].find((opt) => opt.value === formData.paymentCycle)}
-            onChange={(opt) =>
-              setFormData({ ...formData, paymentCycle: opt.value })
-            }
-            options={[
-              { value: "monthly", label: "Monthly" },
-              { value: "quarterly", label: "Quarterly" },
-              { value: "semi-annually", label: "Semi-Annually" },
-              { value: "annually", label: "Annually" },
-            ]}
-          />
-        </div>
+        <Input
+          label="Payment Cycle (Months)"
+          type="number"
+          min="1"
+          value={formData.paymentCycle}
+          onChange={(e) =>
+            setFormData({ ...formData, paymentCycle: e.target.value })
+          }
+          placeholder="e.g., 1 for Monthly"
+          required
+        />
 
         {/* Payment Dates */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

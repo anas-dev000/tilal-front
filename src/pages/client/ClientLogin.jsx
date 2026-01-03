@@ -62,13 +62,13 @@ const ClientLogin = () => {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-primary-50">
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4 ring-4 ring-primary-50">
-            <UserCircle className="w-8 h-8 text-primary-600" />
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg mx-auto ring-4 ring-primary-50">
+            <img src="/logo.png" alt="KTC" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Client Portal
+            Kingdom Telal Company
           </h1>
-          <p className="text-gray-500 text-sm">Access your garden dashboard</p>
+          <p className="text-gray-500 text-sm">Client Portal</p>
         </div>
 
         {/* Login Form */}

@@ -207,7 +207,7 @@ const AccountantSiteDetails = () => {
                 <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
                   <div className="flex items-center gap-2">
                     <span className="font-bold capitaliz text-gray-700">
-                      {site.paymentCycle ? t(`status.${site.paymentCycle.toLowerCase()}`) : t("status.monthly")}
+                      {site.paymentCycle} {t("common.months")}
                     </span>
                     <button 
                       onClick={() => setIsEditCycleModalOpen(true)}

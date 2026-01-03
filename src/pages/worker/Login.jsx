@@ -69,13 +69,13 @@ const Login = () => {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-gray-100">
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-50 rounded-full mb-4 ring-4 ring-primary-50/50">
-            <Flower2 className="w-8 h-8 text-primary-600" />
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg mx-auto ring-4 ring-primary-50">
+            <img src="/logo.png" alt="KTC" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome Back
+            Kingdom Telal Company
           </h1>
-          <p className="text-gray-500 text-sm">Staff Portal Login</p>
+          <p className="text-gray-500 text-sm">Staff Portal</p>
         </div>
 
         {/* Login Form */}
