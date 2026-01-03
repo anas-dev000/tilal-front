@@ -24,7 +24,7 @@ import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const MyTasks = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [filter, setFilter] = useState("all");
@@ -71,7 +71,7 @@ const MyTasks = () => {
       const getLocation = () =>
         new Promise((resolve, reject) => {
           if (!navigator.geolocation) {
-            reject(new Error("Geolocation not supported"));
+            reject(new Error(t("worker.errors.geolocationNotSupported")));
             return;
           }
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -87,11 +87,11 @@ const MyTasks = () => {
             id,
             data: {},
           });
-          toast.error("Task started (location not saved)!", {
+          toast.error(t("worker.taskStartedNoLocation"), {
             duration: 5000,
           });
         } catch (err) {
-          toast.error("Failed to start task.");
+          toast.error(t("worker.errors.failedToStart"));
         } finally {
           setStartingTaskId(null);
         }
@@ -106,12 +106,12 @@ const MyTasks = () => {
             longitude: position.coords.longitude,
           },
         });
-        toast.success("تم فتح المهمة", { duration: 8000 });
+        toast.success(t("worker.taskOpened"), { duration: 8000 });
         setStartingTaskId(null);
       } catch (locationError) {
         if (locationError.code === 1) {
           toast.error(
-            "Location access denied. Please enable location in your browser settings.",
+            t("worker.errors.locationDenied"),
             { duration: 5000 }
           );
           setStartingTaskId(null);
@@ -119,7 +119,7 @@ const MyTasks = () => {
           setTaskToStartWithoutLocation(taskId);
           setShowLocationConfirm(true);
         } else {
-          toast.error("Location error. Please try again.", { duration: 5000 });
+          toast.error(t("worker.errors.locationError"), { duration: 5000 });
           setStartingTaskId(null);
         }
       }
@@ -137,11 +137,11 @@ const MyTasks = () => {
         id: taskToStartWithoutLocation,
         data: {},
       });
-      toast.error("Task started (location not saved)!", {
+      toast.error(t("worker.taskStartedNoLocation"), {
         duration: 5000,
       });
     } catch (err) {
-      toast.error("Failed to start task.");
+      toast.error(t("worker.errors.failedToStart"));
     } finally {
       setShowLocationConfirm(false);
       setTaskToStartWithoutLocation(null);
@@ -227,7 +227,7 @@ const MyTasks = () => {
   if (error) {
     return (
       <div className="text-center py-12 text-red-600">
-        {error.message || "Failed to load tasks"}
+        {error.message || t("worker.errors.failedToLoad")}
       </div>
     );
   }
@@ -239,31 +239,31 @@ const MyTasks = () => {
           {t("worker.myTasks")}
         </h1>
         <p className="text-gray-600">
-          {stats.active} active tasks • {stats.completed} completed
+          {t("worker.stats.activeCount", { count: stats.active })} • {t("worker.stats.completedCount", { count: stats.completed })}
         </p>
       </div>
 
       {tasks.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Your Statistics
+            {t("worker.myStats")}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-              <p className="text-xs text-blue-800">Total Tasks</p>
+              <p className="text-xs text-blue-800">{t("worker.stats.total")}</p>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
               <p className="text-2xl font-bold text-purple-600">
                 {stats.inProgress}
               </p>
-              <p className="text-xs text-purple-800">In Progress</p>
+              <p className="text-xs text-purple-800">{t("worker.stats.inProgress")}</p>
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">
                 {stats.completed}
               </p>
-              <p className="text-xs text-green-800">Completed</p>
+              <p className="text-xs text-green-800">{t("worker.stats.completed")}</p>
             </div>
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <p className="text-2xl font-bold text-orange-600">
@@ -272,7 +272,7 @@ const MyTasks = () => {
                   : 0}
                 %
               </p>
-              <p className="text-xs text-orange-800">Completion Rate</p>
+              <p className="text-xs text-orange-800">{t("worker.stats.completionRate")}</p>
             </div>
           </div>
         </div>
@@ -284,35 +284,35 @@ const MyTasks = () => {
           onClick={() => handleFilterChange("all")}
           size="sm"
         >
-          All ({stats.total})
+          {t("worker.filters.all")} ({stats.total})
         </Button>
         <Button
           variant={filter === "active" ? "primary" : "secondary"}
           onClick={() => handleFilterChange("active")}
           size="sm"
         >
-          Active ({stats.active})
+          {t("worker.filters.active")} ({stats.active})
         </Button>
         <Button
           variant={filter === "assigned" ? "primary" : "secondary"}
           onClick={() => handleFilterChange("assigned")}
           size="sm"
         >
-          Assigned ({stats.assigned})
+          {t("worker.filters.assigned")} ({stats.assigned})
         </Button>
         <Button
           variant={filter === "in-progress" ? "primary" : "secondary"}
           onClick={() => handleFilterChange("in-progress")}
           size="sm"
         >
-          In Progress ({stats.inProgress})
+          {t("worker.filters.inProgress")} ({stats.inProgress})
         </Button>
         <Button
           variant={filter === "completed" ? "primary" : "secondary"}
           onClick={() => handleFilterChange("completed")}
           size="sm"
         >
-          Completed ({stats.completed})
+          {t("worker.filters.completed")} ({stats.completed})
         </Button>
       </div>
 
@@ -398,7 +398,7 @@ const MyTasks = () => {
                   }}
                   disabled={startingTaskId === task._id}
                 >
-                  {startingTaskId === task._id ? "Starting..." : "Start Task"}
+                  {startingTaskId === task._id ? t("worker.starting") : t("worker.startTask")}
                 </Button>
               )}
 
@@ -425,7 +425,7 @@ const MyTasks = () => {
                     handleNavigateToTask(task._id);
                   }}
                 >
-                  View Details
+                  {t("common.viewDetails")}
                 </Button>
               )}
 
@@ -440,7 +440,7 @@ const MyTasks = () => {
                     handleNavigateToTask(task._id);
                   }}
                 >
-                  View Details
+                  {t("common.viewDetails")}
                 </Button>
               )}
             </div>
@@ -452,8 +452,8 @@ const MyTasks = () => {
         isOpen={showLocationConfirm}
         onClose={cancelLocationConfirm}
         onConfirm={confirmStartWithoutLocation}
-        title="Location Unreachable"
-        message="Unable to get location. Start task without location?"
+        title={t("worker.locationUnreachable")}
+        message={t("worker.startWithoutLocationMsg")}
         confirmText={t("common.confirm")}
       />
 
@@ -464,7 +464,7 @@ const MyTasks = () => {
 
 // Memoized EmptyState component
 const EmptyState = memo(({ filter }) => {
-  // const { t } = useTranslation();
+  const { t } = useTranslation();
 
   return (
     <div className="text-center py-12 bg-white rounded-lg shadow-sm">
@@ -472,12 +472,12 @@ const EmptyState = memo(({ filter }) => {
         <CheckCircle className="w-10 h-10 text-gray-400" />
       </div>
       <p className="text-gray-500 text-lg font-medium mb-2">
-        {filter === "all" ? "No tasks assigned" : `No ${filter} tasks`}
+        {filter === "all" ? t("worker.empty.all") : t("worker.empty.filter", { filter: t(`worker.filters.${filter}`) })}
       </p>
       <p className="text-gray-400 text-sm">
         {filter === "completed"
-          ? "Completed tasks will appear here"
-          : "New tasks will appear here when assigned"}
+          ? t("worker.empty.completedDesc")
+          : t("worker.empty.newDesc")}
       </p>
     </div>
   );

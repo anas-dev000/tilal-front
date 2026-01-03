@@ -50,7 +50,7 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
 
       const data = response.data.data || [];
       setNotifications(data);
-      setUnreadCount(data.length); // Everything in DB is effectively unread now because we delete on read
+      setUnreadCount(data.filter(n => !n.read).length);
     } catch (error) {
       if (error.response?.status !== 429) {
         console.error("Error fetching notifications:", error);
@@ -85,12 +85,18 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
 
   const handleNotificationClick = async (n) => {
     try {
-      // 1. Delete from database (as requested)
-      await notificationsAPI.deleteNotification(n._id);
+      // 1. Mark as read in database (don't delete)
+      if (!n.read) {
+          await notificationsAPI.markAsRead(n._id);
+      }
       
-      // 2. Remove from local state
-      setNotifications(prev => prev.filter(item => item._id !== n._id));
-      setUnreadCount(prev => Math.max(0, prev - (n.read ? 0 : 1)));
+      // 2. Update local state
+      setNotifications(prev => prev.map(item => 
+        item._id === n._id ? { ...item, read: true } : item
+      ));
+      if (!n.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
 
       // 3. Navigate based on type and data
       if (n.data) {
@@ -219,7 +225,8 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
                   animate="visible"
                   exit="exit"
                   variants={dropdownVariants}
-                  className={`absolute top-full mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden ${isRTL ? "left-0" : "right-0"}`}
+                  className={`absolute top-full mt-3 w-[90vw] sm:w-[400px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 z-50 overflow-hidden 
+                    ${isRTL ? "left-[-80px] sm:left-0 origin-top-left" : "right-[-80px] sm:right-0 origin-top-right"}`}
                 >
                   <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-gray-50/50">
                     <h3 className="font-bold text-gray-800 text-sm">
@@ -257,7 +264,8 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
                           <div
                             key={n._id}
                             onClick={() => handleNotificationClick(n)}
-                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer flex gap-4 ${!n.read ? "bg-emerald-50/30" : ""}`}
+                            className={`p-4 hover:bg-gray-50 transition-all cursor-pointer flex gap-4 border-b border-gray-50 last:border-0 relative group 
+                              ${!n.read ? "bg-emerald-50/40" : ""}`}
                           >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                                 n.type === 'invoice-generated' ? 'bg-blue-100 text-blue-600' : 
@@ -295,16 +303,7 @@ const Navbar = ({ onMenuClick, onDesktopToggle, isDesktopSidebarOpen }) => {
                     )}
                   </div>
                   
-                  {notifications.length > 0 && (
-                     <div className="p-3 bg-gray-50/50 border-t border-gray-100 text-center">
-                        <button 
-                          onClick={() => setShowNotifications(false)}
-                          className="text-xs font-semibold text-gray-500 hover:text-emerald-600 transition-colors"
-                        >
-                           {t("navbar.viewAllNotifications")}
-                        </button>
-                     </div>
-                  )}
+
                 </motion.div>
               )}
             </AnimatePresence>

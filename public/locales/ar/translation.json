@@ -385,6 +385,7 @@
       "review": "المراجعة",
       "unassigned": "غير معين",
       "reviewStatus": "حالة المراجعة",
+      "voiceInstructions": "تعليمات صوتية",
       "adminReview": "مراجعة المدير "
     },
     "invoices": {
@@ -606,6 +607,43 @@
     "mediaModal": {
       "videoTitle": "معاينة الفيديو",
       "imageTitle": "معاينة الصورة"
+    },
+    "myStats": "إحصائياتك",
+    "errors": {
+      "geolocationNotSupported": "الموقع الجغرافي غير مدعوم",
+      "failedToStart": "فشل بدء المهمة",
+      "failedToLoad": "فشل تحميل المهام",
+      "locationDenied": "تم رفض الوصول للموقع. يرجى تفعيله في الإعدادات.",
+      "locationError": "خطأ في تحديد الموقع. حاول مرة أخرى.",
+      "fileTooLarge": "يجب أن يكون حجم الملف أقل من 100 ميجابايت",
+      "invalidFileType": "يرجى اختيار ملف صورة أو فيديو"
+    },
+    "locationUnreachable": "تعذر الوصول للموقع",
+    "startWithoutLocationMsg": "لا يمكن تحديد الموقع. هل تريد البدء بدونه؟",
+    "starting": "جاري البدء...",
+    "stats": {
+      "total": "إجمالي المهام",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتملة",
+      "completionRate": "معدل الإكمال",
+      "activeCount": "{{count}} مهام نشطة",
+      "completedCount": "{{count}} مكتملة"
+    },
+    "upload": "رفع",
+    "photos": "صور",
+    "workLocations": "مواقع العمل",
+    "filters": {
+      "all": "الكل",
+      "active": "نشط",
+      "assigned": "معين",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    },
+    "empty": {
+      "all": "لا توجد مهام معينة",
+      "filter": "لا توجد مهام {{filter}}",
+      "completedDesc": "ستظهر المهام المكتملة هنا",
+      "newDesc": "ستظهر المهام الجديدة هنا عند تعيينها"
     }
   },
   "client": {

@@ -559,7 +559,7 @@
     "removeMaterialConfirm": "এই উপকরণটি সরিয়ে ফেলবেন?",
     "startTask": "টাস্ক শুরু করুন",
     "completeTask": "টাস্ক সম্পূর্ণ করুন",
-    "finishTask": "টাস্ক শেষ করুن",
+    "finishTask": "টাস্ক শেষ করু",
     "uploading": "আপলোড হচ্ছে",
     "completeAllLocations": "প্রথমে সকল {{count}}টি লোকেশন সম্পূর্ণ করুন",
     "confirmMaterialsWarning": "শেষ করার আগে উপকরণ নিশ্চিত করুন",
@@ -567,7 +567,10 @@
     "mediaModal": {
       "videoTitle": "ভিডিও প্রিভিউ",
       "imageTitle": "ছবির প্রিভিউ"
-    }
+    },
+    "upload": "আপলোড",
+    "photos": "ছবি",
+    "workLocations": "কাজের সাইট"
   },
   "client": {
     "title": "ক্লায়েন্ট পোর্টাল",

@@ -50,7 +50,7 @@ api.interceptors.request.use(
       );
     }
 
-    if (config.data instanceof FormData || isUpload) {
+    if (config.data instanceof FormData) {
       console.group(
         "%cFormData / File Upload:",
         "color: #e91e63; font-weight: bold;"
@@ -192,7 +192,9 @@ api.interceptors.response.use(
       localStorage.removeItem("user");
       sessionStorage.removeItem("token"); // Also clear session storage
       sessionStorage.removeItem("user");
-      window.location.href = "/";
+      if (window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
     }
     return Promise.reject(error);
   }
@@ -290,14 +292,12 @@ export const sitesAPI = {
 export const tasksAPI = {
   getTasks: (params) => api.get("/tasks", { params }),
   getTask: (id) => api.get(`/tasks/${id}`),
-  createTask: (formData) =>
-    api.post("/tasks", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-  updateTask: (id, formData) =>
-    api.put(`/tasks/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
+  createTask: (formData) => api.post("/tasks", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
+  updateTask: (id, formData) => api.put(`/tasks/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
   deleteTask: (id) => api.delete(`/tasks/${id}`),
   startTask: (id, data) => api.post(`/tasks/${id}/start`, data),
   completeTask: (id, data) => api.post(`/tasks/${id}/complete`, data),

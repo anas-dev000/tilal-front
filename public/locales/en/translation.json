@@ -542,6 +542,43 @@
     "mediaModal": {
       "videoTitle": "Video Preview",
       "imageTitle": "Image Preview"
+    },
+    "myStats": "Your Statistics",
+    "errors": {
+      "geolocationNotSupported": "Geolocation not supported",
+      "failedToStart": "Failed to start task",
+      "failedToLoad": "Failed to load tasks",
+      "locationDenied": "Location access denied. Please enable location in your browser settings.",
+      "locationError": "Location error. Please try again.",
+      "fileTooLarge": "File size must be less than 100MB",
+      "invalidFileType": "Please select an image or video file"
+    },
+    "locationUnreachable": "Location Unreachable",
+    "startWithoutLocationMsg": "Unable to get location. Start task without location?",
+    "starting": "Starting...",
+    "stats": {
+      "total": "Total Tasks",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "completionRate": "Completion Rate",
+      "activeCount": "{{count}} active tasks",
+      "completedCount": "{{count}} completed"
+    },
+    "upload": "Upload",
+    "photos": "Photos",
+    "workLocations": "Work Locations",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "assigned": "Assigned",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "empty": {
+      "all": "No tasks assigned",
+      "filter": "No {{filter}} tasks",
+      "completedDesc": "Completed tasks will appear here",
+      "newDesc": "New tasks will appear here when assigned"
     }
   },
   "client": {

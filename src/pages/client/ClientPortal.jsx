@@ -455,7 +455,7 @@ const TaskCard = ({ task, onClick, onFeedback, onSatisfied, getStatusColor }) =>
              Details
           </Button>
           
-          {task.status === "completed" && !task.feedback?.rating && !task.feedback?.isSatisfiedOnly && (
+          {task.status === "completed" && !task.feedback && (
              <>
                <Button 
                   variant="outline" 

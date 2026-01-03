@@ -24,6 +24,7 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import { TaskDetailSkeleton } from "../../components/common/Skeleton";
 import MediaModal from "../../components/common/MediaModal";
+import Toggle from "../../components/common/Toggle";
 import { toast } from "sonner";
 
 const AdminTaskDetail = () => {
@@ -201,6 +202,30 @@ const AdminTaskDetail = () => {
             <p className="text-gray-600">{task.description}</p>
           </div>
           <div className="flex flex-col gap-2 items-end">
+            <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200 mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                {t("admin.tasks.visibleToClient")}:
+              </span>
+              <Toggle
+                checked={task.visibleToClient}
+                onChange={async (checked) => {
+                  try {
+                    await updateTaskMutation.mutateAsync({
+                      id,
+                      data: { visibleToClient: checked },
+                    });
+                    toast.success(
+                      checked
+                        ? t("admin.tasks.taskVisible")
+                        : t("admin.tasks.taskHidden")
+                    );
+                  } catch (error) {
+                    console.error("Failed to update task visibility:", error);
+                    toast.error(t("common.errorOccurred"));
+                  }
+                }}
+              />
+            </div>
             <span
               className={`px-3 py-1 rounded-full text-sm font-semibold ${
                 task.status === "completed"
@@ -618,7 +643,7 @@ const AdminTaskDetail = () => {
                                       </div>
 
                                       {/* Toggle Visibility */}
-                                      <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                      <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm rounded p-2 transition-opacity">
                                         <label className="flex items-center gap-2 text-xs cursor-pointer">
                                           <input
                                             type="checkbox"

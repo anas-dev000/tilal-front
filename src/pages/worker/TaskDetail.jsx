@@ -1,24 +1,25 @@
-// frontend/src/pages/worker/TaskDetail.jsx - REFACTORED WITH REACT QUERY (COMPLETE)
+// frontend/src/pages/worker/TaskDetail.jsx - PREMIUM REDESIGN
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
 import {
   Camera,
   CheckCircle,
   Clock,
-  X,
-  Plus,
-  Minus,
   MapPin,
-  Layers,
   Image as ImageIcon,
   AlertCircle,
   Loader2,
   Video,
   Play,
   Mic,
+  ChevronLeft,
+  Calendar,
+  User,
+  Info,
+  Layers,
+  Eye
 } from "lucide-react";
 
 // React Query hooks
@@ -27,28 +28,25 @@ import {
   useUploadTaskImages,
   useStartTask,
   useCompleteTask,
-  useUpdateTask,
 } from "../../hooks/queries/useTasks";
 
 import DeleteImageButton from "../../components/common/DeleteImageButton";
 import MediaModal from "../../components/common/MediaModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
-import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
-import Loading from "../../components/common/Loading";
+import { CardSkeleton } from "../../components/common/Skeleton";
 
 const TaskDetail = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const isRTL = i18n.dir() === "rtl";
 
   const { data: task, isLoading: taskLoading } = useTask(id);
 
   const uploadImagesMutation = useUploadTaskImages();
   const startTaskMutation = useStartTask();
   const completeTaskMutation = useCompleteTask();
-  const updateTaskMutation = useUpdateTask();
 
   const [uploadingImages, setUploadingImages] = useState({});
   const [previewsByRef, setPreviewsByRef] = useState({});
@@ -58,6 +56,7 @@ const TaskDetail = () => {
   const [selectedMediaType, setSelectedMediaType] = useState("image");
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: "", message: "", onConfirm: null });
 
+  // Initialize Structure
   const initializeQTNStructure = useCallback((taskData) => {
     if (!taskData?.referenceImages || taskData.referenceImages.length === 0) {
       setReferenceImages([]);
@@ -69,7 +68,6 @@ const TaskDetail = () => {
     setReferenceImages(refs);
 
     const previews = {};
-
     refs.forEach((ref, refIdx) => {
       const qtn = ref.qtn || 1;
       previews[refIdx] = {};
@@ -87,8 +85,7 @@ const TaskDetail = () => {
         if (taskData.images?.before?.[globalBeforeIdx]) {
           previews[refIdx][qtnIdx].before = {
             url: taskData.images.before[globalBeforeIdx].url,
-            mediaType:
-              taskData.images.before[globalBeforeIdx].mediaType || "image",
+            mediaType: taskData.images.before[globalBeforeIdx].mediaType || "image",
             existing: true,
           };
           globalBeforeIdx++;
@@ -96,8 +93,7 @@ const TaskDetail = () => {
         if (taskData.images?.after?.[globalAfterIdx]) {
           previews[refIdx][qtnIdx].after = {
             url: taskData.images.after[globalAfterIdx].url,
-            mediaType:
-              taskData.images.after[globalAfterIdx].mediaType || "image",
+            mediaType: taskData.images.after[globalAfterIdx].mediaType || "image",
             existing: true,
           };
           globalAfterIdx++;
@@ -109,65 +105,55 @@ const TaskDetail = () => {
   }, []);
 
   useEffect(() => {
-    if (task) {
-      initializeQTNStructure(task);
-    }
+    if (task) initializeQTNStructure(task);
   }, [task, initializeQTNStructure]);
 
-  const getUploadKey = useCallback((type, refIndex, qtnIndex) => {
-    return `${type}-${refIndex}-${qtnIndex}`;
-  }, []);
+  // Upload Logic
+  const getUploadKey = useCallback((type, refIndex, qtnIndex) => `${type}-${refIndex}-${qtnIndex}`, []);
 
-  const handleImageUpload = useCallback(
-    async (type, refIndex, qtnIndex, file) => {
-      if (!file || !id) return;
+  const handleImageUpload = useCallback(async (type, refIndex, qtnIndex, file) => {
+    if (!file || !id) return;
 
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
 
-      if (!isImage && !isVideo) {
-        toast.error("Please select an image or video file");
-        return;
-      }
+    if (!isImage && !isVideo) {
+      toast.error(t("worker.errors.invalidFileType"));
+      return;
+    }
 
-      const maxSize = 100 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error("File size must be less than 100MB");
-        return;
-      }
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(t("worker.errors.fileTooLarge"));
+      return;
+    }
 
-      const uploadKey = getUploadKey(type, refIndex, qtnIndex);
+    const uploadKey = getUploadKey(type, refIndex, qtnIndex);
 
-      try {
-        setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
+    try {
+      setUploadingImages((prev) => ({ ...prev, [uploadKey]: true }));
+      toast.info(t("worker.uploading"));
 
-        toast.info(`Uploading ${isVideo ? "video" : "image"}...`);
+      const formData = new FormData();
+      formData.append("images", file);
+      formData.append("imageType", type);
+      formData.append("isVisibleToClient", "true");
 
-        const formData = new FormData();
-        formData.append("images", file);
-        formData.append("imageType", type);
-        formData.append("isVisibleToClient", "true");
+      await uploadImagesMutation.mutateAsync({ id, formData });
+      toast.success(t("worker.allPhotosUploaded"));
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error.response?.data?.message || t("worker.error"));
+    } finally {
+      setUploadingImages((prev) => {
+        const newState = { ...prev };
+        delete newState[uploadKey];
+        return newState;
+      });
+    }
+  }, [id, getUploadKey, uploadImagesMutation, t]);
 
-        await uploadImagesMutation.mutateAsync({ id, formData });
-
-        toast.success(`${isVideo ? "Video" : "Image"} uploaded successfully!`);
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast.error(
-          error.response?.data?.message || "Failed to upload. Please try again."
-        );
-      } finally {
-        setUploadingImages((prev) => {
-          const newState = { ...prev };
-          delete newState[uploadKey];
-          return newState;
-        });
-      }
-    },
-    [id, getUploadKey, uploadImagesMutation]
-  );
-
-  const calculateProgress = useCallback(() => {
+  // Progress Calculation
+  const progress = useMemo(() => {
     let total = 0;
     let beforeCount = 0;
     let afterCount = 0;
@@ -180,55 +166,35 @@ const TaskDetail = () => {
         if (previewsByRef[refIdx]?.[i]?.after) afterCount++;
       }
     });
-
     return { total, beforeCount, afterCount };
   }, [referenceImages, previewsByRef]);
 
-  const progress = useMemo(() => calculateProgress(), [calculateProgress]);
-  const totalLocations = progress.total;
-  const beforeCount = progress.beforeCount;
-  const afterCount = progress.afterCount;
+  const allPhotosComplete = progress.beforeCount === progress.total && progress.afterCount === progress.total;
+  const hasAnyUploading = Object.keys(uploadingImages).length > 0;
 
-  const allPhotosComplete = useMemo(
-    () => beforeCount === totalLocations && afterCount === totalLocations,
-    [beforeCount, totalLocations, afterCount]
-  );
-
-  const hasAnyUploading = useMemo(
-    () => Object.keys(uploadingImages).length > 0,
-    [uploadingImages]
-  );
-
-  const materialsConfirmed = true;
-
+  // Actions
   const handleStartTask = useCallback(async () => {
-    const getLocation = () =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Geolocation not supported"));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: Infinity,
-        });
+    const getLocation = () => new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: Infinity,
       });
+    });
 
     const startWithPosition = async (position = null) => {
       try {
         await startTaskMutation.mutateAsync({
           id,
-          data: position
-            ? {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              }
-            : {},
+          data: position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : {},
         });
-        toast.success("Task started successfully!");
+        toast.success(t("worker.taskOpened"));
       } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to start task");
+        toast.error(error.response?.data?.message || t("common.error"));
       }
     };
 
@@ -236,70 +202,56 @@ const TaskDetail = () => {
       const position = await getLocation();
       await startWithPosition(position);
     } catch (locationError) {
-      if (locationError.code === 1) {
-        toast.error(
-          "Location access denied. Please enable location access in your browser settings and try again.",
-          { duration: 6000 }
-        );
-        return;
+       if (locationError.code === 1) {
+        toast.error(t("worker.locationDenied"), { duration: 6000 });
       } else if (locationError.code === 2) {
         setConfirmConfig({
           isOpen: true,
-          title: "Location Unreachable",
-          message: "Unable to get your location. Do you want to start the task without saving location?",
+          title: t("worker.locationError"),
+          message: t("worker.unableToGetLocation"),
           onConfirm: () => {
             startWithPosition(null);
             setConfirmConfig(prev => ({ ...prev, isOpen: false }));
           }
         });
       } else {
-        toast.error("An error occurred while getting location. Please try again.");
+        toast.error(t("worker.locationError"));
       }
     }
-  }, [id, startTaskMutation]);
+  }, [id, startTaskMutation, t]);
 
   const handleFinishTask = useCallback(async () => {
     if (!allPhotosComplete) {
-      toast.error(
-        `Please upload all photos:\nBefore: ${beforeCount}/${totalLocations}\nAfter: ${afterCount}/${totalLocations}`,
-        { duration: 5000 }
-      );
+      toast.error(t("worker.completeAllLocations", { count: progress.total }), { duration: 5000 });
       return;
     }
 
     if (hasAnyUploading) {
-      toast.info("Please wait for all images to finish uploading");
+      toast.info(t("worker.waitForUploads"));
       return;
     }
 
-    const getLocation = () =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) reject(new Error("Not supported"));
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: Infinity,
-        });
+    const getLocation = () => new Promise((resolve, reject) => {
+      if (!navigator.geolocation) reject(new Error("Not supported"));
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: Infinity,
       });
+    });
 
     const completeWithPosition = async (position = null) => {
       try {
         await completeTaskMutation.mutateAsync({
           id,
           data: {
-            location: position
-              ? {
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-                }
-              : {},
+            location: position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : {},
           },
         });
-
-        toast.success("Task completed successfully! 🎉", { duration: 4000 });
+        toast.success(t("common.success"));
         setTimeout(() => navigate("/worker/tasks"), 1000);
       } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to complete task");
+        toast.error(error.response?.data?.message || t("common.error"));
       }
     };
 
@@ -307,116 +259,81 @@ const TaskDetail = () => {
       const position = await getLocation();
       await completeWithPosition(position);
     } catch (err) {
-      if (err.code === 1) {
-        toast.error("Location access denied.", { duration: 4000 });
-        return;
-      }
       setConfirmConfig({
         isOpen: true,
-        title: "Location Unreachable",
-        message: "Complete without location?",
+        title: t("worker.locationError"),
+        message: t("worker.unableToGetLocation"),
         onConfirm: () => {
           completeWithPosition(null);
           setConfirmConfig(prev => ({ ...prev, isOpen: false }));
         }
       });
     }
-  }, [
-    id,
-    allPhotosComplete,
-    beforeCount,
-    totalLocations,
-    afterCount,
-    materialsConfirmed,
-    hasAnyUploading,
-    completeTaskMutation,
-    navigate,
-  ]);
+  }, [id, allPhotosComplete, progress.total, hasAnyUploading, completeTaskMutation, navigate, t]);
 
-  const openMediaModal = useCallback((url, mediaType) => {
-    setSelectedMedia(url);
-    setSelectedMediaType(mediaType || "image");
-    setShowMediaModal(true);
-  }, []);
 
-  const closeMediaModal = useCallback(() => {
-    setShowMediaModal(false);
-  }, []);
+  // Helper Components
+  const StatusBadge = ({ status }) => {
+    const styles = {
+      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      assigned: "bg-blue-100 text-blue-800 border-blue-200",
+      "in-progress": "bg-purple-100 text-purple-800 border-purple-200",
+      completed: "bg-green-100 text-green-800 border-green-200",
+    };
+    const icons = {
+      pending: <Clock className="w-3 h-3" />,
+      assigned: <AlertCircle className="w-3 h-3" />,
+      "in-progress": <Loader2 className="w-3 h-3 animate-spin" />,
+      completed: <CheckCircle className="w-3 h-3" />,
+    };
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${styles[status] || styles.pending}`}>
+        {icons[status]}
+        {t(`status.${status}`)}
+      </span>
+    );
+  };
 
   const SkeletonLoader = () => (
-    <div className="relative w-full h-56 bg-gray-200 rounded-lg overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"></div>
+    <div className="relative w-full h-48 bg-gray-100 rounded-xl overflow-hidden">
+      <div className="absolute inset-0 bg-linear-to-r from-gray-100 via-gray-200 to-gray-100 animate-shimmer"></div>
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-2" />
-          <p className="text-gray-500 font-medium">Uploading...</p>
-        </div>
+        <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
       </div>
     </div>
   );
 
-  const getStatusColor = useCallback((status) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      assigned: "bg-blue-100 text-blue-800",
-      "in-progress": "bg-purple-100 text-purple-800",
-      completed: "bg-green-100 text-green-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
-  }, []);
-
   if (taskLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-        </div>
-      </div>
+       <div className="max-w-5xl mx-auto p-4 space-y-6">
+          <CardSkeleton />
+          <CardSkeleton />
+       </div>
     );
   }
-  if (!task)
-    return (
-      <div className="text-center py-12 text-gray-500">Task not found</div>
-    );
+
+  if (!task) return <div className="text-center py-20 text-gray-500">{t("tasks.taskNotFound")}</div>;
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Add shimmer animation to global styles */}
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
+    <div className="max-w-5xl mx-auto pb-20 p-2 sm:p-4 md:p-6 space-y-6 animate-fade-in">
+       {/* Global Style for shimmer */}
+       <style>{`
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .animate-shimmer { animation: shimmer 2s infinite; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
       {/* Media Modal */}
       <MediaModal
         isOpen={showMediaModal}
-        onClose={closeMediaModal}
+        onClose={() => setShowMediaModal(false)}
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}
-        title={t(
-          `worker.mediaModal.${
-            selectedMediaType === "video" ? "videoTitle" : "imageTitle"
-          }`
-        )}
+        title={selectedMediaType === "video" ? t("worker.mediaModal.videoTitle") : t("worker.mediaModal.imageTitle")}
       />
 
-      {/* Choice Modal (Replacing window.confirm) */}
       <ConfirmationModal
         isOpen={confirmConfig.isOpen}
         onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
@@ -425,511 +342,288 @@ const TaskDetail = () => {
         message={confirmConfig.message}
         confirmText={t("common.confirm")}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Task Info Card */}
-          <Card>
-            <div className="flex justify-between items-start mb-4">
-              <h1 className="text-2xl font-bold">{task.title}</h1>
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(
-                  task.status
-                )}`}
-              >
-                {t(`status.${task.status}`)}
-              </span>
-            </div>
-            <p className="text-gray-600 mb-4">{task.description}</p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">{t("common.client")}:</span>{" "}
-                <strong>{task.client?.name}</strong>
-              </div>
-              <div>
-                <span className="text-gray-500">{t("common.priority")}:</span>{" "}
-                <strong className="text-orange-600">
-                  {t(`priority.${task.priority}`)}
-                </strong>
-              </div>
-            </div>
+
+        {/* Back Button */}
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors text-sm font-medium mb-2"
+        >
+          <ChevronLeft className={`w-4 h-4 ${isRTL ? "rotate-180" : ""}`} />
+          {t("common.back")}
+        </button>
+
+        {/* Header Section */}
+        <div className="bg-white rounded-2xl shadow-xs border border-gray-100 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60 pointer-events-none"></div>
             
-            {/* Voice Recording Section - Improved Design */}
-            {task.voiceRecording?.url && (
-              <div className="mt-6 bg-linear-to-r from-blue-50 to-indigo-50 border-s-4 border-blue-500 rounded-lg p-5 shadow-sm">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="bg-blue-600 p-2 rounded-full">
-                    <Mic className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-blue-900">
-                      {t("worker.voiceInstructions") || "Voice Instructions"}
-                    </h3>
-                    <p className="text-xs text-blue-700">Listen to voice instructions for this task</p>
-                  </div>
-                </div>
-                <audio
-                  controls
-                  src={task.voiceRecording.url}
-                  className="w-full h-10"
-                  preload="metadata"
-                />
-              </div>
-            )}
-          </Card>
-
-          {/* Reference Guide */}
-          {referenceImages.length > 0 && (
-            <Card title={t("worker.referenceGuideTitle")}>
-              {/* Progress Header */}
-              <div className="bg-linear-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 mb-8">
-                <div className="flex items-center gap-4">
-                  <AlertCircle className="w-10 h-10 text-indigo-600" />
-                  <div>
-                    <p className="text-xl font-bold text-indigo-900">
-                      {t("worker.totalRequiredLocations")}
-                    </p>
-                    <p className="text-3xl font-extrabold text-indigo-700">
-                      {totalLocations}
-                    </p>
-                    <p className="text-sm text-indigo-600">
-                      {t("worker.progressBefore")}: {beforeCount}/
-                      {totalLocations} • {t("worker.progressAfter")}:{" "}
-                      {afterCount}/{totalLocations}
-                    </p>
-                  </div>
-                  {allPhotosComplete && (
-                    <CheckCircle className="w-12 h-12 text-green-600 ml-auto" />
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-12">
-                {referenceImages.map((ref, refIdx) => {
-                  const qtn = ref.qtn || 1;
-                  const refMediaType = ref.mediaType || "image";
-
-                  return (
-                    <div
-                      key={refIdx}
-                      className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
-                    >
-                      {/* Header */}
-                      <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-5 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <span className="text-3xl font-bold">
-                            {t("worker.reference")} #{refIdx + 1}
-                          </span>
-                          {qtn > 1 && (
-                            <span className="bg-orange-500 px-5 py-2 rounded-full text-lg font-bold">
-                              {qtn} {t("worker.locations")}
-                            </span>
-                          )}
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6 relative z-10">
+                <div>
+                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{task.title}</h1>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <span>{task.client?.name}</span>
                         </div>
-                        <span className="text-lg opacity-90">
-                          {ref.caption || t("worker.workArea")}
-                        </span>
-                      </div>
-
-                      {/* Reference Media & QTN Locations */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 bg-gray-50">
-                        {/* Reference Media - Left */}
-                        <div className="lg:col-span-1 flex flex-col">
-                          <h4 className="text-xl font-bold text-center mb-4 text-gray-800">
-                            {t("worker.reference")}{" "}
-                            {refMediaType === "video"
-                              ? t("worker.video")
-                              : t("worker.image")}
-                          </h4>
-
-                          {refMediaType === "video" ? (
-                            <div className="relative group">
-                              <video
-                                src={ref.url}
-                                className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
-                                onClick={() => openMediaModal(ref.url, "video")}
-                                preload="metadata"
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-xl">
-                                <Play className="w-16 h-16 text-white fill-white" />
-                              </div>
-                              <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-1">
-                                <Video className="w-4 h-4" />
-                                <span>{t("worker.video").toUpperCase()}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="relative group">
-                              <img
-                                src={ref.url}
-                                alt="Reference"
-                                className="w-full h-60 object-cover rounded-xl shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
-                                onClick={() => openMediaModal(ref.url, "image")}
-                              />
-                              <div className="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-1">
-                                <ImageIcon className="w-4 h-4" />
-                                <span>{t("worker.image").toUpperCase()}</span>
-                              </div>
-                            </div>
-                          )}
-
-                          <p className="text-center mt-4 text-gray-600 font-medium">
-                            {t("worker.clickToEnlarge")}
-                          </p>
+                        <span className="hidden sm:inline text-gray-300">|</span>
+                        <div className="flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span>{new Date(task.scheduledDate).toLocaleDateString()}</span>
                         </div>
-
-                        {/* QTN Locations */}
-                        <div className="lg:col-span-2 space-y-8">
-                          {Array.from({ length: qtn }, (_, locIdx) => {
-                            const beforeKey = getUploadKey(
-                              "before",
-                              refIdx,
-                              locIdx
-                            );
-                            const afterKey = getUploadKey(
-                              "after",
-                              refIdx,
-                              locIdx
-                            );
-                            const isBeforeUploading =
-                              uploadingImages[beforeKey];
-                            const isAfterUploading = uploadingImages[afterKey];
-
-                            const beforeData =
-                              previewsByRef[refIdx]?.[locIdx]?.before;
-                            const afterData =
-                              previewsByRef[refIdx]?.[locIdx]?.after;
-
-                            return (
-                              <div
-                                key={locIdx}
-                                className="bg-white rounded-xl shadow-md p-6 border border-gray-300"
-                              >
-                                <h4 className="text-lg font-bold mb-4 text-center flex items-center justify-center gap-3">
-                                  <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg">
-                                    {t("worker.location")} #{locIdx + 1}
-                                  </span>
-                                </h4>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                  {/* Before */}
-                                  <div>
-                                    <label className="block text-center text-md font-semibold text-gray-700 mb-3">
-                                      {t("worker.beforeWork")}
-                                    </label>
-                                    {isBeforeUploading ? (
-                                      <SkeletonLoader />
-                                    ) : beforeData ? (
-                                      <div className="relative group">
-                                        {beforeData.mediaType === "video" ? (
-                                          <div className="relative">
-                                            <video
-                                              src={beforeData.url}
-                                              className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md cursor-pointer hover:opacity-90 transition"
-                                              onClick={() =>
-                                                openMediaModal(
-                                                  beforeData.url,
-                                                  "video"
-                                                )
-                                              }
-                                              preload="metadata"
-                                            />
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-lg">
-                                              <Play className="w-12 h-12 text-white fill-white" />
-                                            </div>
-                                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
-                                              VIDEO
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <img
-                                            src={beforeData.url}
-                                            alt="Before"
-                                            className="w-full h-56 object-cover rounded-lg border-4 border-blue-400 shadow-md cursor-pointer hover:opacity-90 transition"
-                                            onClick={() =>
-                                              openMediaModal(
-                                                beforeData.url,
-                                                "image"
-                                              )
-                                            }
-                                          />
-                                        )}
-
-                                        {beforeData.existing && (
-                                          <div className="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
-                                            {t("worker.uploaded")}
-                                          </div>
-                                        )}
-
-                                        {task.status !== "completed" &&
-                                          beforeData.existing && (
-                                            <DeleteImageButton
-                                              imageData={{
-                                                cloudinaryId:
-                                                  task.images.before.find(
-                                                    (img) =>
-                                                      img.url === beforeData.url
-                                                  )?.cloudinaryId,
-                                                mediaType: beforeData.mediaType,
-                                                _id: task.images.before.find(
-                                                  (img) =>
-                                                    img.url === beforeData.url
-                                                )?._id,
-                                              }}
-                                              entityType="task"
-                                              entityId={task._id}
-                                              imageType="before"
-                                              onSuccess={() => {}}
-                                              position="top-left"
-                                              size="md"
-                                              showOnHover={true}
-                                            />
-                                          )}
-                                      </div>
-                                    ) : (
-                                      <label className="block cursor-pointer">
-                                        <input
-                                          type="file"
-                                          accept="image/*,video/*"
-                                          className="hidden"
-                                          disabled={task.status === "completed"}
-                                          onChange={(e) =>
-                                            handleImageUpload(
-                                              "before",
-                                              refIdx,
-                                              locIdx,
-                                              e.target.files[0]
-                                            )
-                                          }
-                                        />
-                                        <div className="h-56 border-4 border-dashed border-blue-400 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50 transition">
-                                          <div className="flex gap-3 mb-2">
-                                            <Camera className="w-10 h-10 text-blue-500" />
-                                            <Video className="w-10 h-10 text-blue-500" />
-                                          </div>
-                                          <span className="text-blue-600 font-medium">
-                                            {t("worker.uploadBefore")}
-                                          </span>
-                                          <span className="text-xs text-gray-500 mt-1">
-                                            {t("worker.imageOrVideo")}
-                                          </span>
-                                        </div>
-                                      </label>
-                                    )}
-                                  </div>
-                                  {/* After */}
-                                  <div>
-                                    <label className="block text-center text-md font-semibold text-gray-700 mb-3">
-                                      {t("worker.afterWork")}
-                                    </label>
-                                    {isAfterUploading ? (
-                                      <SkeletonLoader />
-                                    ) : afterData ? (
-                                      <div className="relative group">
-                                        {afterData.mediaType === "video" ? (
-                                          <div className="relative">
-                                            <video
-                                              src={afterData.url}
-                                              className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md cursor-pointer hover:opacity-90 transition"
-                                              onClick={() =>
-                                                openMediaModal(
-                                                  afterData.url,
-                                                  "video"
-                                                )
-                                              }
-                                              preload="metadata"
-                                            />
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none rounded-lg">
-                                              <Play className="w-12 h-12 text-white fill-white" />
-                                            </div>
-                                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
-                                              VIDEO
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <img
-                                            src={afterData.url}
-                                            alt="After"
-                                            className="w-full h-56 object-cover rounded-lg border-4 border-green-400 shadow-md cursor-pointer hover:opacity-90 transition"
-                                            onClick={() =>
-                                              openMediaModal(
-                                                afterData.url,
-                                                "image"
-                                              )
-                                            }
-                                          />
-                                        )}
-
-                                        {afterData.existing && (
-                                          <div className="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
-                                            {t("worker.uploaded")}
-                                          </div>
-                                        )}
-
-                                        {task.status !== "completed" &&
-                                          afterData.existing && (
-                                            <DeleteImageButton
-                                              imageData={{
-                                                cloudinaryId:
-                                                  task.images.after.find(
-                                                    (img) =>
-                                                      img.url === afterData.url
-                                                  )?.cloudinaryId,
-                                                mediaType: afterData.mediaType,
-                                                _id: task.images.after.find(
-                                                  (img) =>
-                                                    img.url === afterData.url
-                                                )?._id,
-                                              }}
-                                              entityType="task"
-                                              entityId={task._id}
-                                              imageType="after"
-                                              onSuccess={() => {}}
-                                              position="top-left"
-                                              size="md"
-                                              showOnHover={true}
-                                            />
-                                          )}
-                                      </div>
-                                    ) : (
-                                      <label className="block cursor-pointer">
-                                        <input
-                                          type="file"
-                                          accept="image/*,video/*"
-                                          className="hidden"
-                                          disabled={task.status === "completed"}
-                                          onChange={(e) =>
-                                            handleImageUpload(
-                                              "after",
-                                              refIdx,
-                                              locIdx,
-                                              e.target.files[0]
-                                            )
-                                          }
-                                        />
-                                        <div className="h-56 border-4 border-dashed border-green-400 rounded-lg flex flex-col items-center justify-center hover:bg-green-50 transition">
-                                          <div className="flex gap-3 mb-2">
-                                            <Camera className="w-10 h-10 text-green-500" />
-                                            <Video className="w-10 h-10 text-green-500" />
-                                          </div>
-                                          <span className="text-green-600 font-medium">
-                                            {t("worker.uploadAfter")}
-                                          </span>
-                                          <span className="text-xs text-gray-500 mt-1">
-                                            {t("worker.imageOrVideo")}
-                                          </span>
-                                        </div>
-                                      </label>
-                                    )}
-                                  </div>
+                         {task.site && (
+                             <>
+                                <span className="hidden sm:inline text-gray-300">|</span>
+                                <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-4 h-4 text-gray-400" />
+                                    <span>{task.site.name}</span>
                                 </div>
-
-                                {/* Mini progress */}
-                                <div className="mt-4 flex justify-center gap-6 text-md">
-                                  <span
-                                    className={
-                                      beforeData
-                                        ? "text-green-600 font-bold"
-                                        : "text-gray-400"
-                                    }
-                                  >
-                                    {beforeData ? "✓" : "○"}{" "}
-                                    {t("worker.before")}
-                                  </span>
-                                  <span
-                                    className={
-                                      afterData
-                                        ? "text-green-600 font-bold"
-                                        : "text-gray-400"
-                                    }
-                                  >
-                                    {afterData ? "✓" : "○"} {t("worker.after")}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                             </>
+                         )}
                     </div>
-                  );
-                })}
-              </div>
+                </div>
+                <StatusBadge status={task.status} />
+            </div>
 
-              {/* Final Progress */}
-              <div className="mt-10 bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 text-center">
-                <p className="text-3xl font-bold text-green-800">
-                  {beforeCount + afterCount} / {totalLocations * 2}{" "}
-                  {t("worker.photosCompleted")}
-                </p>
-                {allPhotosComplete && (
-                  <div className="mt-4 flex items-center justify-center gap-3 text-2xl text-green-600">
-                    <CheckCircle className="w-12 h-12" />
-                    <span>{t("worker.allPhotosUploaded")}</span>
+            {/* Description Box */}
+             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200/60">
+                <div className="flex gap-2">
+                    <Info className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
+                    <p className="text-gray-700 leading-relaxed text-sm md:text-base">
+                        {task.description || t("tasks.noDescription")}
+                    </p>
+                </div>
+             </div>
+             
+              {/* Voice Note */}
+              {task.voiceRecording?.url && (
+                <div className="mt-4 bg-linear-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-4">
+                  <div className="bg-white p-2.5 rounded-full shadow-xs shrink-0">
+                    <Mic className="w-5 h-5 text-indigo-600" />
                   </div>
-                )}
-                {hasAnyUploading && (
-                  <div className="mt-4 flex items-center justify-center gap-3 text-lg text-blue-600">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    <span>{t("worker.uploadingImages")}...</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-indigo-900 mb-1">{t("worker.voiceInstructions") || "Instructions"}</p>
+                    <audio
+                      controls
+                      src={task.voiceRecording.url}
+                      className="w-full h-8"
+                      preload="metadata"
+                      style={{ height: '32px' }} 
+                    />
                   </div>
-                )}
-              </div>
-            </Card>
-          )}
+                </div>
+              )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Task Action Buttons */}
-          {task.status === "assigned" && (
-            <Card title={t("worker.startTask")}>
-              <Button
-                variant="primary"
-                className="w-full py-6 text-xl font-bold"
-                onClick={handleStartTask}
-              >
-                <Clock className="w-6 h-6 inline mr-2" />
-                {t("worker.startTask")}
-              </Button>
-            </Card>
-          )}
+        {/* Action Bar (Start/Complete) */}
 
-          {task.status === "in-progress" && (
-            <Card title={t("worker.completeTask")}>
-              <Button
-                variant="success"
-                className="w-full py-6 text-2xl font-bold"
-                onClick={handleFinishTask}
-                disabled={
-                  hasAnyUploading || !allPhotosComplete || !materialsConfirmed
-                }
-              >
-                {hasAnyUploading ? "Uploading..." : "Finish Task"}
-              </Button>
 
-              {!allPhotosComplete && (
-                <p className="text-red-600 text-center mt-4 font-bold">
-                  {t("worker.completeAllLocations", { count: totalLocations })}
-                </p>
-              )}
+        {/* Reference Locations */}
+        {referenceImages.length > 0 && (
+            <div className="space-y-8 mt-8">
+                 <div className="flex items-center justify-between px-2">
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <Layers className="w-6 h-6 text-primary-600" />
+                        {t("worker.workLocations")}
+                    </h2>
+                     <span className="text-sm font-medium px-3 py-1 bg-gray-100 rounded-full text-gray-600">
+                        {progress.beforeCount + progress.afterCount} / {progress.total * 2} {t("worker.photos")}
+                    </span>
+                 </div>
 
-              {!materialsConfirmed && allPhotosComplete && (
-                <p className="text-orange-600 text-center mt-4 font-bold">
-                  Confirm materials before finishing
-                </p>
-              )}
+                 {referenceImages.map((ref, refIdx) => {
+                     const qtn = ref.qtn || 1;
+                     return (
+                         <div key={refIdx} className="space-y-6">
+                            {/* Reference Header */}
+                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+                                <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center">
+                                     {/* Media Preview */}
+                                     <div 
+                                        className="w-full md:w-32 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-gray-200 hover:border-primary-300 transition-colors group"
+                                        onClick={() => { setSelectedMedia(ref.url); setSelectedMediaType(ref.mediaType || 'image'); setShowMediaModal(true); }}
+                                     >
+                                        {ref.mediaType === 'video' ? (
+                                            <div className="w-full h-full flex items-center justify-center relative">
+                                                <video src={ref.url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                                                <Play className="w-10 h-10 text-white absolute drop-shadow-md" />
+                                            </div>
+                                        ) : (
+                                            <img src={ref.url} alt="Ref" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        )}
+                                     </div>
 
-              {hasAnyUploading && (
-                <p className="text-blue-600 text-center mt-4 font-bold flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Please wait for uploads to complete
-                </p>
-              )}
-            </Card>
-          )}
-        </div>
-      </div>
+                                     <div className="flex-1">
+                                          <div className="flex items-center gap-3 mb-2">
+                                              <span className="px-2.5 py-1 bg-primary-50 text-primary-700 rounded-md text-xs font-bold uppercase tracking-wider">
+                                                 {t("worker.reference")} #{refIdx + 1}
+                                              </span>
+                                              <span className="text-gray-500 text-sm">{qtn} {t("worker.locations")}</span>
+                                          </div>
+                                          <p className="text-lg font-bold text-gray-900 mb-1 leading-snug">
+                                              {ref.caption || t("worker.workArea")}
+                                          </p>
+                                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                                            <Eye className="w-3 h-3" /> {t("worker.clickToEnlarge")}
+                                          </p>
+                                     </div>
+                                </div>
+                            </div>
+
+                            {/* QTN Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                {Array.from({ length: qtn }).map((_, locIdx) => {
+                                    const beforeKey = getUploadKey("before", refIdx, locIdx);
+                                    const afterKey = getUploadKey("after", refIdx, locIdx);
+                                    const beforeData = previewsByRef[refIdx]?.[locIdx]?.before;
+                                    const afterData = previewsByRef[refIdx]?.[locIdx]?.after;
+                                    const isBeforeUploading = uploadingImages[beforeKey];
+                                    const isAfterUploading = uploadingImages[afterKey];
+
+                                    return (
+                                        <div key={locIdx} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs hover:shadow-md transition-shadow">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-bold text-gray-700">{t("worker.location")} #{locIdx + 1}</h3>
+                                                {beforeData && afterData ? (
+                                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                                ) : (
+                                                    <div className="w-5 h-5 rounded-full border-2 border-gray-200"></div>
+                                                )}
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {/* Before Upload */}
+                                                <div className="space-y-2">
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase block text-center">{t("worker.before")}</span>
+                                                    {isBeforeUploading ? <SkeletonLoader /> : (
+                                                        <div className="relative aspect-3/4 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 hover:border-blue-300 transition-colors group">
+                                                            {beforeData ? (
+                                                                <>
+                                                                    {beforeData.mediaType === 'video' ? (
+                                                                        <video src={beforeData.url} className="w-full h-full object-cover" onClick={() => {setSelectedMedia(beforeData.url); setSelectedMediaType('video'); setShowMediaModal(true)}} />
+                                                                    ) : (
+                                                                        <img src={beforeData.url} alt="Before" className="w-full h-full object-cover" onClick={() => {setSelectedMedia(beforeData.url); setSelectedMediaType('image'); setShowMediaModal(true)}} />
+                                                                    )}
+                                                                    {task.status !== "completed" && beforeData.existing && (
+                                                                        <div className="absolute top-1 right-1 z-10">
+                                                                             <DeleteImageButton
+                                                                                imageData={{
+                                                                                  cloudinaryId: task.images.before.find(img => img.url === beforeData.url)?.cloudinaryId,
+                                                                                  mediaType: beforeData.mediaType,
+                                                                                  _id: task.images.before.find(img => img.url === beforeData.url)?._id,
+                                                                                }}
+                                                                                entityType="task"
+                                                                                entityId={task._id}
+                                                                                imageType="before"
+                                                                                onSuccess={() => {}} 
+                                                                                size="sm"
+                                                                             />
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                                                                    <input 
+                                                                        type="file" 
+                                                                        accept="image/*,video/*" 
+                                                                        className="hidden" 
+                                                                        capture="environment"
+                                                                        disabled={task.status === "completed"}
+                                                                        onChange={(e) => handleImageUpload("before", refIdx, locIdx, e.target.files[0])}
+                                                                    />
+                                                                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                                        <Camera className="w-5 h-5" />
+                                                                    </div>
+                                                                    <span className="text-xs text-center text-blue-600 font-medium px-2">{t("worker.upload")}</span>
+                                                                </label>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* After Upload */}
+                                                 <div className="space-y-2">
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase block text-center">{t("worker.after")}</span>
+                                                    {isAfterUploading ? <SkeletonLoader /> : (
+                                                        <div className="relative aspect-3/4 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 hover:border-green-300 transition-colors group">
+                                                            {afterData ? (
+                                                                <>
+                                                                    {afterData.mediaType === 'video' ? (
+                                                                        <video src={afterData.url} className="w-full h-full object-cover" onClick={() => {setSelectedMedia(afterData.url); setSelectedMediaType('video'); setShowMediaModal(true)}} />
+                                                                    ) : (
+                                                                        <img src={afterData.url} alt="After" className="w-full h-full object-cover" onClick={() => {setSelectedMedia(afterData.url); setSelectedMediaType('image'); setShowMediaModal(true)}} />
+                                                                    )}
+                                                                    {task.status !== "completed" && afterData.existing && (
+                                                                        <div className="absolute top-1 right-1 z-10">
+                                                                             <DeleteImageButton
+                                                                                imageData={{
+                                                                                  cloudinaryId: task.images.after.find(img => img.url === afterData.url)?.cloudinaryId,
+                                                                                  mediaType: afterData.mediaType,
+                                                                                  _id: task.images.after.find(img => img.url === afterData.url)?._id,
+                                                                                }}
+                                                                                entityType="task"
+                                                                                entityId={task._id}
+                                                                                imageType="after"
+                                                                                onSuccess={() => {}} 
+                                                                                size="sm"
+                                                                             />
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                                                                    <input 
+                                                                        type="file" 
+                                                                        accept="image/*,video/*" 
+                                                                        className="hidden" 
+                                                                        capture="environment"
+                                                                        disabled={task.status === "completed"}
+                                                                        onChange={(e) => handleImageUpload("after", refIdx, locIdx, e.target.files[0])}
+                                                                    />
+                                                                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                                        <Camera className="w-5 h-5" />
+                                                                    </div>
+                                                                    <span className="text-xs text-center text-green-600 font-medium px-2">{t("worker.upload")}</span>
+                                                                </label>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                         </div>
+                     );
+                 })}
+            </div>
+        )}
+
+        {/* Action Bar (Start/Complete) - Moved to bottom */}
+        {!['completed', 'cancelled'].includes(task.status) && (
+            <div className="mt-8 flex justify-center w-full pb-8">
+                 <div className="w-full">
+                    {task.status === "pending" || task.status === "assigned" ? (
+                        <Button 
+                            className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-200 rounded-xl"
+                            onClick={handleStartTask}
+                        >
+                            <Play className="w-5 h-5 mr-2 fill-current" /> {t("worker.startTask")}
+                        </Button>
+                    ) : (
+                        <Button 
+                          className="w-full h-14 text-lg font-bold shadow-lg shadow-green-200 rounded-xl"
+                          variant="success"
+                          onClick={handleFinishTask}
+                          disabled={!allPhotosComplete || hasAnyUploading}
+                        >
+                            <CheckCircle className="w-5 h-5 mr-2" /> {t("worker.finishTask")}
+                        </Button>
+                    )}
+                 </div>
+            </div>
+        )}
     </div>
   );
 };
+
 export default TaskDetail;

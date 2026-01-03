@@ -70,6 +70,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     if (task) {
       // 🔧 Edit Mode - Load existing task data
       console.log("📝 Edit Mode - Loading task:", task);
+      console.log("🎤 Voice Recording Data:", task.voiceRecording);
 
       // Reset form with task data
       reset({
@@ -279,6 +280,8 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
             </p>
           )}
         </div>
+
+
 
         {/* Site Selection */}
         <div>

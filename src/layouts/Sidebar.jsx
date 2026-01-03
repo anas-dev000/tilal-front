@@ -33,9 +33,9 @@ const Sidebar = ({
     { path: "/admin", icon: LayoutDashboard, label: t("nav.dashboard") },
     { path: "/admin/clients", icon: Users, label: t("nav.clients") },
     { path: "/admin/employees", icon: Briefcase, label: t("nav.employees") },
-    { path: "/admin/invoices", icon: DollarSign, label: t("nav.invoices") },
     { path: "/admin/sites", icon: MapPin, label: t("nav.sites") },
     { path: "/admin/tasks", icon: CheckSquare, label: t("nav.tasks") },
+    { path: "/admin/invoices", icon: DollarSign, label: t("nav.invoices") },
     { path: "/admin/inventory", icon: Package, label: t("nav.inventory") },
   ];
 
