@@ -9,6 +9,7 @@ import {
   Edit,
   Plus,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 // React Query hooks
@@ -165,6 +166,15 @@ const SiteSectionsPage = () => {
               <p className="text-gray-600 flex items-center gap-2">
                 <span className="font-medium">{t("common.client")}:</span>
                 {site.client?.name || t("common.notFound")}
+                {site.client?._id && (
+                  <button
+                    onClick={() => navigate(`/admin/clients/${site.client._id}`)}
+                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                    title={t("admin.sites.viewClientDetails") || "View Client Details"}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                )}
               </p>
             </div>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">

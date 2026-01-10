@@ -36,6 +36,7 @@
     "error": "An error occurred",
     "errorOccurred": "An error occurred",
     "success": "Operation successful",
+    "updatedSuccessfully": "Updated successfully",
     "language": "Language",
     "settings": "Settings",
     "actions": "Actions",
@@ -144,7 +145,8 @@
       "house": "House",
       "building": "Building",
       "cash": "Cash",
-      "online": "Online"
+      "online": "Online",
+      "financialOverview": "Financial Overview"
     },
     "workerDetails": {
       "title": "Worker Details",
@@ -250,7 +252,8 @@
       "displayed": "Workers displayed",
       "total": "Total workers",
       "activateWorker": "Activate Worker",
-      "deactivateWorker": "Deactivate Worker"
+      "deactivateWorker": "Deactivate Worker",
+      "notes": "Worker Notes"
     },
     "employees": {
       "title": "Employees Management",
@@ -366,7 +369,8 @@
       "allTabLabel": "All",
       "inStockTabLabel": "In Stock",
       "lowStockTabLabel": "Low Stock",
-      "outOfStockTabLabel": "Out of Stock"
+      "outOfStockTabLabel": "Out of Stock",
+      "items": "Inventory Items"
     },
     "plants": {
       "title": "Plants Management",
@@ -579,7 +583,9 @@
       "filter": "No {{filter}} tasks",
       "completedDesc": "Completed tasks will appear here",
       "newDesc": "New tasks will appear here when assigned"
-    }
+    },
+    "continueTask": "Continue Task",
+    "due": "Due"
   },
   "client": {
     "title": "Client Portal",
@@ -797,6 +803,7 @@
     "daysAgo": "d ago"
   },
   "accountant": {
+    "invoicePdf": "Invoice PDF",
     "siteInfo": "Site Info",
     "paymentCycle": "Payment Cycle",
     "editCycle": "Edit Payment Cycle",

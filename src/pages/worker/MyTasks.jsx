@@ -367,7 +367,7 @@ const MyTasks = () => {
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar className="w-4 h-4 shrink-0" />
                   <span>
-                    Due: {new Date(task.scheduledDate).toLocaleDateString()}
+                    {t("worker.due")}: {new Date(task.scheduledDate).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -382,7 +382,7 @@ const MyTasks = () => {
                     )}`}
                   >
                     {task.priority === "urgent" && "🔥 "}{" "}
-                    {t(`priority.${task.priority}`)} Priority
+                    {t(`priority.${task.priority}`)} {t("common.priority")}
                   </span>
                 </div>
               </div>
@@ -412,7 +412,7 @@ const MyTasks = () => {
                     handleNavigateToTask(task._id);
                   }}
                 >
-                  Continue Task
+                  {t("worker.continueTask")}
                 </Button>
               )}
 

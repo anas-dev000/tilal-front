@@ -37,6 +37,7 @@
     "error": "حدث خطأ",
     "errorOccurred": "حدث خطأ",
     "success": "تمت العملية بنجاح",
+    "updatedSuccessfully": "تم التحديث بنجاح",
     "language": "اللغة",
     "settings": "الإعدادات",
     "actions": "الإجراءات",
@@ -192,7 +193,8 @@
       "house": "منزل",
       "building": "مبنى",
       "cash": "نقد",
-      "online": "أونلاين"
+      "online": "أونلاين",
+      "financialOverview": "نظرة عامة مالية"
     },
     "workerDetails": {
       "title": "تفاصيل العامل",
@@ -298,7 +300,8 @@
       "displayed": "عمال معروضون",
       "total": "إجمالي العمال",
       "activateWorker": "تفعيل العامل",
-      "deactivateWorker": "إيقاف العامل"
+      "deactivateWorker": "إيقاف العامل",
+      "notes": "ملاحظات العامل"
     },
     "employees": {
       "title": "إدارة الموظفين",
@@ -415,7 +418,8 @@
       "allTabLabel": "الكل",
       "inStockTabLabel": "المتوفر",
       "lowStockTabLabel": "مخزون منخفض",
-      "outOfStockTabLabel": "نفذ من المخزون"
+      "outOfStockTabLabel": "نفذ من المخزون",
+      "items": "عناصر المخزون"
     },
     "plants": {
       "title": "إدارة النباتات",
@@ -644,7 +648,9 @@
       "filter": "لا توجد مهام {{filter}}",
       "completedDesc": "ستظهر المهام المكتملة هنا",
       "newDesc": "ستظهر المهام الجديدة هنا عند تعيينها"
-    }
+    },
+    "continueTask": "متابعة المهمة",
+    "due": "مستحق"
   },
   "client": {
     "title": "بوابة العميل",
@@ -814,6 +820,7 @@
     }
   },
   "accountant": {
+    "invoicePdf": "فاتورة PDF",
     "siteInfo": "معلومات الموقع",
     "paymentCycle": "دورة الدفع",
     "editCycle": "تعديل دورة الدفع",

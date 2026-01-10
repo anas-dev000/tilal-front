@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { 
@@ -19,6 +19,8 @@ import Loading from "../../components/common/Loading";
 import Badge from "../../components/common/Badge";
 import Pagination from "../../components/common/Pagination";
 import InvoiceDetailModal from "./InvoiceDetailModal";
+import Modal from "../../components/common/Modal";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -29,6 +31,8 @@ const ClientInvoices = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Fetch Client Data for header
   const { data: client, isLoading: clientLoading } = useClient(id);
@@ -64,6 +68,36 @@ const ClientInvoices = () => {
     "partially-paid": "info",
     overdue: "danger",
     cancelled: "neutral",
+  };
+
+  const getSafePdfUrl = useCallback((invoice) => {
+    let url = invoice.pdfFile?.url || invoice.pdfUrl;
+    if (!url) return null;
+
+    if (url.includes('cloudinary.com')) {
+      if (url.includes('/image/upload/')) {
+        if (!url.toLowerCase().endsWith('.pdf')) {
+          url = `${url}.pdf`;
+        }
+        url = url.replace('/upload/', '/upload/f_auto,q_auto/');
+      }
+    }
+
+    if (url.toLowerCase().endsWith('.pdf')) {
+      url = `${url}#view=FitH`;
+    }
+    
+    return url;
+  }, []);
+
+  const handleViewPdf = (invoice) => {
+    const url = getSafePdfUrl(invoice);
+    if (url) {
+      setPdfUrl(url);
+      setIsPdfModalOpen(true);
+    } else {
+      toast.error(t("errors.pdfNotAvailable") || "PDF not available");
+    }
   };
 
   const columns = [
@@ -108,6 +142,14 @@ const ClientInvoices = () => {
               setSelectedInvoice(row);
               setIsModalOpen(true);
             }}
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={FileText}
+            onClick={() => handleViewPdf(row)}
+            disabled={!(row.pdfFile?.url || row.pdfUrl)}
+            title={t("common.viewPdf") || "View PDF"}
           />
         </div>
       ),
@@ -200,6 +242,26 @@ const ClientInvoices = () => {
         onClose={() => setIsModalOpen(false)}
         invoice={selectedInvoice}
       />
+
+      {/* PDF View Modal */}
+      <Modal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        title={t("accountant.invoicePdf") || "Invoice PDF"}
+        size="4xl"
+      >
+        <div className="h-[80vh] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+           {pdfUrl ? (
+             <iframe
+               src={pdfUrl}
+               className="w-full h-full border-none"
+               title="PDF Viewer"
+             />
+           ) : (
+             <p className="text-gray-500">{t("errors.noPdfAvailable") || "No PDF available"}</p>
+           )}
+         </div>
+      </Modal>
     </div>
   );
 };

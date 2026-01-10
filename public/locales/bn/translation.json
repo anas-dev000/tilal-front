@@ -5,6 +5,7 @@
     "priority": "অগ্রাধিকার",
     "available": "উপলব্ধ",
     "welcome": "স্বাগতম",
+    "viewDetails": "বিস্তারিত দেখুন",
     "viewOnGoogleMaps": "গুগল ম্যাপে দেখুন",
     "login": "লগইন",
     "logout": "লগআউট",
@@ -37,6 +38,7 @@
     "error": "একটি ত্রুটি ঘটেছে",
     "errorOccurred": "একটি ত্রুটি ঘটেছে",
     "success": "অপারেশন সফল হয়েছে",
+    "updatedSuccessfully": "সফলভাবে আপডেট করা হয়েছে",
     "language": "ভাষা",
     "settings": "সেটিংস",
     "actions": "কর্ম",
@@ -137,7 +139,8 @@
       "house": "বাড়ি",
       "building": "ভবন",
       "cash": "নগদ",
-      "online": "অনলাইন"
+      "online": "অনলাইন",
+      "financialOverview": "আর্থিক সারাংশ"
     },
     "workerDetails": {
       "title": "কর্মীর বিবরণ",
@@ -243,7 +246,8 @@
       "displayed": "কর্মী প্রদর্শিত",
       "total": "মোট কর্মী",
       "activateWorker": "কর্মী সক্রিয় করুন",
-      "deactivateWorker": "কর্মী নিষ্ক্রিয় করুন"
+      "deactivateWorker": "কর্মী নিষ্ক্রিয় করুন",
+      "notes": "কর্মীর নোট"
     },
     "tasks": {
       "clientFeedback": "ক্লায়েন্ট প্রতিক্রিয়া",
@@ -344,7 +348,8 @@
       "allTabLabel": "সব",
       "inStockTabLabel": "স্টকে আছে",
       "lowStockTabLabel": "কম স্টক",
-      "outOfStockTabLabel": "স্টক শেষ"
+      "outOfStockTabLabel": "স্টক শেষ",
+      "items": "ইনভেন্টরি আইটেম"
     },
     "plants": {
       "title": "উদ্ভিদ ব্যবস্থাপনা",
@@ -527,6 +532,43 @@
     "completionRate": "সম্পন্নের হার"
   },
   "worker": {
+    "myTasks": "আমার কাজ",
+    "myStats": "আপনার পরিসংখ্যান",
+    "stats": {
+      "total": "মোট কাজ",
+      "inProgress": "চলমান",
+      "completed": "সম্পন্ন",
+      "completionRate": "সম্পন্নের হার",
+      "activeCount": "{{count}}টি সক্রিয় কাজ",
+      "completedCount": "{{count}}টি সম্পন্ন"
+    },
+    "filters": {
+      "all": "সব",
+      "active": "সক্রিয়",
+      "assigned": "নির্ধারিত",
+      "inProgress": "চলমান",
+      "completed": "সম্পন্ন"
+    },
+    "empty": {
+      "all": "কোন কাজ নির্ধারিত নেই",
+      "filter": "কোন {{filter}} কাজ নেই",
+      "completedDesc": "সম্পন্ন কাজ এখানে দেখা যাবে",
+      "newDesc": "নির্ধারিত হলে নতুন কাজ এখানে দেখা যাবে"
+    },
+    "errors": {
+      "geolocationNotSupported": "জিওলোকেশন সমর্থিত নয়",
+      "failedToStart": "কাজ শুরু করতে ব্যর্থ হয়েছে",
+      "failedToLoad": "কাজ লোড করতে ব্যর্থ হয়েছে",
+      "locationDenied": "অবস্থান অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে। অনুগ্রহ করে আপনার ব্রাউজার সেটিংসে অবস্থান সক্ষম করুন।",
+      "locationError": "অবস্থান ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "fileTooLarge": "ফাইলের আকার ১০০ মেগাবাইটের কম হতে হবে",
+      "invalidFileType": "অনুগ্রহ করে একটি ছবি বা ভিডিও ফাইল নির্বাচন করুন"
+    },
+    "locationUnreachable": "অবস্থান পৌঁছানো যায় না",
+    "startWithoutLocationMsg": "অবস্থান পাওয়া সম্ভব হয়নি। অবস্থান ছাড়াই কাজ শুরু করবেন?",
+    "starting": "শুরু হচ্ছে...",
+    "taskStartedNoLocation": "কাজ শুরু হয়েছে (অবস্থান সংরক্ষণ করা হয়নি)!",
+    "taskOpened": "কাজ খোলা হয়েছে",
     "referenceGuideTitle": "কাজের রেফারেন্স গাইড",
     "totalRequiredLocations": "মোট প্রয়োজনীয় লোকেশন",
     "progressBefore": "আগে",
@@ -570,7 +612,9 @@
     },
     "upload": "আপলোড",
     "photos": "ছবি",
-    "workLocations": "কাজের সাইট"
+    "workLocations": "কাজের সাইট",
+    "continueTask": "কাজ চালিয়ে যান",
+    "due": "বাকি"
   },
   "client": {
     "title": "ক্লায়েন্ট পোর্টাল",
@@ -777,6 +821,7 @@
     "daysAgo": "দিন আগে"
   },
   "accountant": {
+    "invoicePdf": "চালান পিডিএফ",
     "dashboard": "অ্যাকাউনটেন্ট ড্যাশবোর্ড",
     "invoiceStats": {
       "title": "চালান পরিসংখ্যান",

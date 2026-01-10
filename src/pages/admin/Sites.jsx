@@ -9,6 +9,7 @@ import {
   MapPin,
   Layers,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
@@ -251,9 +252,23 @@ const Sites = () => {
                     <h3 className="font-semibold text-lg text-gray-900 truncate group-hover:text-primary-600 transition-colors">
                       {site.name}
                     </h3>
-                    <p className="text-sm text-gray-500 truncate">
-                      {site.client?.name || t("admin.sites.noClient")}
-                    </p>
+                    <div className="flex items-center gap-2 max-w-full">
+                      <p className="text-sm text-gray-500 truncate">
+                        {site.client?.name || t("admin.sites.noClient")}
+                      </p>
+                      {site.client?._id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/clients/${site.client._id}`);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0"
+                          title={t("admin.sites.viewClientDetails") || "View Client Details"}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 shrink-0 ${getSiteTypeColor(
