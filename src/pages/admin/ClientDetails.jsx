@@ -21,6 +21,8 @@ import Loading from "../../components/common/Loading";
 import ClientStatsGrid from "../../components/client/ClientStatsGrid";
 import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import ClientSitesList from "../../components/client/ClientSitesList";
+import Modal from "../../components/common/Modal";
+import { useState } from "react";
 
 const ClientDetails = () => {
   const { t } = useTranslation();
@@ -30,6 +32,8 @@ const ClientDetails = () => {
   const { data: client, isLoading: clientLoading, error: clientError } = useClient(id);
   const { data: sitesData, isLoading: sitesLoading } = useSites({ client: id });
   const { data: tasksData, isLoading: tasksLoading } = useClientTasks(id);
+
+  const [isContractOpen, setIsContractOpen] = useState(false);
 
   const sites = sitesData?.data || [];
   const tasks = tasksData?.data || [];
@@ -61,6 +65,25 @@ const ClientDetails = () => {
       completed: "bg-green-100 text-green-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
+  }, []);
+
+  const getSafePdfUrl = useCallback((url) => {
+    if (!url) return null;
+
+    if (url.includes('cloudinary.com')) {
+      if (url.includes('/image/upload/')) {
+        if (!url.toLowerCase().endsWith('.pdf')) {
+          url = `${url}.pdf`;
+        }
+        url = url.replace('/upload/', '/upload/f_auto,q_auto/');
+      }
+    }
+
+    if (url.toLowerCase().endsWith('.pdf') && !url.includes('#view=')) {
+      url = `${url}#view=FitH`;
+    }
+    
+    return url;
   }, []);
 
   if (isLoading) {
@@ -280,6 +303,36 @@ const ClientDetails = () => {
                   {format(new Date(client.createdAt), "dd MMM yyyy")}
                 </span>
               </div>
+
+               {/* Contract PDF Link */}
+               {client.contractPdf?.url && (
+                <div className="pt-3 border-t">
+                   <button
+                    onClick={() => setIsContractOpen(true)}
+                    className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      className="lucide lucide-file-text"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <path d="M16 13H8"/>
+                      <path d="M16 17H8"/>
+                      <path d="M10 9H8"/>
+                    </svg>
+                    {t("admin.clientDetails.viewContract") || "View Contract (PDF)"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -368,6 +421,32 @@ const ClientDetails = () => {
           </div>
         </div>
       </div>
+      
+      {/* Contract Preview Modal */}
+      {client.contractPdf?.url && (
+        <Modal
+          isOpen={isContractOpen}
+          onClose={() => setIsContractOpen(false)}
+          title={t("admin.clientDetails.contractPreview") || "Contract Preview"}
+          size="lg"
+        >
+          <div className="h-[75vh] w-full bg-gray-100 rounded-lg overflow-hidden">
+            <iframe
+              src={getSafePdfUrl(client.contractPdf.url)}
+              className="w-full h-full"
+              title="Contract Preview"
+            />
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => setIsContractOpen(false)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

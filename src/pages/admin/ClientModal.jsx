@@ -57,19 +57,42 @@ const ClientModal = ({ isOpen, onClose, client }) => {
 
   const onSubmit = async (data) => {
     try {
+      const formData = new FormData();
+
+      // Append basic fields
+      formData.append("name", data.name);
+      formData.append("email", data.email);
+      formData.append("phone", data.phone);
+      if (data.whatsapp) formData.append("whatsapp", data.whatsapp);
+      if (data.password) formData.append("password", data.password);
+      formData.append("paymentType", data.paymentType);
+      formData.append("propertyType", data.propertyType);
+      if (data.propertySize) formData.append("propertySize", data.propertySize);
+      if (data.notes) formData.append("notes", data.notes);
+
+      // Append Address fields separately
+      formData.append("address[street]", data.address.street);
+      formData.append("address[city]", data.address.city);
+
+      // Append File
+      if (data.contractPdf && data.contractPdf[0]) {
+        formData.append("contractPdf", data.contractPdf[0]);
+      }
+
       if (isEditMode) {
         await updateMutation.mutateAsync({
           id: client._id,
-          data,
+          data: formData, // Send FormData
         });
         toast.success("تم تحديث بيانات العميل بنجاح");
       } else {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync(formData); // Send FormData
         toast.success("تم إضافة العميل بنجاح");
       }
 
       onClose();
     } catch (err) {
+      console.error(err);
       const message =
         err?.response?.data?.message || "حدث خطأ أثناء الحفظ";
       toast.error(message);
@@ -195,6 +218,24 @@ const ClientModal = ({ isOpen, onClose, client }) => {
             type="number"
             placeholder="sq meters"
             {...register("propertySize")}
+          />
+        </div>
+
+        {/* Contract PDF Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t("admin.clients.contractPdf") || "Contract PDF"} (.pdf)
+          </label>
+          <input
+            type="file"
+            accept=".pdf"
+            {...register("contractPdf")}
+            className="block w-full text-sm text-gray-500
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-full file:border-0
+              file:text-sm file:font-semibold
+              file:bg-green-50 file:text-green-700
+              hover:file:bg-green-100"
           />
         </div>
 

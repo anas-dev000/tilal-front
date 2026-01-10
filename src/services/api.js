@@ -1,8 +1,8 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL = "http://localhost:5000/api/v1";
+//   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -222,8 +222,23 @@ export const clientsAPI = {
   getClients: (params) => api.get("/clients", { params }),
   getClient: (id) => api.get(`/clients/${id}`),
   getClientTasks: (id) => api.get(`/clients/${id}/tasks`),
-  createClient: (data) => api.post("/clients", data),
-  updateClient: (id, data) => api.put(`/clients/${id}`, data),
+  createClient: (data) => {
+    // If FormData, let browser set Content-Type with boundary
+    if (data instanceof FormData) {
+      return api.post("/clients", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+    }
+    return api.post("/clients", data);
+  },
+  updateClient: (id, data) => {
+    if (data instanceof FormData) {
+      return api.put(`/clients/${id}`, data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+    }
+    return api.put(`/clients/${id}`, data);
+  },
   deleteClient: (id) => api.delete(`/clients/${id}`),
   toggleClientStatus: (id) => api.put(`/clients/${id}/toggle-status`),
 };
