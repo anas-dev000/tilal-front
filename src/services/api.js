@@ -1,8 +1,9 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
-//   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+// "http://localhost:5000/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,7 +16,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Check localStorage first (Remember Me), then sessionStorage (Session only)
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -187,7 +189,10 @@ api.interceptors.response.use(
 
     console.groupEnd();
 
-    if (error.response?.status === 401 && !error.config?.url?.includes("/login")) {
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes("/login")
+    ) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       sessionStorage.removeItem("token"); // Also clear session storage
@@ -206,11 +211,12 @@ export const authAPI = {
   logout: () => api.post("/auth/logout"),
   getCurrentUser: () => api.get("/auth/me"),
   updatePassword: (data) => api.put("/auth/update-password", data),
-  
+
   // Password Reset (MOCKED)
   // Password Reset (REAL)
   forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
-  resetPassword: (token, password) => api.put(`/auth/reset-password/${token}`, { password }),
+  resetPassword: (token, password) =>
+    api.put(`/auth/reset-password/${token}`, { password }),
 };
 
 //  Client Auth & API (UNIFIED)
@@ -226,7 +232,7 @@ export const clientsAPI = {
     // If FormData, let browser set Content-Type with boundary
     if (data instanceof FormData) {
       return api.post("/clients", data, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
     }
     return api.post("/clients", data);
@@ -234,7 +240,7 @@ export const clientsAPI = {
   updateClient: (id, data) => {
     if (data instanceof FormData) {
       return api.put(`/clients/${id}`, data, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
     }
     return api.put(`/clients/${id}`, data);
@@ -307,12 +313,14 @@ export const sitesAPI = {
 export const tasksAPI = {
   getTasks: (params) => api.get("/tasks", { params }),
   getTask: (id) => api.get(`/tasks/${id}`),
-  createTask: (formData) => api.post("/tasks", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  }),
-  updateTask: (id, formData) => api.put(`/tasks/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  }),
+  createTask: (formData) =>
+    api.post("/tasks", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  updateTask: (id, formData) =>
+    api.put(`/tasks/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   deleteTask: (id) => api.delete(`/tasks/${id}`),
   startTask: (id, data) => api.post(`/tasks/${id}/start`, data),
   completeTask: (id, data) => api.post(`/tasks/${id}/complete`, data),
@@ -389,11 +397,11 @@ export const accountantAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     }),
   deleteInvoice: (id) => api.delete(`/accountant/invoices/${id}`),
-  
+
   // Invoice statistics and alerts
   getInvoiceStats: () => api.get("/accountant/invoices/stats"),
   getPaymentAlerts: () => api.get("/accountant/invoices/payment-alerts"),
-  
+
   // Sites
   getSites: (params) => api.get("/accountant/sites", { params }),
   getSite: (id) => api.get(`/accountant/sites/${id}`),
@@ -434,7 +442,8 @@ export const invoicesAPI = {
   createInvoice: (data) => api.post("/invoices", data),
   updateInvoice: (id, data) => api.put(`/invoices/${id}`, data),
   deleteInvoice: (id) => api.delete(`/invoices/${id}`),
-  updatePaymentStatus: (id, data) => api.put(`/invoices/${id}/payment-status`, data),
+  updatePaymentStatus: (id, data) =>
+    api.put(`/invoices/${id}/payment-status`, data),
   getInvoiceStats: () => api.get("/invoices/stats"),
   getPaymentAlerts: () => api.get("/invoices/payment-alerts"),
 };
