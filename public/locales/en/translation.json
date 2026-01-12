@@ -146,7 +146,11 @@
       "building": "Building",
       "cash": "Cash",
       "online": "Online",
-      "financialOverview": "Financial Overview"
+      "online": "Online",
+      "financialOverview": "Financial Overview",
+      "documents": "Documents",
+      "contract": "Contract",
+      "viewContract": "View Contract"
     },
     "workerDetails": {
       "title": "Worker Details",
@@ -253,7 +257,15 @@
       "total": "Total workers",
       "activateWorker": "Activate Worker",
       "deactivateWorker": "Deactivate Worker",
-      "notes": "Worker Notes"
+      "activateWorker": "Activate Worker",
+      "deactivateWorker": "Deactivate Worker",
+      "notes": "Worker Notes",
+      "documents": "Documents",
+      "residencePhoto": "Residence Photo (Iqama)",
+      "licensePhoto": "Driving License",
+      "idPhoto": "National ID",
+      "otherDocuments": "Additional Documents",
+      "contractPdf": "Contract PDF"
     },
     "employees": {
       "title": "Employees Management",

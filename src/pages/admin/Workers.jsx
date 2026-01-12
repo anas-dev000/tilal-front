@@ -248,6 +248,7 @@ const Workers = () => {
       </Card>
 
       {/* Modals */}
+      {/* Modal for Creating/Editing Worker */}
       <WorkerModal
         isOpen={isModalOpen}
         onClose={handleModalClose}

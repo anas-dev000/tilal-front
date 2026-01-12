@@ -71,13 +71,21 @@ const EmployeesTable = ({
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center
-                    text-base font-semibold border-2
+                    w-10 h-10 rounded-full flex items-center justify-center overflow-hidden
+                    text-base font-semibold border-2 shrink-0
                     ${employee.isActive 
                       ? 'bg-primary-50 text-primary-600 border-primary-100' 
                       : 'bg-gray-100 text-gray-500 border-gray-200'}
                   `}>
-                    {employee.name.charAt(0).toUpperCase()}
+                    {employee.profilePicture ? (
+                      <img 
+                        src={employee.profilePicture} 
+                        alt={employee.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      employee.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
