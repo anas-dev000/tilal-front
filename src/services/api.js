@@ -248,8 +248,23 @@ export const usersAPI = {
   getUsers: (params) => api.get("/users", { params }),
   getUser: (id) => api.get(`/users/${id}`),
   getWorkers: () => api.get("/users/workers"),
-  createUser: (data) => api.post("/users", data),
-  updateUser: (id, data) => api.put(`/users/${id}`, data),
+  getWorkers: () => api.get("/users/workers"),
+  createUser: (data) => {
+    if (data instanceof FormData) {
+      return api.post("/users", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    }
+    return api.post("/users", data);
+  },
+  updateUser: (id, data) => {
+    if (data instanceof FormData) {
+      return api.put(`/users/${id}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    }
+    return api.put(`/users/${id}`, data);
+  },
   deleteUser: (id) => api.delete(`/users/${id}`),
   toggleUserStatus: (id) => api.put(`/users/${id}/toggle-status`),
 };
