@@ -1,8 +1,10 @@
 // src/pages/admin/ClientModal.jsx
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { X, FileText, Upload, ExternalLink } from "lucide-react";
 
 // React Query hooks
 import {
@@ -15,6 +17,123 @@ import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 
+// Standalone PDF Preview Component for maximum reliability
+const PdfPreviewModal = ({ isOpen, onClose, url, title }) => {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen || !url) {
+      setBlobUrl(null);
+      setError(null);
+      return;
+    }
+
+    // If it's already a blob (newly selected file), use it directly
+    if (url.startsWith('blob:')) {
+      setBlobUrl(url);
+      return;
+    }
+
+    // Fetch remote PDF and convert to blob to bypass iframe cross-origin issues
+    const loadPdf = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const cleanUrl = url.split('#')[0];
+        console.log("📥 [BLOB FETCH] Fetching PDF:", cleanUrl);
+        const response = await fetch(cleanUrl);
+        if (!response.ok) throw new Error(`Failed to load: ${response.statusText}`);
+        const blob = await response.blob();
+        const bUrl = URL.createObjectURL(blob);
+        console.log("✅ [BLOB FETCH] Created blob URL:", bUrl);
+        setBlobUrl(bUrl);
+      } catch (err) {
+        console.error("❌ [BLOB FETCH] Error:", err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPdf();
+
+    return () => {
+      if (blobUrl && blobUrl.startsWith('blob:') && blobUrl !== url) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [isOpen, url]);
+
+  if (!isOpen) return null;
+
+  const finalIframeUrl = blobUrl ? (blobUrl.includes('#view=') ? blobUrl : `${blobUrl}#view=FitH`) : null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-5xl h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between text-white mb-4">
+          <h3 className="text-lg font-semibold truncate flex-1 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-red-500" />
+            {title}
+          </h3>
+          <div className="flex items-center gap-2">
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+              title="Open in new tab / Download"
+            >
+              <ExternalLink className="w-6 h-6" />
+            </a>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-white/10 shadow-2xl relative">
+          {isLoading ? (
+             <div className="flex flex-col items-center gap-3">
+               <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+               <p className="text-gray-500">Loading PDF...</p>
+             </div>
+          ) : error ? (
+            <div className="text-center p-8">
+               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+               <p className="text-red-500 font-medium mb-4">Error loading document</p>
+               <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">
+                 Click here to try opening in a new tab
+               </a>
+            </div>
+          ) : finalIframeUrl ? (
+            <iframe
+              key={finalIframeUrl}
+              src={finalIframeUrl}
+              className="w-full h-full bg-white"
+              title="PDF Preview"
+            />
+          ) : null}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const ClientModal = ({ isOpen, onClose, client }) => {
   const { t } = useTranslation();
 
@@ -22,6 +141,13 @@ const ClientModal = ({ isOpen, onClose, client }) => {
   const updateMutation = useUpdateClient();
 
   const isEditMode = !!client;
+  
+  // PDF file state
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState(null);
+  const [removedPdf, setRemovedPdf] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const fileInputRef = useRef(null);
 
   const {
     register,
@@ -36,6 +162,17 @@ const ClientModal = ({ isOpen, onClose, client }) => {
         ...client,
         address: client.address || { street: "", city: "" },
       });
+      // Set existing PDF if available (handle both string URL and object {url, cloudinaryId})
+      if (client.contractPdf) {
+        const pdfUrl = typeof client.contractPdf === 'string' 
+          ? client.contractPdf 
+          : client.contractPdf.url;
+        setPdfPreview(pdfUrl);
+      } else {
+        setPdfPreview(null);
+      }
+      setPdfFile(null);
+      setRemovedPdf(false);
     } else {
       reset({
         name: "",
@@ -52,6 +189,9 @@ const ClientModal = ({ isOpen, onClose, client }) => {
         propertySize: "",
         notes: "",
       });
+      setPdfFile(null);
+      setPdfPreview(null);
+      setRemovedPdf(false);
     }
   }, [client, reset]);
 
@@ -74,19 +214,24 @@ const ClientModal = ({ isOpen, onClose, client }) => {
       formData.append("address[street]", data.address.street);
       formData.append("address[city]", data.address.city);
 
-      // Append File
-      if (data.contractPdf && data.contractPdf[0]) {
-        formData.append("contractPdf", data.contractPdf[0]);
+      // Append PDF File (from state)
+      if (pdfFile) {
+        formData.append("contractPdf", pdfFile);
+      }
+      
+      // Handle PDF removal in edit mode
+      if (isEditMode && removedPdf) {
+        formData.append("remove_contractPdf", "true");
       }
 
       if (isEditMode) {
         await updateMutation.mutateAsync({
           id: client._id,
-          data: formData, // Send FormData
+          data: formData,
         });
         toast.success("تم تحديث بيانات العميل بنجاح");
       } else {
-        await createMutation.mutateAsync(formData); // Send FormData
+        await createMutation.mutateAsync(formData);
         toast.success("تم إضافة العميل بنجاح");
       }
 
@@ -99,9 +244,56 @@ const ClientModal = ({ isOpen, onClose, client }) => {
     }
   };
 
+  const getSafePdfUrl = useCallback((url) => {
+    if (!url) return null;
+
+    let finalUrl = url;
+
+    // Handle Cloudinary URLs
+    if (finalUrl.includes('cloudinary.com')) {
+      if (finalUrl.includes('/image/upload/')) {
+        if (!finalUrl.toLowerCase().endsWith('.pdf')) {
+          finalUrl = `${finalUrl}.pdf`;
+        }
+        finalUrl = finalUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+      }
+    }
+    
+    if (finalUrl.toLowerCase().endsWith('.pdf') && !finalUrl.includes('#view=')) {
+      finalUrl = `${finalUrl}#view=FitH`;
+    }
+    
+    return finalUrl;
+  }, []);
+
+  const handlePdfChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === "application/pdf") {
+      setPdfFile(file);
+      // Create a local URL for previewing the newly selected file
+      const localUrl = URL.createObjectURL(file);
+      setPdfPreview(localUrl);
+      setRemovedPdf(false);
+    }
+  };
+
+  const handleRemovePdf = () => {
+    // If it's a local object URL, revoke it to prevent memory leaks
+    if (pdfFile && pdfPreview && pdfPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(pdfPreview);
+    }
+    setPdfFile(null);
+    setPdfPreview(null);
+    setRemovedPdf(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -226,17 +418,58 @@ const ClientModal = ({ isOpen, onClose, client }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t("admin.clients.contractPdf") || "Contract PDF"} (.pdf)
           </label>
-          <input
-            type="file"
-            accept=".pdf"
-            {...register("contractPdf")}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-full file:border-0
-              file:text-sm file:font-semibold
-              file:bg-green-50 file:text-green-700
-              hover:file:bg-green-100"
-          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-400 transition bg-gray-50">
+            {pdfPreview ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="p-2 bg-red-50 rounded-lg shrink-0">
+                    <FileText className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {pdfFile ? pdfFile.name : "Contract PDF"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {pdfFile ? `${(pdfFile.size / 1024).toFixed(1)} KB` : "Existing file"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {pdfPreview && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPdfModal(true)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      title="View PDF"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleRemovePdf}
+                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                    title="Remove file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center cursor-pointer py-4">
+                <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                <span className="text-sm text-gray-600">Click to upload PDF</span>
+                <span className="text-xs text-gray-400 mt-1">PDF files only, max 10MB</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handlePdfChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
         </div>
 
         {/* Notes */}
@@ -268,6 +501,14 @@ const ClientModal = ({ isOpen, onClose, client }) => {
         </div>
       </form>
     </Modal>
+
+      <PdfPreviewModal
+        isOpen={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        url={getSafePdfUrl(pdfPreview)}
+        title={t("admin.clients.contractPdf") || "Contract PDF"}
+      />
+    </>
   );
 };
 

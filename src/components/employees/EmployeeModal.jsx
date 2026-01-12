@@ -1,14 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 import { useCreateUser, useUpdateUser } from "../../hooks/queries/useUsers";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
-
-// ... other imports
 
 const EmployeeModal = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();
@@ -132,17 +131,25 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
   const ImageUpload = ({ name, label, currentUrl }) => {
     const fileList = watch(name);
     const file = fileList && fileList.length > 0 ? fileList[0] : null;
-    // Ensure file is actually a File object to avoid "Overload resolution failed"
-    // Also handle cleanup if needed, though simple replacement is safer for now.
+    // Ensure file is actually a File object
     const previewUrl = (file instanceof File) ? URL.createObjectURL(file) : currentUrl;
+    
+    const [removed, setRemoved] = useState(false);
+    const displayUrl = removed ? null : previewUrl;
+
+    const handleRemove = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setRemoved(true);
+    };
 
     return (
       <div className="flex flex-col items-center mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
         <div className="relative group cursor-pointer">
            <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden relative">
-              {previewUrl ? (
-                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              {displayUrl ? (
+                <img src={displayUrl} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-3xl text-gray-300 font-bold">
                    {watch("name")?.charAt(0)?.toUpperCase() || "?"}
@@ -158,7 +165,22 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
               accept="image/*"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               {...register(name)}
+              onChange={(e) => {
+                register(name).onChange(e);
+                setRemoved(false);
+              }}
            />
+           {/* Delete Button */}
+           {displayUrl && (
+             <button
+               type="button"
+               onClick={handleRemove}
+               className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition shadow-md z-10"
+               title="Remove image"
+             >
+               <X className="w-3 h-3" />
+             </button>
+           )}
         </div>
       </div>
     );
@@ -167,8 +189,18 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
   // Custom Document Upload Component (Box Style with Preview)
   const DocumentUpload = ({ name, label, accept, multiple = false }) => {
      const fileList = watch(name);
-     const files = fileList ? Array.from(fileList) : [];
+     const allFiles = fileList ? Array.from(fileList) : [];
+     const [removedIndices, setRemovedIndices] = useState([]);
+     
+     // Filter out removed files for display
+     const files = allFiles.filter((_, idx) => !removedIndices.includes(idx));
      const hasFiles = files.length > 0;
+
+     const handleRemoveFile = (e, originalIndex) => {
+       e.preventDefault();
+       e.stopPropagation();
+       setRemovedIndices(prev => [...prev, originalIndex]);
+     };
      
      return (
        <div className="form-control w-full">
@@ -182,12 +214,18 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
                multiple={multiple}
                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                {...register(name)}
+               onChange={(e) => {
+                 register(name).onChange(e);
+                 setRemovedIndices([]); // Reset when new files selected
+               }}
             />
             
             {hasFiles ? (
                 <div className="w-full">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
-                       {files.map((file, idx) => {
+                       {allFiles.map((file, idx) => {
+                           if (removedIndices.includes(idx)) return null;
+                           
                            // Safe createObjectURL
                            const isImage = file.type?.startsWith('image/');
                            let previewUrl = null;
@@ -205,6 +243,15 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
                                        </div>
                                    )}
                                    <span className="text-xs text-gray-600 truncate w-full text-center px-1">{file.name}</span>
+                                   {/* Delete Button */}
+                                   <button
+                                     type="button"
+                                     onClick={(e) => handleRemoveFile(e, idx)}
+                                     className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition shadow-md z-20 opacity-0 group-hover:opacity-100"
+                                     title="Remove file"
+                                   >
+                                     <X className="w-3 h-3" />
+                                   </button>
                                </div>
                            );
                        })}
