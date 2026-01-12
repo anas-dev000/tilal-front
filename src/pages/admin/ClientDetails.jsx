@@ -9,6 +9,7 @@ import {
   CreditCard,
   Edit,
   DollarSign,
+  FileText, // Added FileText
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useCallback, memo } from "react";
@@ -307,29 +308,20 @@ const ClientDetails = () => {
                {/* Contract PDF Link */}
                {client.contractPdf?.url && (
                 <div className="pt-3 border-t">
+                   <h4 className="text-sm font-medium text-gray-700 mb-2">{t("admin.clientDetails.documents") || "Documents"}</h4>
                    <button
                     onClick={() => setIsContractOpen(true)}
-                    className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                    className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group w-full text-left"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="lucide lucide-file-text"
-                    >
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                      <path d="M16 13H8"/>
-                      <path d="M16 17H8"/>
-                      <path d="M10 9H8"/>
-                    </svg>
-                    {t("admin.clientDetails.viewContract") || "View Contract (PDF)"}
+                     <div className="p-2 bg-red-50 text-red-600 rounded-lg group-hover:bg-red-100 transition-colors">
+                       <FileText className="w-5 h-5" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {t("admin.clientDetails.contract") || "Contract"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF / Document</p>
+                     </div>
                   </button>
                 </div>
               )}

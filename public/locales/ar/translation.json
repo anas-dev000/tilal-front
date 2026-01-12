@@ -194,7 +194,11 @@
       "building": "مبنى",
       "cash": "نقد",
       "online": "أونلاين",
-      "financialOverview": "نظرة عامة مالية"
+      "online": "أونلاين",
+      "financialOverview": "نظرة عامة مالية",
+      "documents": "المستندات",
+      "contract": "العقد",
+      "viewContract": "عرض العقد"
     },
     "workerDetails": {
       "title": "تفاصيل العامل",
@@ -301,7 +305,15 @@
       "total": "إجمالي العمال",
       "activateWorker": "تفعيل العامل",
       "deactivateWorker": "إيقاف العامل",
-      "notes": "ملاحظات العامل"
+      "activateWorker": "تفعيل العامل",
+      "deactivateWorker": "إيقاف العامل",
+      "notes": "ملاحظات العامل",
+      "documents": "المستندات",
+      "residencePhoto": "صورة الإقامة",
+      "licensePhoto": "رخصة القيادة",
+      "idPhoto": "الهوية الوطنية",
+      "otherDocuments": "مستندات إضافية",
+      "contractPdf": "ملف العقد"
     },
     "employees": {
       "title": "إدارة الموظفين",

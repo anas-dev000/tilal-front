@@ -8,6 +8,8 @@ import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 
+// ... other imports
+
 const EmployeeModal = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();
 
@@ -28,11 +30,14 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
       email: "",
       password: "",
       phone: "",
-      role: "worker", // default
+      role: "worker",
       isActive: "true",
       notes: "",
     },
   });
+
+  // Watch role to conditionally show document uploads
+  const selectedRole = watch("role");
 
   // Reset form when employee prop changes
   useEffect(() => {
@@ -40,6 +45,7 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
       reset({
         ...employee,
         isActive: employee.isActive ? "true" : "false",
+        password: "", // clear password
       });
     } else {
       reset({
@@ -54,31 +60,61 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
     }
   }, [employee, reset]);
 
-  const onSubmit = async (formData) => {
+  const onSubmit = async (data) => {
     try {
-      // Prepare data
-      const submitData = {
-        ...formData,
-        isActive: formData.isActive === "true",
+      const formData = new FormData();
+
+      // Append text fields
+      formData.append("name", data.name);
+      formData.append("email", data.email);
+      formData.append("phone", data.phone);
+      formData.append("role", data.role);
+      formData.append("isActive", data.isActive === "true");
+      formData.append("notes", data.notes || "");
+
+      if (!isEditMode && data.password) {
+        formData.append("password", data.password);
+      }
+
+      // Append files
+      const appendFile = (fieldName) => {
+        const fileInput = data[fieldName];
+        // Only append if it's a FileList with a File object
+        if (fileInput && fileInput.length > 0 && fileInput[0] instanceof File) {
+          formData.append(fieldName, fileInput[0]);
+        }
       };
 
-      // Remove password field if we're editing
-      if (isEditMode) {
-        delete submitData.password;
+      // Profile Picture (For all roles)
+      appendFile("profilePicture");
+
+      // Specific Worker Documents
+      if (data.role === 'worker') {
+        appendFile("residencePhoto");
+        appendFile("licensePhoto");
+        appendFile("idPhoto");
+        
+        // Multiple Files (otherFiles)
+        if (data.otherFiles && data.otherFiles.length > 0) {
+          Array.from(data.otherFiles).forEach((file) => {
+             if (file instanceof File) {
+                formData.append("otherFiles", file);
+             }
+          });
+        }
       }
 
       if (isEditMode) {
         await updateUserMutation.mutateAsync({
           id: employee._id,
-          data: submitData,
+          data: formData,
         });
         toast.success(t("common.updatedSuccessfully") || "Employee updated successfully");
       } else {
-        await createUserMutation.mutateAsync(submitData);
+        await createUserMutation.mutateAsync(formData);
         toast.success(t("common.createdSuccessfully") || "Employee created successfully");
       }
 
-      // Close modal on success
       onClose();
     } catch (error) {
       const errorMessage =
@@ -86,21 +122,131 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
         (isEditMode
           ? "Failed to update employee"
           : "Failed to create employee");
-
       toast.error(errorMessage);
     }
   };
 
   const isLoading = isSubmitting || createUserMutation.isPending || updateUserMutation.isPending;
 
+  // Custom Image Upload Component (Avatar Style)
+  const ImageUpload = ({ name, label, currentUrl }) => {
+    const fileList = watch(name);
+    const file = fileList && fileList.length > 0 ? fileList[0] : null;
+    // Ensure file is actually a File object to avoid "Overload resolution failed"
+    // Also handle cleanup if needed, though simple replacement is safer for now.
+    const previewUrl = (file instanceof File) ? URL.createObjectURL(file) : currentUrl;
+
+    return (
+      <div className="flex flex-col items-center mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+        <div className="relative group cursor-pointer">
+           <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden relative">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl text-gray-300 font-bold">
+                   {watch("name")?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              )}
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                 <span className="text-xs font-medium">Change</span>
+              </div>
+           </div>
+           <input 
+              type="file" 
+              accept="image/*"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              {...register(name)}
+           />
+        </div>
+      </div>
+    );
+  };
+
+  // Custom Document Upload Component (Box Style with Preview)
+  const DocumentUpload = ({ name, label, accept, multiple = false }) => {
+     const fileList = watch(name);
+     const files = fileList ? Array.from(fileList) : [];
+     const hasFiles = files.length > 0;
+     
+     return (
+       <div className="form-control w-full">
+         <label className="label">
+           <span className="label-text font-medium text-gray-700">{label}</span>
+         </label>
+         <div className={`relative border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer min-h-[120px] flex flex-col items-center justify-center ${hasFiles ? 'items-start' : ''}`}>
+            <input 
+               type="file" 
+               accept={accept}
+               multiple={multiple}
+               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+               {...register(name)}
+            />
+            
+            {hasFiles ? (
+                <div className="w-full">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
+                       {files.map((file, idx) => {
+                           // Safe createObjectURL
+                           const isImage = file.type?.startsWith('image/');
+                           let previewUrl = null;
+                           if (isImage) {
+                               try { previewUrl = URL.createObjectURL(file); } catch (e) { /* ignore */ }
+                           }
+                           
+                           return (
+                               <div key={idx} className="relative bg-white p-2 rounded-lg border shadow-sm flex flex-col items-center group">
+                                   {isImage && previewUrl ? (
+                                       <img src={previewUrl} className="h-20 w-full object-cover rounded mb-2" alt="preview" />
+                                   ) : (
+                                       <div className="h-20 w-full bg-gray-100 rounded flex items-center justify-center mb-2 text-gray-500">
+                                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                       </div>
+                                   )}
+                                   <span className="text-xs text-gray-600 truncate w-full text-center px-1">{file.name}</span>
+                               </div>
+                           );
+                       })}
+                    </div>
+                    <p className="text-center text-xs text-blue-600 mt-3 font-medium">Click to add/change files</p>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center gap-2 pointer-events-none w-full">
+                   <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                   </div>
+                   <div className="text-sm text-gray-500">
+                      <span className="font-semibold text-primary-600">Click to upload</span> or drag and drop
+                   </div>
+                   <p className="text-xs text-gray-400">
+                      {accept === "image/*" ? "PNG, JPG (max 5MB)" : "PDF, Images (max 10MB)"}
+                   </p>
+                </div>
+            )}
+         </div>
+       </div>
+     );
+  };
+
+  const currentProfilePic = employee?.profilePicture;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? t("common.edit") : t("admin.employees.addEmployee")}
-      size="md"
+      size="lg"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Profile Picture - Avatar Style */}
+        <ImageUpload 
+           name="profilePicture" 
+           label={t("admin.workers.profilePicture") || "Profile Picture"}
+           currentUrl={currentProfilePic}
+        />
+
         {/* Global error */}
         {(createUserMutation.error || updateUserMutation.error) && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
@@ -178,6 +324,24 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
             />
           )}
         </div>
+
+        {/* Worker Documents - Condition on Role */}
+        {selectedRole === 'worker' && (
+          <div className="border-t pt-4 mt-2">
+               {/* Multiple Documents Upload (Consolidated) */}
+               <div className="md:col-span-2">
+                  <DocumentUpload 
+                      label={t("admin.workers.documents") || "Documents (ID, License, Residence, Contracts)"} 
+                      name="otherFiles" 
+                      accept="application/pdf, image/*" 
+                      multiple={true}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload all worker documents here (PDFs or Images). You can select multiple files.
+                  </p>
+               </div>
+            </div>
+        )}
 
         {/* Notes */}
         <div>
