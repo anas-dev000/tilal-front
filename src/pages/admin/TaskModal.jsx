@@ -184,6 +184,35 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
       }
 
       try {
+        // ✅ DEBUG: Log all possible client sources
+        console.log("🔍 DEBUG Client Sources:", {
+          selectedClient,
+          "selectedSite?.client": selectedSite?.client,
+          "selectedSite?.client?._id": selectedSite?.client?._id,
+          "task?.client": task?.client,
+          "task?.client?._id": task?.client?._id,
+          selectedSite,
+        });
+
+        // ✅ FIXED: Get client ID with proper fallbacks
+        const clientId = selectedClient || 
+                         selectedSite?.client?._id || 
+                         selectedSite?.client || // In case client is just an ID string
+                         task?.client?._id ||
+                         task?.client;
+        
+        console.log("🎯 Final clientId:", clientId);
+
+        if (!clientId) {
+          // Show more specific error based on where the issue is
+          if (selectedSite && !selectedSite.client) {
+            toast.error("هذا الموقع ليس له عميل مرتبط. يرجى تحديث بيانات الموقع أو اختيار موقع آخر.");
+          } else {
+            toast.error("Client information is missing. Please select a site.");
+          }
+          return;
+        }
+
         // ✅ FIXED: Prepare payload with sections and voice recording
         const formData = new FormData();
         formData.append('title', data.title.trim());
@@ -191,7 +220,7 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
         formData.append('site', watchSite);
         formData.append('worker', data.worker);
         formData.append('scheduledDate', data.scheduledDate);
-        formData.append('client', selectedClient || task?.client?._id);
+        formData.append('client', clientId);
         formData.append('visibleToClient', data.visibleToClient);
         
         // Add sections as JSON array
@@ -226,8 +255,11 @@ const TaskModal = ({ isOpen, onClose, task, preFillSite }) => {
     [
       task,
       selectedClient,
+      selectedSite,
       selectedSections,
       watchSite,
+      existingVoiceUrl,
+      voiceRecording,
       updateTaskMutation,
       createTaskMutation,
       onClose,
