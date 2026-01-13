@@ -10,7 +10,7 @@ import {
   UserX,
   Lock // Import Lock icon
 } from "lucide-react";
-import Badge from "../../components/common/Badge";
+import Badge from "../../common/Badge";
 import { format } from "date-fns";
 
 const EmployeesTable = ({ 

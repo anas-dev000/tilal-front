@@ -19,8 +19,8 @@ import { useTasks } from "../../hooks/queries/useTasks";
 
 import Button from "../../components/common/Button";
 import SectionManagement from "./SectionManagement";
-import SiteModal from "./SiteModal";
-import TaskModal from "./TaskModal";
+import SiteModal from "../../components/admin/modals/SiteModal";
+import TaskModal from "../../components/admin/modals/TaskModal";
 import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import { toast } from "sonner";

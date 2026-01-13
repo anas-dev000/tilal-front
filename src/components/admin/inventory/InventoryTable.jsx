@@ -6,7 +6,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import Pagination from "../common/Pagination";
+import Pagination from "../../common/Pagination";
 
 const InventoryTable = ({
   items,

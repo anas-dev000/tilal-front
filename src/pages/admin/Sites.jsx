@@ -20,7 +20,7 @@ import { useSites, useDeleteSite } from "../../hooks/queries/useSites";
 import { useClients } from "../../hooks/queries/useClients";
 
 import Button from "../../components/common/Button";
-import SiteModal from "./SiteModal";
+import SiteModal from "../../components/admin/modals/SiteModal";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";

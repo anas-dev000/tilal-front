@@ -19,9 +19,9 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Input from "../../components/common/Input";
-import ClientModal from "./ClientModal";
+import ClientModal from "../../components/admin/modals/ClientModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
-import ClientsTable from "../../components/client/ClientsTable";
+import ClientsTable from "../../components/admin/clients/ClientsTable";
 
 const PAGE_SIZE = 10;
 

@@ -21,8 +21,8 @@ import Button from "../../components/common/Button";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
-import InventoryModal from "./InventoryModal";
-import InventoryTable from "../../components/admin/InventoryTable";
+import InventoryModal from "../../components/admin/modals/InventoryModal";
+import InventoryTable from "../../components/admin/inventory/InventoryTable";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 

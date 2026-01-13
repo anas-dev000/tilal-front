@@ -19,9 +19,9 @@ import { useClient, useClientTasks } from "../../hooks/queries/useClients";
 import { useSites } from "../../hooks/queries/useSites";
 
 import Loading from "../../components/common/Loading";
-import ClientStatsGrid from "../../components/client/ClientStatsGrid";
+import ClientStatsGrid from "../../components/admin/clients/ClientStatsGrid";
 import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
-import ClientSitesList from "../../components/client/ClientSitesList";
+import ClientSitesList from "../../components/admin/clients/ClientSitesList";
 import Modal from "../../components/common/Modal";
 import { useState } from "react";
 

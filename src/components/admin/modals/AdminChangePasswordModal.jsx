@@ -2,10 +2,10 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
-import Modal from "../common/Modal";
-import Input from "../common/Input";
-import Button from "../common/Button";
-import { usersAPI } from "../../services/api";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Button from "../../common/Button";
+import { usersAPI } from "../../../services/api";
 
 const AdminChangePasswordModal = ({ isOpen, onClose, user }) => {
   const { t } = useTranslation();

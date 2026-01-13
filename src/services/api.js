@@ -254,7 +254,7 @@ export const usersAPI = {
   getUsers: (params) => api.get("/users", { params }),
   getUser: (id) => api.get(`/users/${id}`),
   getWorkers: () => api.get("/users/workers"),
-  getWorkers: () => api.get("/users/workers"),
+
   createUser: (data) => {
     if (data instanceof FormData) {
       return api.post("/users", data, {

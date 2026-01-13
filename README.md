@@ -83,8 +83,12 @@ frontend/
 │   │
 │   ├── components/          # Reusable UI components
 │   │   ├── admin/            # Admin-specific components
-│   │   ├── client/           # Client-specific components
-│   │   ├── workers/          # Worker-specific components
+│   │   │   ├── clients/      # Client management components
+│   │   │   ├── employees/    # Employee management components
+│   │   │   ├── workers/      # Worker management components
+│   │   │   ├── inventory/    # Inventory components
+│   │   │   └── modals/       # Admin modals
+│   │   ├── finance/          # Finance components (Invoices, etc.)
 │   │   └── common/           # Shared components (Button, Modal, etc.)
 │   │
 │   ├── contexts/            # React context providers

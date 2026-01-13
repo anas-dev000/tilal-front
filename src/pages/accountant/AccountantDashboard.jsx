@@ -2,8 +2,8 @@
 import React, { memo } from "react";
 import { useTranslation } from "react-i18next";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
-import InvoiceStats from "../../components/admin/InvoiceStats";
-import PaymentAlerts from "../../components/admin/PaymentAlerts";
+import InvoiceStats from "../../components/finance/InvoiceStats";
+import PaymentAlerts from "../../components/finance/PaymentAlerts";
 import { useInvoiceStats, usePaymentAlerts } from "../../hooks/queries/useInvoices";
 
 const AccountantDashboard = () => {
