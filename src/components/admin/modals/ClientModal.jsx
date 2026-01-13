@@ -10,12 +10,12 @@ import { X, FileText, Upload, ExternalLink } from "lucide-react";
 import {
   useCreateClient,
   useUpdateClient,
-} from "../../hooks/queries/useClients";
+} from "../../../hooks/queries/useClients";
 
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Select from "../../components/common/Select";
-import Button from "../../components/common/Button";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Button from "../../common/Button";
 
 // Standalone PDF Preview Component for maximum reliability
 const PdfPreviewModal = ({ isOpen, onClose, url, title }) => {

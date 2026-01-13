@@ -23,7 +23,7 @@ import { useSites } from "../../hooks/queries/useSites";
 
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import TaskModal from "./TaskModal";
+import TaskModal from "../../components/admin/modals/TaskModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";

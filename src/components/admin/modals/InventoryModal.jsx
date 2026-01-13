@@ -7,12 +7,12 @@ import { useForm } from "react-hook-form";
 import {
   useCreateInventoryItem,
   useUpdateInventoryItem,
-} from "../../hooks/queries/useInventory";
+} from "../../../hooks/queries/useInventory";
 
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Select from "../../components/common/Select";
-import Button from "../../components/common/Button";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Button from "../../common/Button";
 
 const InventoryModal = ({ isOpen, onClose, item }) => {
   const { t } = useTranslation();

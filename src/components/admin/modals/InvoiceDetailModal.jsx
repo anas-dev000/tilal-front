@@ -2,12 +2,12 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, X, Eye, FileText, DollarSign } from "lucide-react";
-import Modal from "../../components/common/Modal";
-import Button from "../../components/common/Button";
-import Select from "../../components/common/Select";
-import Input from "../../components/common/Input";
-import Badge from "../../components/common/Badge";
-import { invoicesAPI } from "../../services/api";
+import Modal from "../../common/Modal";
+import Button from "../../common/Button";
+import Select from "../../common/Select";
+import Input from "../../common/Input";
+import Badge from "../../common/Badge";
+import { invoicesAPI } from "../../../services/api";
 import { toast } from "sonner";
 import { useCallback } from "react";
 

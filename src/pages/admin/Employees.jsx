@@ -16,10 +16,10 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Loading from "../../components/common/Loading";
-import EmployeeModal from "../../components/employees/EmployeeModal";
-import EmployeesTable from "../../components/employees/EmployeesTable";
+import EmployeeModal from "../../components/admin/employees/EmployeeModal";
+import EmployeesTable from "../../components/admin/employees/EmployeesTable";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
-import AdminChangePasswordModal from "../../components/admin/AdminChangePasswordModal";
+import AdminChangePasswordModal from "../../components/admin/modals/AdminChangePasswordModal";
 
 const PAGE_SIZE = 10;
 

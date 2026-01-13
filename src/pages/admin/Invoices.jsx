@@ -14,7 +14,7 @@ import Badge from "../../components/common/Badge";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
 import Modal from "../../components/common/Modal";
 import { toast } from "sonner";
-import InvoiceDetailModal from "./InvoiceDetailModal";
+import InvoiceDetailModal from "../../components/admin/modals/InvoiceDetailModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 // API & Hooks

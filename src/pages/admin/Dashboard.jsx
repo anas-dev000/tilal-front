@@ -18,8 +18,8 @@ import StatCard from "../../components/common/StatCard";
 import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import Skeleton, { CardSkeleton } from "../../components/common/Skeleton";
-import InvoiceStats from "../../components/admin/InvoiceStats";
-import PaymentAlerts from "../../components/admin/PaymentAlerts";
+import InvoiceStats from "../../components/finance/InvoiceStats";
+import PaymentAlerts from "../../components/finance/PaymentAlerts";
 
 const Dashboard = () => {
   const { t } = useTranslation();

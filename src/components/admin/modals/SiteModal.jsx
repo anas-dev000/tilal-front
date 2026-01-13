@@ -14,16 +14,16 @@ import {
 import {
   useCreateSite,
   useUpdateSite,
-} from "../../hooks/queries/useSites";
-import { useDeleteImage } from "../../hooks/queries/useDeleteImage";
+} from "../../../hooks/queries/useSites";
+import { useDeleteImage } from "../../../hooks/queries/useDeleteImage";
 
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Select from "../../components/common/Select";
-import Button from "../../components/common/Button";
-import ImageUpload from "../../components/common/ImageUpload";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Button from "../../common/Button";
+import ImageUpload from "../../common/ImageUpload";
 import ReactSelect from "react-select";
-import ConfirmationModal from "../../components/common/ConfirmationModal";
+import ConfirmationModal from "../../common/ConfirmationModal";
 import { toast } from "sonner";
 
 const SiteModal = ({ isOpen, onClose, site, clients }) => {

@@ -19,7 +19,7 @@ import { notificationsAPI } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
 import ChangePasswordModal from "../components/common/ChangePasswordModal";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../contexts/SocketContext";
 import useClickOutside from "../hooks/useClickOutside";
 import { motion, AnimatePresence } from "framer-motion";
 

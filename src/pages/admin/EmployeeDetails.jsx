@@ -13,10 +13,10 @@ import { useTasks } from "../../hooks/queries/useTasks";
 // Components
 import Loading from "../../components/common/Loading";
 import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
-import WorkerStatsGrid from "../../components/workers/WorkerStatsGrid";
-import WorkerTaskList from "../../components/workers/WorkerTaskList";
-import EmployeeModal from "../../components/employees/EmployeeModal";
-import WorkerModal from "./WorkerModal";
+import WorkerStatsGrid from "../../components/admin/workers/WorkerStatsGrid";
+import WorkerTaskList from "../../components/admin/workers/WorkerTaskList";
+import EmployeeModal from "../../components/admin/employees/EmployeeModal";
+// WorkerModal removed (consolidated into EmployeeModal)
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import Button from "../../components/common/Button";
 
@@ -525,19 +525,11 @@ const EmployeeDetails = () => {
         title={previewModal.title}
       />
 
-      {isWorker ? (
-        <WorkerModal
-          isOpen={isEditModalOpen}
-          onClose={handleModalClose}
-          worker={employee}
-        />
-      ) : (
-        <EmployeeModal
-          isOpen={isEditModalOpen}
-          onClose={handleModalClose}
-          employee={employee}
-        />
-      )}
+      <EmployeeModal
+        isOpen={isEditModalOpen}
+        onClose={handleModalClose}
+        employee={employee}
+      />
 
       <ConfirmationModal
         isOpen={confirmModal.isOpen}

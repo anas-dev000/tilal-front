@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 
 // React Query hooks
-import { useSites } from "../../hooks/queries/useSites";
-import { useWorkers } from "../../hooks/queries/useUsers";
-import { useCreateTask, useUpdateTask } from "../../hooks/queries/useTasks";
+import { useSites } from "../../../hooks/queries/useSites";
+import { useWorkers } from "../../../hooks/queries/useUsers";
+import { useCreateTask, useUpdateTask } from "../../../hooks/queries/useTasks";
 
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Button from "../../components/common/Button";
-import VoiceRecorder from "../../components/common/VoiceRecorder";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Button from "../../common/Button";
+import VoiceRecorder from "../../common/VoiceRecorder";
 import ReactSelect from "react-select";
 import { toast } from "sonner";
 
