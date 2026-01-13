@@ -23,7 +23,7 @@ import { useUpdateReferenceImage } from "../../hooks/queries/useSites"; // Assum
 
 import Loading from "../../components/common/Loading";
 import Button from "../../components/common/Button";
-import EditImageModal from "../../components/admin/EditImageModal";
+import EditImageModal from "../../components/admin/modals/EditImageModal";
 import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/Skeleton";
 import MediaModal from "../../components/common/MediaModal";
 

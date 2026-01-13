@@ -18,7 +18,7 @@ import Skeleton, { CardSkeleton, TableSkeleton } from "../../components/common/S
 import Loading from "../../components/common/Loading";
 import Badge from "../../components/common/Badge";
 import Pagination from "../../components/common/Pagination";
-import InvoiceDetailModal from "./InvoiceDetailModal";
+import InvoiceDetailModal from "../../components/admin/modals/InvoiceDetailModal";
 import Modal from "../../components/common/Modal";
 import { toast } from "sonner";
 

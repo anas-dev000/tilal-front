@@ -20,7 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { useDeleteSection } from "../../hooks/queries/useSites"; // ← add this export
 
 import Button from "../../components/common/Button";
-import SectionModal from "./SectionModal";
+import SectionModal from "../../components/admin/modals/SectionModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 

@@ -16,12 +16,12 @@ import {
   useCreateSection,
   useUpdateSection,
   useDeleteReferenceImage,
-} from "../../hooks/queries/useSites";
+} from "../../../hooks/queries/useSites";
 
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Button from "../../components/common/Button";
-import MediaModal from "../../components/common/MediaModal";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Button from "../../common/Button";
+import MediaModal from "../../common/MediaModal";
 import { toast } from "sonner";
 import { t } from "i18next";
 

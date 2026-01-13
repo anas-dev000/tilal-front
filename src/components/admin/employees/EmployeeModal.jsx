@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { X } from "lucide-react";
-import { useCreateUser, useUpdateUser } from "../../hooks/queries/useUsers";
-import Modal from "../../components/common/Modal";
-import Input from "../../components/common/Input";
-import Select from "../../components/common/Select";
-import Button from "../../components/common/Button";
+import { useCreateUser, useUpdateUser } from "../../../hooks/queries/useUsers";
+import Modal from "../../common/Modal";
+import Input from "../../common/Input";
+import Select from "../../common/Select";
+import Button from "../../common/Button";
 
 const EmployeeModal = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();

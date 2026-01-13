@@ -21,10 +21,10 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Skeleton, { TableSkeleton } from "../../components/common/Skeleton";
-import WorkerModal from "./WorkerModal";
-import WorkersTable from "../../components/workers/WorkersTable";
+import EmployeeModal from "../../components/admin/employees/EmployeeModal";
+import WorkersTable from "../../components/admin/workers/WorkersTable";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
-import AdminChangePasswordModal from "../../components/admin/AdminChangePasswordModal";
+import AdminChangePasswordModal from "../../components/admin/modals/AdminChangePasswordModal";
 
 const PAGE_SIZE = 10;
 
@@ -249,10 +249,10 @@ const Workers = () => {
 
       {/* Modals */}
       {/* Modal for Creating/Editing Worker */}
-      <WorkerModal
+      <EmployeeModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        worker={selectedWorker}
+        employee={selectedWorker}
       />
 
       <ConfirmationModal

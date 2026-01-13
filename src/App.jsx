@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import { SocketProvider } from "./context/SocketContext";
+import { SocketProvider } from "./contexts/SocketContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Loading from "./components/common/Loading";
 
