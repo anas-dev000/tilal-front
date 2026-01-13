@@ -372,23 +372,6 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
           )}
         </div>
 
-        {/* Worker Documents - Condition on Role */}
-        {selectedRole === 'worker' && (
-          <div className="border-t pt-4 mt-2">
-               {/* Multiple Documents Upload (Consolidated) */}
-               <div className="md:col-span-2">
-                  <DocumentUpload 
-                      label={t("admin.workers.documents") || "Documents (ID, License, Residence, Contracts)"} 
-                      name="otherFiles" 
-                      accept="application/pdf, image/*" 
-                      multiple={true}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Upload all worker documents here (PDFs or Images). You can select multiple files.
-                  </p>
-               </div>
-            </div>
-        )}
 
         {/* Notes */}
         <div>
