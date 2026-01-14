@@ -83,7 +83,7 @@ const LandingPage = () => {
             className="mt-8 flex flex-col items-center gap-2"
           >
             <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              Tilal
+              Telal
             </h2>
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
@@ -173,7 +173,7 @@ const LandingPage = () => {
                   <div className="flex items-center gap-4">
                     <motion.img
                       src="/logo.png"
-                      alt="Tilal Logo"
+                      alt="Telal Logo"
                       className="h-12 w-12 rounded-lg object-contain bg-white shadow-md"
                       whileHover={{ scale: 1.15, rotate: 15 }}
                       transition={{ type: "spring", stiffness: 400 }}
@@ -182,7 +182,7 @@ const LandingPage = () => {
                       className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent"
                       whileHover={{ scale: 1.1 }}
                     >
-                      Tilal
+                      Telal
                     </motion.span>
                   </div>
                   <div className="flex items-center gap-6">
@@ -320,15 +320,15 @@ const LandingPage = () => {
                 >
                   <img
                     src="/logo.png"
-                    alt="Tilal Logo"
+                    alt="Telal Logo"
                     className="h-12 w-12 rounded-lg object-contain shadow-lg"
                   />
                   <span className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                    Tilal
+                    Telal
                   </span>
                 </motion.div>
                 <p className="text-gray-600 text-sm">
-                  © {new Date().getFullYear()} Tilal Garden Management System. All
+                  © {new Date().getFullYear()} Telal Garden Management System. All
                   rights reserved.
                 </p>
               </div>

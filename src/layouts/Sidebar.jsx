@@ -122,7 +122,7 @@ const Sidebar = ({
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                  {t("common.appName", "Tilal")}
+                  {t("common.appName", "Telal")}
                 </h1>
                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                   {t("common.services", "Services")}
