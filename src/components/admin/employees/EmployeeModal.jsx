@@ -35,6 +35,10 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
     },
   });
 
+  const [removedFiles, setRemovedFiles] = useState({
+    profilePicture: false,
+  });
+
   // Watch role to conditionally show document uploads
   const selectedRole = watch("role");
 
@@ -58,6 +62,10 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
       });
     }
   }, [employee, reset]);
+
+  const handleFileRemove = (fieldName) => {
+    setRemovedFiles(prev => ({ ...prev, [fieldName]: true }));
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -103,6 +111,11 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
         }
       }
 
+      // Removal Flags
+      if (removedFiles.profilePicture) {
+        formData.append("remove_profilePicture", "true");
+      }
+
       if (isEditMode) {
         await updateUserMutation.mutateAsync({
           id: employee._id,
@@ -134,13 +147,15 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
     // Ensure file is actually a File object
     const previewUrl = (file instanceof File) ? URL.createObjectURL(file) : currentUrl;
     
-    const [removed, setRemoved] = useState(false);
+    const [removed, setRemoved] = useState(false);    
     const displayUrl = removed ? null : previewUrl;
+    const isRemoved = removedFiles[name];
 
     const handleRemove = (e) => {
       e.preventDefault();
       e.stopPropagation();
       setRemoved(true);
+      handleFileRemove(name);
     };
 
     return (
@@ -168,6 +183,7 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
               onChange={(e) => {
                 register(name).onChange(e);
                 setRemoved(false);
+                setRemovedFiles(prev => ({ ...prev, [name]: false }));
               }}
            />
            {/* Delete Button */}
