@@ -216,7 +216,15 @@ const ClientModal = ({ isOpen, onClose, client }) => {
 
       // Append PDF File (from state)
       if (pdfFile) {
-        formData.append("contractPdf", pdfFile);
+        let fileToUpload = pdfFile;
+        // Compress if it's an image (users sometimes upload photos of contracts)
+        if (fileToUpload.type.startsWith('image/')) {
+          try {
+            const { compressImage } = await import("../../../utils/imageCompression");
+            fileToUpload = await compressImage(fileToUpload);
+          } catch (err) { /* ignore */ }
+        }
+        formData.append("contractPdf", fileToUpload);
       }
       
       // Handle PDF removal in edit mode

@@ -84,30 +84,54 @@ const EmployeeModal = ({ isOpen, onClose, employee }) => {
       }
 
       // Append files
-      const appendFile = (fieldName) => {
+      const appendFile = async (fieldName) => {
         const fileInput = data[fieldName];
         // Only append if it's a FileList with a File object
         if (fileInput && fileInput.length > 0 && fileInput[0] instanceof File) {
-          formData.append(fieldName, fileInput[0]);
+          let fileToUpload = fileInput[0];
+          
+          // Compress if it's an image
+          if (fileToUpload.type.startsWith('image/')) {
+            try {
+              const { compressImage } = await import("../../../utils/imageCompression");
+              const originalSize = (fileToUpload.size / 1024).toFixed(2);
+              fileToUpload = await compressImage(fileToUpload);
+              const compressedSize = (fileToUpload.size / 1024).toFixed(2);
+              console.log(`📦 Compressed ${fieldName}: ${originalSize}KB -> ${compressedSize}KB`);
+            } catch (err) {
+              console.warn(`⚠️ Compression failed for ${fieldName}, using original:`, err);
+            }
+          }
+          
+          formData.append(fieldName, fileToUpload);
         }
       };
 
       // Profile Picture (For all roles)
-      appendFile("profilePicture");
+      await appendFile("profilePicture");
 
       // Specific Worker Documents
       if (data.role === 'worker') {
-        appendFile("residencePhoto");
-        appendFile("licensePhoto");
-        appendFile("idPhoto");
+        await appendFile("residencePhoto");
+        await appendFile("licensePhoto");
+        await appendFile("idPhoto");
         
         // Multiple Files (otherFiles)
         if (data.otherFiles && data.otherFiles.length > 0) {
-          Array.from(data.otherFiles).forEach((file) => {
+          const { compressImage } = await import("../../../utils/imageCompression");
+          const files = Array.from(data.otherFiles);
+          
+          for (let file of files) {
              if (file instanceof File) {
-                formData.append("otherFiles", file);
+                let fileToUpload = file;
+                if (file.type.startsWith('image/')) {
+                  try {
+                    fileToUpload = await compressImage(file);
+                  } catch (err) { /* ignore */ }
+                }
+                formData.append("otherFiles", fileToUpload);
              }
-          });
+          }
         }
       }
 
